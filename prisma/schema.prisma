@@ -1,0 +1,1018 @@
+// NephroAssist Prisma Schema
+// Multi-tenant SaaS for Organ Transplant Coordination
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// CORE IDENTITY & TENANCY
+// ============================================================
+
+model Organization {
+  id          String             @id @default(uuid())
+  name        String
+  slug        String             @unique
+  type        OrganizationType
+  logo        String?
+  timezone    String             @default("Europe/Berlin")
+  language    String             @default("de")
+  contactInfo Json?              @map("contact_info")
+  settings    Json?
+  status      OrganizationStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  memberships       OrganizationMembership[]
+  programs          TransplantProgram[]
+  patients          Patient[]
+  cases             PatientCase[]
+  requirements      RequirementTemplate[]
+  documents         Document[]
+  appointments      Appointment[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  featureFlags      FeatureFlag[]
+  systemSettings    SystemSetting[]
+  secureUploadLinks SecureUploadLink[]
+  helpRequests      HelpRequest[]
+  messages          Message[]
+  Role              Role[]
+
+  @@index([type])
+  @@index([status])
+  @@map("organizations")
+}
+
+model OrganizationMembership {
+  id             String           @id @default(uuid())
+  userId         String           @map("user_id")
+  organizationId String           @map("organization_id")
+  roleId         String           @map("role_id")
+  joinedAt       DateTime         @default(now()) @map("joined_at")
+  status         MembershipStatus @default(ACTIVE)
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([roleId])
+  @@map("organization_memberships")
+}
+
+model Role {
+  id             String       @id @default(uuid())
+  name           String
+  organizationId String?      @map("organization_id")
+  isGlobal       Boolean      @default(false) @map("is_global")
+  permissions    Permission[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization?            @relation(fields: [organizationId], references: [id])
+  memberships  OrganizationMembership[]
+
+  @@index([organizationId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String @id @default(uuid())
+  code        String @unique
+  description String
+  resource    String
+  action      String
+
+  roles Role[]
+
+  @@index([resource])
+  @@index([action])
+  @@map("permissions")
+}
+
+// ============================================================
+// PATIENT & CASE
+// ============================================================
+
+model Patient {
+  id            String        @id @default(uuid())
+  firstName     String        @map("first_name")
+  lastName      String        @map("last_name")
+  dateOfBirth   DateTime      @map("date_of_birth")
+  email         String?
+  phone         String?
+  language      String        @default("de")
+  timezone      String        @default("Europe/Berlin")
+  consentStatus ConsentStatus @default(CONSENT_PENDING) @map("consent_status")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+
+  // Relations
+  cases           PatientCase[]
+  documents       Document[]
+  appointments    Appointment[]
+  notifications   Notification[]
+  caregiverAccess CaregiverAccess[]
+  messages        Message[]
+  helpRequests    HelpRequest[]
+  Organization    Organization?     @relation(fields: [organizationId], references: [id])
+  organizationId  String?
+
+  @@index([email])
+  @@index([consentStatus])
+  @@map("patients")
+}
+
+model PatientCase {
+  id                 String     @id @default(uuid())
+  patientId          String     @map("patient_id")
+  organizationId     String     @map("organization_id")
+  programId          String     @map("program_id")
+  coordinatorId      String?    @map("coordinator_id")
+  status             CaseStatus @default(REFERRAL)
+  referralDate       DateTime?  @map("referral_date")
+  intakeDate         DateTime?  @map("intake_date")
+  readyForReviewDate DateTime?  @map("ready_for_review_date")
+  boardDecisionDate  DateTime?  @map("board_decision_date")
+  waitlistedDate     DateTime?  @map("waitlisted_date")
+  closedDate         DateTime?  @map("closed_date")
+  closureReason      String?    @map("closure_reason")
+  notes              String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+
+  // Relations
+  patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  organization        Organization         @relation(fields: [organizationId], references: [id])
+  program             TransplantProgram    @relation(fields: [programId], references: [id])
+  requirements        PatientRequirement[]
+  documents           Document[]
+  appointments        Appointment[]
+  blockers            Blocker[]
+  helpRequests        HelpRequest[]
+  timelineEvents      TimelineEvent[]
+  transplantPassports TransplantPassport[]
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([coordinatorId])
+  @@map("patient_cases")
+}
+
+// ============================================================
+// TRANSPLANT PROGRAMS & REQUIREMENTS
+// ============================================================
+
+model TransplantProgram {
+  id             String        @id @default(uuid())
+  organizationId String        @map("organization_id")
+  name           String
+  slug           String
+  description    String?
+  type           ProgramType   @default(KIDNEY)
+  status         ProgramStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  templates    RequirementTemplate[]
+  cases        PatientCase[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@map("transplant_programs")
+}
+
+model RequirementTemplate {
+  id                         String          @id @default(uuid())
+  programId                  String          @map("program_id")
+  organizationId             String          @map("organization_id")
+  name                       String
+  category                   String
+  description                String?
+  patientFriendlyDescription String?         @map("patient_friendly_description")
+  required                   Boolean         @default(true)
+  listingBlocker             Boolean         @default(false) @map("listing_blocker")
+  conditional                Boolean         @default(false)
+  validityDuration           Int?            @map("validity_duration") // in months
+  renewalLeadTime            Int?            @map("renewal_lead_time") // in days
+  responsibleRole            ResponsibleRole @default(PATIENT) @map("responsible_role")
+  reviewRequired             Boolean         @default(true) @map("review_required")
+  instructions               String?
+  priority                   Int             @default(0)
+  version                    Int             @default(1)
+  status                     TemplateStatus  @default(DRAFT)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+
+  // Relations
+  program             TransplantProgram            @relation(fields: [programId], references: [id], onDelete: Cascade)
+  organization        Organization                 @relation(fields: [organizationId], references: [id])
+  versions            RequirementTemplateVersion[]
+  patientRequirements PatientRequirement[]
+  dependencies        RequirementDependency[]      @relation("TemplateDependencies")
+  prerequisites       RequirementDependency[]      @relation("TemplatePrerequisites")
+
+  @@index([programId])
+  @@index([organizationId])
+  @@index([status])
+  @@map("requirement_templates")
+}
+
+model RequirementTemplateVersion {
+  id          String    @id @default(uuid())
+  templateId  String    @map("template_id")
+  version     Int
+  changes     String?
+  publishedAt DateTime? @map("published_at")
+  publishedBy String?   @map("published_by")
+  applyTo     ApplyTo   @default(NEW_ONLY) @map("apply_to")
+
+  // Relations
+  template RequirementTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("requirement_template_versions")
+}
+
+model RequirementDependency {
+  id             String @id @default(uuid())
+  templateId     String @map("template_id")
+  prerequisiteId String @map("prerequisite_id")
+
+  // Relations
+  template     RequirementTemplate @relation("TemplateDependencies", fields: [templateId], references: [id])
+  prerequisite RequirementTemplate @relation("TemplatePrerequisites", fields: [prerequisiteId], references: [id])
+
+  @@unique([templateId, prerequisiteId])
+  @@index([templateId])
+  @@index([prerequisiteId])
+  @@map("requirement_dependencies")
+}
+
+model PatientRequirement {
+  id                         String            @id @default(uuid())
+  caseId                     String            @map("case_id")
+  templateId                 String            @map("template_id")
+  organizationId             String            @map("organization_id")
+  programId                  String            @map("program_id")
+  title                      String
+  description                String?
+  category                   String
+  required                   Boolean           @default(true)
+  listingBlocker             Boolean           @default(false) @map("listing_blocker")
+  conditional                Boolean           @default(false)
+  validityDuration           Int?              @map("validity_duration")
+  renewalLeadTime            Int?              @map("renewal_lead_time")
+  responsibleRole            ResponsibleRole   @default(PATIENT) @map("responsible_role")
+  reviewRequired             Boolean           @default(true) @map("review_required")
+  status                     RequirementStatus @default(NOT_STARTED)
+  priority                   Int               @default(0)
+  instructions               String?
+  patientFriendlyDescription String?           @map("patient_friendly_description")
+  dueDate                    DateTime?         @map("due_date")
+  completedAt                DateTime?         @map("completed_at")
+  expiresAt                  DateTime?         @map("expires_at")
+  renewalStartedAt           DateTime?         @map("renewal_started_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  patientCase   PatientCase               @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  template      RequirementTemplate       @relation(fields: [templateId], references: [id])
+  tasks         Task[]
+  documentLinks DocumentRequirementLink[]
+  blockers      Blocker[]
+  appointments  Appointment[]
+  helpRequests  HelpRequest[]
+
+  @@index([caseId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([expiresAt])
+  @@map("patient_requirements")
+}
+
+// ============================================================
+// TASKS
+// ============================================================
+
+model Task {
+  id            String     @id @default(uuid())
+  requirementId String     @map("requirement_id")
+  caseId        String     @map("case_id")
+  patientId     String?    @map("patient_id")
+  title         String
+  description   String?
+  ownerType     OwnerType  @default(PATIENT) @map("owner_type")
+  ownerId       String?    @map("owner_id")
+  status        TaskStatus @default(PENDING)
+  dueDate       DateTime?  @map("due_date")
+  completedAt   DateTime?  @map("completed_at")
+  reminders     Json?
+  dependencyOf  String?    @map("dependency_of")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  requirement PatientRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([ownerId])
+  @@map("tasks")
+}
+
+// ============================================================
+// DOCUMENTS
+// ============================================================
+
+model Document {
+  id                String           @id @default(uuid())
+  patientId         String           @map("patient_id")
+  organizationId    String           @map("organization_id")
+  caseId            String?          @map("case_id")
+  fileKey           String           @map("file_key")
+  filename          String
+  mimeType          String           @map("mime_type")
+  size              Int
+  sha256            String
+  documentType      String?          @map("document_type")
+  documentDate      DateTime?        @map("document_date")
+  uploadedBy        String           @map("uploaded_by")
+  source            DocumentSource   @default(PATIENT_UPLOAD)
+  processingStatus  ProcessingStatus @default(UPLOADED) @map("processing_status")
+  classification    String?
+  aiConfidence      Float?           @map("ai_confidence")
+  ocrText           String?          @map("ocr_text")
+  extractedData     Json?            @map("extracted_data")
+  version           Int              @default(1)
+  previousVersionId String?          @map("previous_version_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  patient          Patient                   @relation(fields: [patientId], references: [id])
+  organization     Organization              @relation(fields: [organizationId], references: [id])
+  patientCase      PatientCase?              @relation(fields: [caseId], references: [id])
+  reviews          DocumentReview[]
+  requirementLinks DocumentRequirementLink[]
+  extractedItems   ExtractedDocumentItem[]
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([caseId])
+  @@index([processingStatus])
+  @@index([sha256])
+  @@map("documents")
+}
+
+model DocumentRequirementLink {
+  id            String     @id @default(uuid())
+  documentId    String     @map("document_id")
+  requirementId String     @map("requirement_id")
+  matchedBy     MatchType  @default(MANUAL)
+  confidence    Float?
+  matchedAt     DateTime   @default(now()) @map("matched_at")
+  matchedByUser String?    @map("matched_by_user")
+  status        LinkStatus @default(ACTIVE)
+
+  // Relations
+  document    Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  requirement PatientRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, requirementId])
+  @@index([documentId])
+  @@index([requirementId])
+  @@map("document_requirement_links")
+}
+
+model ExtractedDocumentItem {
+  id            String  @id @default(uuid())
+  documentId    String  @map("document_id")
+  itemType      String  @map("item_type")
+  description   String?
+  value         String?
+  confidence    Float?
+  requirementId String? @map("requirement_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("extracted_document_items")
+}
+
+model DocumentReview {
+  id              String       @id @default(uuid())
+  documentId      String       @map("document_id")
+  reviewerId      String       @map("reviewer_id")
+  status          ReviewStatus
+  rejectionReason String?      @map("rejection_reason")
+  comment         String?
+  reviewedAt      DateTime     @default(now()) @map("reviewed_at")
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_reviews")
+}
+
+// ============================================================
+// APPOINTMENTS
+// ============================================================
+
+model Appointment {
+  id                   String            @id @default(uuid())
+  patientId            String            @map("patient_id")
+  caseId               String?           @map("case_id")
+  organizationId       String            @map("organization_id")
+  type                 String
+  provider             String?
+  location             String?
+  startTime            DateTime          @map("start_time")
+  endTime              DateTime?         @map("end_time")
+  status               AppointmentStatus @default(PLANNED)
+  relatedRequirementId String?           @map("related_requirement_id")
+  notes                String?
+  reminders            Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  patient      Patient             @relation(fields: [patientId], references: [id])
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  patientCase  PatientCase?        @relation(fields: [caseId], references: [id])
+  requirement  PatientRequirement? @relation(fields: [relatedRequirementId], references: [id])
+
+  @@index([patientId])
+  @@index([caseId])
+  @@index([organizationId])
+  @@index([startTime])
+  @@index([status])
+  @@map("appointments")
+}
+
+// ============================================================
+// BLOCKERS & HELP REQUESTS
+// ============================================================
+
+model Blocker {
+  id            String        @id @default(uuid())
+  caseId        String        @map("case_id")
+  requirementId String?       @map("requirement_id")
+  type          BlockerType
+  description   String?
+  status        BlockerStatus @default(ACTIVE)
+  resolvedAt    DateTime?     @map("resolved_at")
+  resolvedBy    String?       @map("resolved_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  patientCase PatientCase         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  requirement PatientRequirement? @relation(fields: [requirementId], references: [id])
+
+  @@index([caseId])
+  @@index([status])
+  @@map("blockers")
+}
+
+model HelpRequest {
+  id             String     @id @default(uuid())
+  patientId      String     @map("patient_id")
+  caseId         String     @map("case_id")
+  organizationId String     @map("organization_id")
+  requirementId  String?    @map("requirement_id")
+  type           HelpType
+  description    String?
+  status         HelpStatus @default(OPEN)
+  assignedTo     String?    @map("assigned_to")
+
+  createdAt  DateTime  @default(now()) @map("created_at")
+  resolvedAt DateTime? @map("resolved_at")
+
+  // Relations
+  patient      Patient             @relation(fields: [patientId], references: [id])
+  patientCase  PatientCase         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  requirement  PatientRequirement? @relation(fields: [requirementId], references: [id])
+
+  @@index([caseId])
+  @@index([status])
+  @@index([assignedTo])
+  @@map("help_requests")
+}
+
+// ============================================================
+// MESSAGING & NOTIFICATIONS
+// ============================================================
+
+model Message {
+  id             String            @id @default(uuid())
+  threadId       String            @map("thread_id")
+  senderId       String            @map("sender_id")
+  content        String
+  entityType     MessageEntityType @map("entity_type")
+  entityId       String            @map("entity_id")
+  organizationId String            @map("organization_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  Patient      Patient?     @relation(fields: [patientId], references: [id])
+  patientId    String?
+
+  @@index([threadId])
+  @@index([entityType, entityId])
+  @@map("messages")
+}
+
+model Notification {
+  id             String           @id @default(uuid())
+  userId         String           @map("user_id")
+  organizationId String           @map("organization_id")
+  type           NotificationType
+  title          String
+  message        String
+  entityType     String?          @map("entity_type")
+  entityId       String?          @map("entity_id")
+  read           Boolean          @default(false)
+  readAt         DateTime?        @map("read_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  Patient      Patient?     @relation(fields: [patientId], references: [id])
+  patientId    String?
+
+  @@index([userId])
+  @@index([read])
+  @@index([organizationId])
+  @@map("notifications")
+}
+
+// ============================================================
+// AUDIT & TIMELINE
+// ============================================================
+
+model AuditLog {
+  id             String  @id @default(uuid())
+  actorId        String  @map("actor_id")
+  action         String
+  entityType     String  @map("entity_type")
+  entityId       String  @map("entity_id")
+  organizationId String  @map("organization_id")
+  metadata       Json?
+  ipAddress      String? @map("ip_address")
+
+  timestamp DateTime @default(now())
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([organizationId])
+  @@index([timestamp])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+model TimelineEvent {
+  id          String  @id @default(uuid())
+  caseId      String  @map("case_id")
+  eventType   String  @map("event_type")
+  description String?
+  metadata    Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  patientCase PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([eventType])
+  @@map("timeline_events")
+}
+
+// ============================================================
+// PASSPORT & CAREGIVER
+// ============================================================
+
+model TransplantPassport {
+  id                 String    @id @default(uuid())
+  patientId          String    @map("patient_id")
+  caseId             String    @map("case_id")
+  shareToken         String    @unique @map("share_token")
+  shareExpiresAt     DateTime? @map("share_expires_at")
+  selectedCategories Json?     @map("selected_categories")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  patientCase PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("transplant_passports")
+}
+
+model CaregiverAccess {
+  id          String          @id @default(uuid())
+  patientId   String          @map("patient_id")
+  caregiverId String          @map("caregiver_id")
+  permissions Json
+  status      CaregiverStatus @default(ACTIVE)
+
+  invitedAt DateTime  @default(now()) @map("invited_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([caregiverId])
+  @@map("caregiver_access")
+}
+
+// ============================================================
+// SECURE UPLOAD LINKS
+// ============================================================
+
+model SecureUploadLink {
+  id             String   @id @default(uuid())
+  patientId      String   @map("patient_id")
+  caseId         String?  @map("case_id")
+  organizationId String   @map("organization_id")
+  requirementId  String?  @map("requirement_id")
+  documentType   String?  @map("document_type")
+  tokenHash      String   @unique @map("token_hash")
+  expiresAt      DateTime @map("expires_at")
+  maxUses        Int?     @map("max_uses")
+  usesUsed       Int      @default(0) @map("uses_used")
+  revoked        Boolean  @default(false)
+  createdBy      String   @map("created_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@map("secure_upload_links")
+}
+
+// ============================================================
+// SYSTEM CONFIGURATION
+// ============================================================
+
+model FeatureFlag {
+  id             String    @id @default(uuid())
+  name           String    @unique
+  description    String?
+  scope          FlagScope @default(GLOBAL)
+  organizationId String?   @map("organization_id")
+  enabled        Boolean   @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@map("feature_flags")
+}
+
+model SystemSetting {
+  id             String       @id @default(uuid())
+  key            String
+  value          String
+  scope          SettingScope @default(GLOBAL)
+  organizationId String?      @map("organization_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@unique([key, scope, organizationId])
+  @@index([organizationId])
+  @@map("system_settings")
+}
+
+// ============================================================
+// AI CONFIGURATION
+// ============================================================
+
+model PromptTemplate {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  prompt      String
+  version     Int          @default(1)
+  status      PromptStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  promptVersions PromptVersion[]
+
+  @@map("prompt_templates")
+}
+
+model PromptVersion {
+  id          String    @id @default(uuid())
+  templateId  String    @map("template_id")
+  version     Int
+  changes     String?
+  prompt      String
+  performance Json?
+  usedAt      DateTime? @map("used_at")
+
+  // Relations
+  template PromptTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("prompt_versions")
+}
+
+model AIProcessingLog {
+  id            String  @id @default(uuid())
+  documentId    String? @map("document_id")
+  provider      String
+  model         String
+  promptVersion String? @map("prompt_version")
+  inputHash     String  @map("input_hash")
+  output        Json
+  confidence    Float?
+  humanOverride Boolean @default(false) @map("human_override")
+  reviewerId    String? @map("reviewer_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([documentId])
+  @@index([provider])
+  @@map("ai_processing_logs")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum OrganizationType {
+  TRANSPLANT_CENTER
+  DIALYSIS_CENTER
+  NEPHROLOGY
+  OTHER_PROVIDER
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum ConsentStatus {
+  CONSENT_GRANTED
+  CONSENT_REVOKED
+  CONSENT_PENDING
+}
+
+enum CaseStatus {
+  REFERRAL
+  INTAKE
+  EVALUATION
+  READY_FOR_REVIEW
+  UNDER_REVIEW
+  DEFERRED
+  APPROVED
+  WAITLISTED
+  INACTIVE
+  TRANSPLANTED
+  CLOSED
+}
+
+enum ProgramType {
+  KIDNEY
+  LIVER
+  HEART
+  LUNG
+  OTHER
+}
+
+enum ProgramStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+
+enum TemplateStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ApplyTo {
+  NEW_ONLY
+  SELECTED
+  ALL_ELIGIBLE
+}
+
+enum RequirementStatus {
+  NOT_STARTED
+  ACTION_REQUIRED
+  IN_PROGRESS
+  WAITING_FOR_APPOINTMENT
+  WAITING_FOR_DOCUMENT
+  DOCUMENT_UPLOADED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  BLOCKED
+  EXPIRED
+  RENEWAL_REQUIRED
+  WAIVED
+  NOT_APPLICABLE
+}
+
+enum ResponsibleRole {
+  PATIENT
+  CAREGIVER
+  DIALYSIS_CENTER
+  TRANSPLANT_CENTER
+  EXTERNAL_PROVIDER
+  SYSTEM
+}
+
+enum OwnerType {
+  PATIENT
+  CAREGIVER
+  DIALYSIS_CENTER
+  TRANSPLANT_CENTER
+  EXTERNAL_PROVIDER
+  SYSTEM
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum DocumentSource {
+  PATIENT_UPLOAD
+  CAREGIVER_UPLOAD
+  DIALYSIS_UPLOAD
+  CENTER_UPLOAD
+  EXTERNAL_PROVIDER_UPLOAD
+  INTEGRATION
+}
+
+enum ProcessingStatus {
+  UPLOADED
+  SCANNING
+  PROCESSING
+  READY_FOR_REVIEW
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  SUPERSEDED
+  EXPIRED
+}
+
+enum MatchType {
+  AI
+  MANUAL
+}
+
+enum LinkStatus {
+  ACTIVE
+  REMOVED
+}
+
+enum ReviewStatus {
+  ACCEPTED
+  REJECTED
+  REQUEST_INFO
+}
+
+enum AppointmentStatus {
+  PLANNED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULE_REQUIRED
+}
+
+enum BlockerType {
+  MISSING_PRESCRIPTION
+  NO_APPOINTMENT
+  MISSING_DOCUMENT
+  REJECTED_DOCUMENT
+  PATIENT_NEEDS_HELP
+  CLINIC_REVIEW_OVERDUE
+  EXTERNAL_PROVIDER_DELAY
+  EXPIRED_EXAMINATION
+  OTHER
+}
+
+enum BlockerStatus {
+  ACTIVE
+  RESOLVED
+}
+
+enum HelpType {
+  I_DONT_UNDERSTAND
+  NO_APPOINTMENT
+  MISSING_PRESCRIPTION
+  DOCTOR_WONT_ISSUE
+  TRANSPORT
+  LANGUAGE
+  ORGANIZATIONAL
+  OTHER
+}
+
+enum HelpStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum MessageEntityType {
+  REQUIREMENT
+  DOCUMENT
+  CASE
+  APPOINTMENT
+}
+
+enum NotificationType {
+  TASK
+  APPOINTMENT
+  DOCUMENT
+  REVIEW
+  MESSAGE
+  RENEWAL
+  HELP_REQUEST
+  SYSTEM
+}
+
+enum CaregiverStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum FlagScope {
+  GLOBAL
+  ORGANIZATION
+}
+
+enum SettingScope {
+  GLOBAL
+  ORGANIZATION
+}
+
+enum PromptStatus {
+  ACTIVE
+  DEPRECATED
+}
