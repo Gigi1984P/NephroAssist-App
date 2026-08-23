@@ -1,0 +1,44 @@
+# Prisma Seed - wird nur für DB-Seeding verwendet
+prisma/seed.ts
+
+# Test-Dateien
+__tests__/
+*.test.ts
+*.test.tsx
+
+# Dokumentation
+docs/
+*.md
+
+# Development
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Temporäre Dateien
+tmp/
+temp/
+
+# Backups
+backups/
+
+# Uploads (lokal)
+uploads/
