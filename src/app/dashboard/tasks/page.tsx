@@ -121,20 +121,18 @@ export default function TasksPage() {
           <table className="table-custom">
             <thead>
               <tr>
-                <th style={{ width: "40%" }}>Untersuchung</th>
-                <th>Patient</th>
-                <th>Kategorie</th>
+                <th>Untersuchung</th>
                 <th style={{ width: "1%" }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="text-center text-muted py-4">Laden...</td>
+                  <td colSpan={2} className="text-center text-muted py-4">Laden...</td>
                 </tr>
               ) : pageTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={4}>
+                  <td colSpan={2}>
                     <div className="empty-state">
                       <Stethoscope size={40} className="text-muted mb-2" />
                       <p>Keine Untersuchungen gefunden.</p>
@@ -152,7 +150,7 @@ export default function TasksPage() {
                     <td>
                       <div className="d-flex flex-column">
                         <div className="d-flex align-items-center gap-2">
-                          <span className="fw-semibold" style={{ fontSize: "1rem", color: "#1e293b" }}>
+                          <span className="fw-semibold" style={{ fontSize: "1.05rem", color: "#1e293b" }}>
                             {task.title}
                           </span>
                         </div>
@@ -162,16 +160,6 @@ export default function TasksPage() {
                           </span>
                         )}
                       </div>
-                    </td>
-                    <td>
-                      <span className="fw-medium" style={{ fontSize: "0.9rem" }}>
-                        {task.patientName || "—"}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="text-muted" style={{ fontSize: "0.85rem" }}>
-                        {task.category || "—"}
-                      </span>
                     </td>
                     <td>
                       <div className="d-flex align-items-center gap-2">
