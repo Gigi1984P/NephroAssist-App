@@ -17,10 +17,11 @@ import {
 import Link from "next/link";
 
 interface PatientPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function PatientPage({ params }: PatientPageProps) {
+  const { id } = await params;
   const session = await auth();
 
   if (!session) {
@@ -28,7 +29,7 @@ export default async function PatientPage({ params }: PatientPageProps) {
   }
 
   const patient = await prisma.patient.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       cases: {
         include: {
