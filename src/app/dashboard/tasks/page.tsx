@@ -3,14 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { CheckSquare, Plus, Search, ChevronLeft, ChevronRight, Clock, AlertCircle, CheckCircle, Filter, Stethoscope } from "lucide-react";
-
-const STATUS_MAP: Record<string, { label: string; class: string }> = {
-  PENDING: { label: "Ausstehend", class: "badge-blue" },
-  IN_PROGRESS: { label: "In Bearbeitung", class: "badge-yellow" },
-  COMPLETED: { label: "Erledigt", class: "badge-green" },
-  OVERDUE: { label: "Überfällig", class: "badge-red" },
-};
+import { Plus, Search, ChevronLeft, ChevronRight, Stethoscope, ArrowRight } from "lucide-react";
 
 interface TaskItem {
   id: string;
@@ -30,7 +23,6 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const perPage = 10;
@@ -41,7 +33,6 @@ export default function TasksPage() {
       const res = await fetch("/api/tasks");
       if (res.ok) {
         const data = await res.json();
-        // Filter: Nur Top-Level Untersuchungen (nicht einzelne Workflow-Schritte)
         const filtered = data.tasks.filter((t: TaskItem) => !t.isWorkflowStep);
         setTasks(filtered);
       }
@@ -76,12 +67,24 @@ export default function TasksPage() {
       !search ||
       t.title.toLowerCase().includes(search.toLowerCase()) ||
       (t.patientName && t.patientName.toLowerCase().includes(search.toLowerCase()));
-    const matchesStatus = filterStatus === "ALL" || t.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageTasks = filtered.slice((page - 1) * perPage, page * perPage);
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return <span className="badge-custom badge-blue" style={{ fontSize: "0.7rem" }}>Ausstehend</span>;
+      case "IN_PROGRESS":
+        return <span className="badge-custom badge-yellow" style={{ fontSize: "0.7rem" }}>In Bearbeitung</span>;
+      case "COMPLETED":
+        return <span className="badge-custom badge-green" style={{ fontSize: "0.7rem" }}>Erledigt</span>;
+      default:
+        return <span className="badge-custom badge-outline" style={{ fontSize: "0.7rem" }}>{status}</span>;
+    }
+  };
 
   return (
     <div>
@@ -99,7 +102,7 @@ export default function TasksPage() {
       />
 
       <div className="row g-3 mb-3">
-        <div className="col-md-6">
+        <div className="col-md-8">
           <div className="search-bar">
             <Search size={16} className="text-muted" />
             <input
@@ -111,18 +114,6 @@ export default function TasksPage() {
             />
           </div>
         </div>
-        <div className="col-md-3">
-          <select
-            className="form-select form-select-sm search-bar"
-            value={filterStatus}
-            onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
-          >
-            <option value="ALL">Alle Status</option>
-            <option value="PENDING">Ausstehend</option>
-            <option value="IN_PROGRESS">In Bearbeitung</option>
-            <option value="COMPLETED">Erledigt</option>
-          </select>
-        </div>
       </div>
 
       <div className="dashboard-card">
@@ -130,22 +121,20 @@ export default function TasksPage() {
           <table className="table-custom">
             <thead>
               <tr>
-                <th>Untersuchung</th>
+                <th style={{ width: "40%" }}>Untersuchung</th>
                 <th>Patient</th>
                 <th>Kategorie</th>
-                <th>Status</th>
-                <th>Fällig am</th>
-                <th></th>
+                <th style={{ width: "1%" }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center text-muted py-4">Laden...</td>
+                  <td colSpan={4} className="text-center text-muted py-4">Laden...</td>
                 </tr>
               ) : pageTasks.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={4}>
                     <div className="empty-state">
                       <Stethoscope size={40} className="text-muted mb-2" />
                       <p>Keine Untersuchungen gefunden.</p>
@@ -158,56 +147,46 @@ export default function TasksPage() {
                   </td>
                 </tr>
               ) : (
-                pageTasks.map((task) => {
-                  const statusConfig = STATUS_MAP[task.status] || STATUS_MAP.PENDING;
-                  return (
-                    <tr key={task.id}>
-                      <td>
+                pageTasks.map((task) => (
+                  <tr key={task.id} className="align-middle">
+                    <td>
+                      <div className="d-flex flex-column">
                         <div className="d-flex align-items-center gap-2">
-                          <CheckSquare size={16} className="text-primary" />
-                          <span className="fw-medium">{task.title}</span>
+                          <span className="fw-semibold" style={{ fontSize: "1rem", color: "#1e293b" }}>
+                            {task.title}
+                          </span>
                         </div>
                         {task.description && (
-                          <div className="text-muted mt-1" style={{ fontSize: "0.8rem" }}>
+                          <span className="text-muted mt-1" style={{ fontSize: "0.85rem" }}>
                             {task.description}
-                          </div>
+                          </span>
                         )}
-                      </td>
-                      <td>
-                        <span className="fw-medium" style={{ fontSize: "0.9rem" }}>
-                          {task.patientName || "—"}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="badge-custom badge-outline">
-                          {task.category || "—"}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge-custom ${statusConfig.class}`}>
-                          {statusConfig.label}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ fontSize: "0.85rem" }}>
-                          {task.dueDate
-                            ? new Date(task.dueDate).toLocaleDateString("de-DE")
-                            : "Kein Datum"}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d-flex gap-1 justify-content-end">
-                          <Link
-                            href={`/dashboard/tasks/${task.id}`}
-                            className="btn btn-sm btn-outline-primary"
-                          >
-                            Details
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                      </div>
+                    </td>
+                    <td>
+                      <span className="fw-medium" style={{ fontSize: "0.9rem" }}>
+                        {task.patientName || "—"}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="text-muted" style={{ fontSize: "0.85rem" }}>
+                        {task.category || "—"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="d-flex align-items-center gap-2">
+                        {getStatusBadge(task.status)}
+                        <Link
+                          href={`/dashboard/tasks/${task.id}`}
+                          className="btn btn-sm btn-link text-decoration-none"
+                          style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}
+                        >
+                          Details <ArrowRight size={12} />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
