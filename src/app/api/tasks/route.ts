@@ -11,10 +11,30 @@ export async function GET() {
       return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
     }
 
+    const user = session.user;
+    const userRole = user.role;
+
+    let whereClause: any = {
+      status: { in: ["PENDING", "IN_PROGRESS"] },
+    };
+
+    // PATIENT: Nur eigene Aufgaben sehen
+    if (userRole === "PATIENT") {
+      const patient = await prisma.patient.findFirst({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (!patient) {
+        return NextResponse.json({ tasks: [] });
+      }
+      whereClause = {
+        ...whereClause,
+        patientId: patient.id,
+      };
+    }
+
     const tasks = await prisma.task.findMany({
-      where: {
-        status: { in: ["PENDING", "IN_PROGRESS"] },
-      },
+      where: whereClause,
       orderBy: [
         { status: "asc" },
         { dueDate: "asc" },

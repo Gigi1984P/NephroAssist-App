@@ -115,6 +115,7 @@ model Patient {
   language      String        @default("de")
   timezone      String        @default("Europe/Berlin")
   consentStatus ConsentStatus @default(CONSENT_PENDING) @map("consent_status")
+  userId        String?       @map("user_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -128,11 +129,13 @@ model Patient {
   caregiverAccess CaregiverAccess[]
   messages        Message[]
   helpRequests    HelpRequest[]
+  user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   Organization    Organization?     @relation(fields: [organizationId], references: [id])
   organizationId  String?
 
   @@index([email])
   @@index([consentStatus])
+  @@index([userId])
   @@map("patients")
 }
 
@@ -1036,6 +1039,7 @@ model User {
   // Relations
   accounts    Account[]
   sessions    Session[]
+  patients    Patient[]
 
   @@index([email])
   @@map("users")
