@@ -16,6 +16,7 @@ import {
   Menu,
   ChevronRight,
   LogOut,
+  GripVertical,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +39,77 @@ const sidebarItems: SidebarItem[] = [
   { title: "Admin", href: "/dashboard/admin", icon: ShieldCheck, roles: ["ADMIN"] },
 ];
 
+/* ================================================================ */
+/*  Resizable Sidebar Hook                                          */
+/* ================================================================ */
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 400;
+const DEFAULT_WIDTH = 260;
+const STORAGE_KEY = "nephro-sidebar-width";
+
+function useResizableSidebar() {
+  const [width, setWidth] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? Math.min(Math.max(parseInt(saved, 10), MIN_WIDTH), MAX_WIDTH) : DEFAULT_WIDTH;
+    }
+    return DEFAULT_WIDTH;
+  });
+  const [isResizing, setIsResizing] = React.useState(false);
+
+  const startResize = React.useCallback(() => setIsResizing(true), []);
+
+  const stopResize = React.useCallback(() => {
+    setIsResizing(false);
+    localStorage.setItem(STORAGE_KEY, width.toString());
+  }, [width]);
+
+  const doResize = React.useCallback(
+    (clientX: number, sidebarLeft: number) => {
+      const newWidth = clientX - sidebarLeft;
+      const clamped = Math.min(Math.max(newWidth, MIN_WIDTH), MAX_WIDTH);
+      setWidth(clamped);
+    },
+    []
+  );
+
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const sidebar = document.querySelector(".sidebar-desktop");
+      if (sidebar) {
+        const rect = sidebar.getBoundingClientRect();
+        doResize(e.clientX, rect.left);
+      }
+    };
+    const handleMouseUp = () => {
+      if (isResizing) stopResize();
+    };
+
+    if (isResizing) {
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    } else {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing, doResize, stopResize]);
+
+  return { width, isResizing, startResize };
+}
+
+/* ================================================================ */
+/*  Sidebar Components                                              */
+/* ================================================================ */
 interface SidebarProps {
   role: string;
   userName?: string | null;
@@ -108,13 +180,26 @@ function SidebarNavItem({
   );
 }
 
-function SidebarContent({ role, userName, userEmail }: SidebarProps) {
+function SidebarContent({ role, userName, userEmail, width }: SidebarProps & { width: number }) {
   const router = useRouter();
 
   const filteredItems = sidebarItems.filter((item) => item.roles.includes(role));
 
   return (
-    <div className="sidebar d-none d-lg-flex">
+    <div
+      className="sidebar sidebar-desktop d-none d-lg-flex"
+      style={{
+        width: `${width}px`,
+        minWidth: `${width}px`,
+        maxWidth: `${width}px`,
+        position: "fixed",
+        top: 0,
+        left: 0,
+        bottom: 0,
+        zIndex: 1040,
+        transition: "none",
+      }}
+    >
       {/* Header */}
       <div className="sidebar-header">
         <div className="sidebar-brand-icon">
@@ -170,8 +255,52 @@ function SidebarContent({ role, userName, userEmail }: SidebarProps) {
   );
 }
 
+/* ================================================================ */
+/*  Exports                                                         */
+/* ================================================================ */
 export function Sidebar(props: SidebarProps) {
-  return <SidebarContent {...props} />;
+  const { width, isResizing, startResize } = useResizableSidebar();
+
+  return (
+    <>
+      <SidebarContent {...props} width={width} />
+      {/* Resize Handle */}
+      <div
+        className="d-none d-lg-block"
+        onMouseDown={startResize}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: `${width - 3}px`,
+          bottom: 0,
+          width: "6px",
+          cursor: "col-resize",
+          zIndex: 1041,
+          background: isResizing ? "rgba(59,130,246,0.3)" : "transparent",
+          transition: "background 0.15s",
+        }}
+        onMouseEnter={(e) => {
+          if (!isResizing) e.currentTarget.style.background = "rgba(59,130,246,0.15)";
+        }}
+        onMouseLeave={(e) => {
+          if (!isResizing) e.currentTarget.style.background = "transparent";
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            color: isResizing ? "#3b82f6" : "transparent",
+            transition: "color 0.15s",
+          }}
+        >
+          <GripVertical size={14} />
+        </div>
+      </div>
+    </>
+  );
 }
 
 export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
@@ -197,7 +326,6 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
         <Menu size={18} />
       </button>
 
-      {/* Mobile Sidebar Overlay */}
       {open && (
         <>
           <div
