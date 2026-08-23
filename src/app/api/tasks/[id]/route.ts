@@ -13,8 +13,9 @@ const updateSchema = z.object({
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await auth();
     if (!session) {
@@ -25,7 +26,7 @@ export async function PATCH(
     const validated = updateSchema.parse(body);
 
     const task = await prisma.task.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: validated.status,
         completedAt: validated.status === "COMPLETED" ? new Date() : null,
@@ -46,7 +47,7 @@ export async function PATCH(
     // E-Mail-Benachrichtigung bei Statusänderung senden
     if (validated.status !== task.status) {
       const taskWithPatient = await prisma.task.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: {
           requirement: {
             include: {

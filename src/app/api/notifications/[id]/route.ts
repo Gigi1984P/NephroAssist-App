@@ -11,8 +11,9 @@ const updateSchema = z.object({
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await auth();
     if (!session) {
@@ -23,7 +24,7 @@ export async function PATCH(
     const { read } = updateSchema.parse(body);
 
     const notification = await prisma.notification.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         read,
         readAt: read ? new Date() : null,

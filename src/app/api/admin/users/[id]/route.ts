@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await auth();
     if (!session || session.user.role !== "ADMIN") {
@@ -19,7 +20,7 @@ export async function PATCH(
 
     if (action === "toggle_admin") {
       const user = await prisma.user.findUnique({
-        where: { id: params.id },
+        where: { id },
       });
 
       if (!user) {
@@ -29,7 +30,7 @@ export async function PATCH(
       const newRole = user.role === "ADMIN" ? "PATIENT" : "ADMIN";
 
       const updatedUser = await prisma.user.update({
-        where: { id: params.id },
+        where: { id },
         data: { role: newRole },
       });
 
