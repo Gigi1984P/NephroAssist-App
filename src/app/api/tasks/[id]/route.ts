@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { sendStatusChangeNotification } from "@/lib/email";
 
 const updateSchema = z.object({
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "OVERDUE", "CANCELLED"]),
@@ -38,6 +39,37 @@ export async function PATCH(
           description: `Aufgabe "${task.title}" wurde aktualisiert: ${validated.notes}`,
         },
       });
+    }
+
+    // E-Mail-Benachrichtigung bei Statusänderung senden
+    if (validated.status !== task.status) {
+      const taskWithPatient = await prisma.task.findUnique({
+        where: { id: params.id },
+        include: {
+          requirement: {
+            include: {
+              patientCase: {
+                include: {
+                  patient: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const patientEmail = taskWithPatient?.requirement?.patientCase?.patient?.email;
+      const patientName = taskWithPatient?.requirement?.patientCase?.patient?.firstName;
+
+      if (patientEmail && patientName) {
+        await sendStatusChangeNotification(
+          "Aufgabe",
+          task.title,
+          validated.status,
+          patientEmail,
+          patientName
+        );
+      }
     }
 
     return NextResponse.json({ message: "Aufgabe aktualisiert", task });

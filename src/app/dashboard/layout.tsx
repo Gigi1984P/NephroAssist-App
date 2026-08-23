@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { UserNav } from "@/components/user-nav";
+import { NotificationCenter } from "@/components/notification-center";
 
 export default async function DashboardLayout({
   children,
@@ -30,7 +31,10 @@ export default async function DashboardLayout({
       <div className="flex-1">
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-white px-6">
           <h1 className="text-lg font-semibold">Dashboard</h1>
-          <UserNav user={session.user} />
+          <div className="flex items-center gap-4">
+            <NotificationCenter />
+            <UserNav user={session.user} />
+          </div>
         </header>
         <main className="p-6">{children}</main>
       </div>

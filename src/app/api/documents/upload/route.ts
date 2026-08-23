@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { createHash } from "crypto";
+import { sendDocumentUploadedNotification } from "@/lib/email";
 
 const UPLOAD_DIR = join(process.cwd(), "uploads");
 
@@ -69,6 +70,9 @@ export async function POST(request: Request) {
         processingStatus: "UPLOADED",
       },
     });
+
+    // E-Mail-Benachrichtigung senden
+    await sendDocumentUploadedNotification(document.id);
 
     return NextResponse.json({
       message: "Dokument erfolgreich hochgeladen",
