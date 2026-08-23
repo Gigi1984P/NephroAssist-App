@@ -1,3 +1,10 @@
+// This file is used by `prisma db seed`
+// It is NOT part of the Next.js build
+
+if (process.env.NODE_ENV === "production" && !process.env.SEEDING) {
+  throw new Error("Seed file should not be executed in production");
+}
+
 import { PrismaClient, UserRole, OrganizationType, OrganizationStatus, ProgramType, ProgramStatus, TemplateStatus, ResponsibleRole, ConsentStatus, CaseStatus, RequirementStatus, TaskStatus, AppointmentStatus, BlockerType, BlockerStatus } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 
