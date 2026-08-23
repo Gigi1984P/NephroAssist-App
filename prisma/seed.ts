@@ -54,6 +54,22 @@ async function main() {
     },
   });
 
+  const dialysisRole = await prisma.role.create({
+    data: {
+      name: "Dialysepersonal",
+      organizationId: organization.id,
+      isGlobal: false,
+    },
+  });
+
+  const transplantRole = await prisma.role.create({
+    data: {
+      name: "Transplantationsklinik",
+      organizationId: organization.id,
+      isGlobal: false,
+    },
+  });
+
   console.log("Created roles");
 
   // 3. Users
@@ -103,11 +119,51 @@ async function main() {
     },
   });
 
+  const dialysisUser = await prisma.user.upsert({
+    where: { email: "dialyse@beispiel.de" },
+    update: {},
+    create: {
+      email: "dialyse@beispiel.de",
+      name: "Lisa Dialyse",
+      password: hashedPassword,
+      role: UserRole.DIALYSIS_STAFF,
+    },
+  });
+
+  const transplantUser = await prisma.user.upsert({
+    where: { email: "transplant@beispiel.de" },
+    update: {},
+    create: {
+      email: "transplant@beispiel.de",
+      name: "Dr. transplantklinik",
+      password: hashedPassword,
+      role: UserRole.PHYSICIAN,
+    },
+  });
+
+  const caregiverUser = await prisma.user.upsert({
+    where: { email: "angehorige@beispiel.de" },
+    update: {},
+    create: {
+      email: "angehorige@beispiel.de",
+      name: "Marie Pflege",
+      password: hashedPassword,
+      role: UserRole.CAREGIVER,
+    },
+  });
+
   console.log("Created users");
 
   // 4. Transplant Program
-  const program = await prisma.transplantProgram.create({
-    data: {
+  const program = await prisma.transplantProgram.upsert({
+    where: {
+      organizationId_slug: {
+        organizationId: organization.id,
+        slug: "nierentransplantation",
+      },
+    },
+    update: {},
+    create: {
       organizationId: organization.id,
       name: "Nierentransplantation",
       slug: "nierentransplantation",
@@ -413,10 +469,13 @@ async function main() {
   console.log("Seeding finished!");
   console.log("");
   console.log("Test-Logins:");
-  console.log("  Admin:      admin@nephroassist.de / Test1234!");
-  console.log("  Koordinator: koordinator@nephroassist.de / Test1234!");
-  console.log("  Arzt:       arzt@nephroassist.de / Test1234!");
-  console.log("  Patient:    patient@beispiel.de / Test1234!");
+  console.log("  Admin:              admin@nephroassist.de / Test1234!");
+  console.log("  Koordinator:        koordinator@nephroassist.de / Test1234!");
+  console.log("  Arzt:               arzt@nephroassist.de / Test1234!");
+  console.log("  Patient:            patient@beispiel.de / Test1234!");
+  console.log("  Dialyse:            dialyse@beispiel.de / Test1234!");
+  console.log("  Transplant:         transplant@beispiel.de / Test1234!");
+  console.log("  Angehöriger (Pflege): angehorige@beispiel.de / Test1234!");
 }
 
 main()
