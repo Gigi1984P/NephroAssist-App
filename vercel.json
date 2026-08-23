@@ -1,0 +1,17 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["fra1"],
+  "env": {
+    "DATABASE_URL": "@nephroassist-database-url",
+    "NEXTAUTH_URL": "@nephroassist-nextauth-url",
+    "NEXTAUTH_SECRET": "@nephroassist-nextauth-secret"
+  },
+  "build": {
+    "env": {
+      "DATABASE_URL": "@nephroassist-database-url"
+    }
+  }
+}
