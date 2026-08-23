@@ -33,6 +33,7 @@ declare module "@auth/core/adapters" {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
+  trustHost: true,
   pages: {
     signIn: "/login",
     signOut: "/login",
@@ -46,7 +47,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Passwort", type: "password" },
       },
       async authorize(credentials) {
+        console.log("[AUTH] Authorize called for:", credentials?.email);
+
         if (!credentials?.email || !credentials?.password) {
+          console.log("[AUTH] Missing credentials");
           return null;
         }
 
@@ -55,6 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         if (!user || !user.password) {
+          console.log("[AUTH] User not found or no password:", credentials.email);
           return null;
         }
 
@@ -64,9 +69,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
 
         if (!isValid) {
+          console.log("[AUTH] Invalid password for:", credentials.email);
           return null;
         }
 
+        console.log("[AUTH] Success:", user.email, "Role:", user.role);
         return {
           id: user.id,
           email: user.email,
