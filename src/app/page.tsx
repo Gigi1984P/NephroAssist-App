@@ -2,6 +2,23 @@
 
 import { useState } from "react";
 
+interface DemoAccount {
+  email: string;
+  password: string;
+  role: string;
+  name: string;
+}
+
+const demoAccounts: DemoAccount[] = [
+  { email: "admin@nephroassist.de", password: "Test1234!", role: "Admin", name: "Dr. Anna Admin" },
+  { email: "koordinator@nephroassist.de", password: "Test1234!", role: "Koordinator", name: "Max Koordinator" },
+  { email: "arzt@nephroassist.de", password: "Test1234!", role: "Arzt", name: "Dr. Petra Arzt" },
+  { email: "patient@beispiel.de", password: "Test1234!", role: "Patient", name: "Hans Patient" },
+  { email: "dialyse@beispiel.de", password: "Test1234!", role: "Dialyse", name: "Lisa Dialyse" },
+  { email: "transplant@beispiel.de", password: "Test1234!", role: "Transplant", name: "Dr. Transplantklinik" },
+  { email: "angehorige@beispiel.de", password: "Test1234!", role: "Pflege", name: "Marie Pflege" },
+];
+
 export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,11 +62,11 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemoCredentials = () => {
+  const fillCredentials = (email: string, password: string) => {
     const emailInput = document.getElementById("email") as HTMLInputElement;
     const passwordInput = document.getElementById("password") as HTMLInputElement;
-    if (emailInput) emailInput.value = "admin@nephroassist.de";
-    if (passwordInput) passwordInput.value = "Test1234!";
+    if (emailInput) emailInput.value = email;
+    if (passwordInput) passwordInput.value = password;
     setError("");
   };
 
@@ -91,7 +108,6 @@ export default function LoginPage() {
             <input
               type="email"
               id="email"
-              defaultValue="admin@nephroassist.de"
               className="form-control form-input-custom"
               placeholder="name@beispiel.de"
             />
@@ -101,7 +117,6 @@ export default function LoginPage() {
             <input
               type="password"
               id="password"
-              defaultValue="Test1234!"
               className="form-control form-input-custom"
               placeholder="••••••••"
             />
@@ -135,23 +150,7 @@ export default function LoginPage() {
         </div>
 
         {/* Demo Zugangsdaten */}
-        <div
-          className="mt-4 p-3 border rounded-3 cursor-pointer"
-          style={{
-            backgroundColor: "#f8fafc",
-            borderColor: "#e2e8f0",
-            transition: "all 0.15s ease",
-          }}
-          onClick={fillDemoCredentials}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#eff6ff";
-            e.currentTarget.style.borderColor = "#2563eb";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#f8fafc";
-            e.currentTarget.style.borderColor = "#e2e8f0";
-          }}
-        >
+        <div className="mt-4">
           <div className="d-flex align-items-center gap-2 mb-2">
             <svg width="16" height="16" fill="#2563eb" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
@@ -161,21 +160,39 @@ export default function LoginPage() {
             </span>
           </div>
           <div className="d-flex flex-column gap-1">
-            <div className="d-flex justify-content-between">
-              <span style={{ fontSize: "0.75rem", color: "#64748b" }}>E-Mail:</span>
-              <span className="fw-medium" style={{ fontSize: "0.75rem", color: "#334155" }}>
-                admin@nephroassist.de
-              </span>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Passwort:</span>
-              <span className="fw-medium" style={{ fontSize: "0.75rem", color: "#334155" }}>
-                Test1234!
-              </span>
-            </div>
+            {demoAccounts.map((acc) => (
+              <button
+                key={acc.email}
+                onClick={() => fillCredentials(acc.email, acc.password)}
+                className="btn btn-sm text-start d-flex justify-content-between align-items-center"
+                style={{
+                  fontSize: "0.75rem",
+                  border: "1px solid #e2e8f0",
+                  background: "#fff",
+                  color: "#334155",
+                  borderRadius: "0.375rem",
+                  padding: "0.5rem 0.75rem",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#eff6ff";
+                  e.currentTarget.style.borderColor = "#2563eb";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#fff";
+                  e.currentTarget.style.borderColor = "#e2e8f0";
+                }}
+              >
+                <span>
+                  <span className="fw-medium">{acc.role}</span>
+                  <span className="text-muted" style={{ fontSize: "0.7rem" }}> — {acc.name}</span>
+                </span>
+                <span className="text-muted" style={{ fontSize: "0.7rem" }}>Klicken</span>
+              </button>
+            ))}
           </div>
           <div className="text-center mt-2" style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
-            Klicken zum Ausfüllen
+            Passwort für alle: Test1234!
           </div>
         </div>
       </div>
