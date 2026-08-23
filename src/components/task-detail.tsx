@@ -36,11 +36,9 @@ interface TaskDetailData {
 
 type UserRole = "ADMIN" | "COORDINATOR" | "PHYSICIAN" | "NURSE" | "PATIENT" | "CAREGIVER" | "DIALYSIS_STAFF";
 
-const CAN_COMPLETE_ROLES: UserRole[] = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"];
-
 export default function TaskDetailPage({ task: initialTask }: { task: TaskDetailData }) {
   const router = useRouter();
-  const [task, setTask] = useState<TaskDetailData>(initialTask);
+  const [task] = useState<TaskDetailData>(initialTask);
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
@@ -79,8 +77,6 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     loadProfile();
   }, [task.id]);
 
-  const canComplete = userRole ? CAN_COMPLETE_ROLES.includes(userRole) : false;
-
   const handleCompleteStep = async (stepId: string) => {
     setUpdating(true);
     setError(null);
@@ -98,7 +94,6 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
         return;
       }
 
-      // Reload workflow
       await loadWorkflowSteps();
       setNotes("");
     } catch (err) {
@@ -106,6 +101,30 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     } finally {
       setUpdating(false);
     }
+  };
+
+  // Bestimmt ob der aktuelle User einen Schritt erledigen darf
+  const canUserCompleteStep = (step: WorkflowStep): boolean => {
+    if (!userRole) return false;
+
+    const stepName = step.stepName;
+    const isUploadStep = stepName.includes("hochladen");
+    const isClinicReview = stepName.includes("Prüfung durch");
+
+    if (isClinicReview) {
+      return ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"].includes(userRole);
+    }
+
+    // Upload + Status: Nur Patient/Caregiver
+    return userRole === "PATIENT" || userRole === "CAREGIVER";
+  };
+
+  // Beschreibung der Aktion
+  const getActionLabel = (step: WorkflowStep): string => {
+    const stepName = step.stepName;
+    if (stepName.includes("hochladen")) return "📎 Dokument hochladen";
+    if (stepName.includes("Prüfung durch")) return "✓ Prüfen und bestätigen";
+    return "✓ Als erledigt markieren";
   };
 
   const getStatusConfig = (status: string) => {
@@ -128,7 +147,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
       case 1: return <FileText size={20} className="text-muted" />;
       case 2: return <Upload size={20} className="text-muted" />;
       case 3: return <Stethoscope size={20} className="text-muted" />;
-      case 7: return <AlertTriangle size={20} className="text-muted" />;
+      case 6: return <AlertTriangle size={20} className="text-muted" />;
       default: return <ChevronRight size={20} className="text-muted" />;
     }
   };
@@ -243,6 +262,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                     {workflowSteps.map((step, index) => {
                       const isCompleted = step.status === "COMPLETED";
                       const isActive = step.status === "IN_PROGRESS";
+                      const userCanComplete = canUserCompleteStep(step);
 
                       return (
                         <div
@@ -272,7 +292,9 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                                 </span>
                               </div>
                             </div>
-                            {isActive && canComplete && (
+
+                            {/* Aktions-Buttons nur fuer aktive Schritte */}
+                            {isActive && userCanComplete && (
                               <>
                                 <div className="mb-2">
                                   <textarea
@@ -289,13 +311,17 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                                   onClick={() => handleCompleteStep(step.id)}
                                   disabled={updating}
                                 >
-                                  {updating ? "Wird aktualisiert..." : "✓ Als erledigt markieren"}
+                                  {updating ? "Wird aktualisiert..." : getActionLabel(step)}
                                 </button>
                               </>
                             )}
-                            {isActive && !canComplete && (
+
+                            {/* Hinweis wenn Patient nicht handeln darf */}
+                            {isActive && !userCanComplete && (
                               <div className="alert alert-info py-2 px-3 mt-2" style={{ fontSize: "0.8rem" }}>
-                                ⏳ Warten auf Bestätigung durch die Klinik...
+                                {step.stepName.includes("Prüfung durch")
+                                  ? "⏳ Warten auf Prüfung durch die Klinik..."
+                                  : "⏳ Dieser Schritt ist für den Patienten vorgesehen."}
                               </div>
                             )}
                           </div>

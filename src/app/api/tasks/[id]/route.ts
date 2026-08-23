@@ -12,7 +12,7 @@ const updateSchema = z.object({
 });
 
 /* ================================================================ */
-/*  Status-Update mit strikten "Erledigt"-Regeln                    */
+/*  Status-Update mit actionType-basierter Berechtigung              */
 /* ================================================================ */
 export async function PATCH(
   request: Request,
@@ -41,6 +41,7 @@ export async function PATCH(
         status: true,
         isWorkflowStep: true,
         stepNumber: true,
+        stepName: true,
         requirementId: true,
       },
     });
@@ -52,43 +53,59 @@ export async function PATCH(
       );
     }
 
-    // 2. PATIENT / CAREGIVER: Keine Status-Updates erlaubt
-    if (userRole === "PATIENT" || userRole === "CAREGIVER") {
-      return NextResponse.json(
-        { error: "Sie dürfen den Status dieser Untersuchung nicht ändern." },
-        { status: 403 }
-      );
+    // 2. Für NICHT-Workflow-Tasks: Alte Regeln (Klinik nur)
+    if (!task.isWorkflowStep) {
+      if (userRole === "PATIENT" || userRole === "CAREGIVER") {
+        return NextResponse.json(
+          { error: "Sie dürfen den Status dieser Untersuchung nicht ändern." },
+          { status: 403 }
+        );
+      }
+      // Rest wie bisher...
     }
 
-    // 3. "ERLEDIGT" (COMPLETED) darf nur Klinik oder unabhängige Dialyse
-    if (newStatus === "COMPLETED") {
-      const isKlinik = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"].includes(userRole);
+    // 3. Workflow-Schritte: actionType-basierte Berechtigung
+    if (task.isWorkflowStep && newStatus === "COMPLETED") {
+      // Bestimme actionType aus stepName
+      const stepName = task.stepName || "";
+      const isUploadStep = stepName.includes("hochladen");
+      const isClinicReview = stepName.includes("Prüfung durch");
 
-      if (!isKlinik) {
-        // Dialyse prüfen: nur wenn unabhängig
-        if (userRole === "DIALYSIS_STAFF") {
-          const userOrgs = await getUserOrganizations(user.id);
-          const isIndependent = userOrgs.every(
-            (org) => org.parentOrganizationId === null
-          );
-
-          if (!isIndependent) {
+      if (isClinicReview) {
+        // Nur Klinik oder Dialyse
+        const isClinic = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"].includes(userRole);
+        if (!isClinic) {
+          if (userRole === "DIALYSIS_STAFF") {
+            const userOrgs = await getUserOrganizations(user.id);
+            const isIndependent = userOrgs.every(
+              (org) => org.parentOrganizationId === null
+            );
+            if (!isIndependent) {
+              return NextResponse.json(
+                { error: "Nur Klinik-Mitarbeiter können diesen Schritt bestätigen." },
+                { status: 403 }
+              );
+            }
+          } else {
             return NextResponse.json(
-              {
-                error:
-                  "Ihre Dialyse ist einer Klinik zugeordnet. Nur Klinik-Mitarbeiter können Untersuchungen als erledigt markieren.",
-              },
+              { error: "Nur Klinik-Mitarbeiter können diesen Schritt bestätigen." },
               { status: 403 }
             );
           }
-          // Unabhängige Dialyse darf → OK
-        } else {
-          // Andere Rollen (z.B. EXTERNAL_PROVIDER) nicht erlaubt
+        }
+      } else if (!isUploadStep) {
+        // patient_status: Nur Patient oder Caregiver
+        if (userRole !== "PATIENT" && userRole !== "CAREGIVER") {
           return NextResponse.json(
-            {
-              error:
-                "Nur Klinik-Mitarbeiter oder unabhängige Dialysen können Untersuchungen als erledigt markieren.",
-            },
+            { error: "Dieser Schritt kann nur vom Patienten selbst erledigt werden." },
+            { status: 403 }
+          );
+        }
+      } else {
+        // patient_upload: Nur Patient oder Caregiver
+        if (userRole !== "PATIENT" && userRole !== "CAREGIVER") {
+          return NextResponse.json(
+            { error: "Dieser Schritt erfordert einen Upload durch den Patienten." },
             { status: 403 }
           );
         }
@@ -101,7 +118,6 @@ export async function PATCH(
       completedAt: newStatus === "COMPLETED" ? new Date() : null,
     };
 
-    // Nur bei Erledigt: completedBy speichern
     if (newStatus === "COMPLETED") {
       updateData.completedById = user.id;
       updateData.completedByRole = userRole;
@@ -112,7 +128,7 @@ export async function PATCH(
       data: updateData,
     });
 
-    // 5. Wenn COMPLETED und Workflow-Schritt: Nächsten Schritt aktivieren
+    // 5. Wenn COMPLETED und Workflow-Schritt: Nächsten aktivieren
     if (newStatus === "COMPLETED" && task.isWorkflowStep) {
       const nextStep = await prisma.task.findFirst({
         where: {

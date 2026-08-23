@@ -1,16 +1,18 @@
 /**
  * Clinical Workflow Definitions
- * Pre-transplant clearance workflows for NephroAssist
+ * 
+ * Jeder Schritt hat einen `actionType`, der definiert wer was tun darf:
+ * - "patient_status": Patient markiert Schritt als erledigt (z.B. "Überweisung angefordert")
+ * - "patient_upload": Patient lädt Dokument hoch → automatisch erledigt
+ * - "clinic_review": Nur Klinik darf erledigen
  */
 
-export interface WorkflowStep {
+export interface WorkflowStepDef {
   stepNumber: number;
   name: string;
   description: string;
-  ownerType: "PATIENT" | "CAREGIVER" | "CLINIC" | "EXTERNAL" | "TRANSPLANT_CENTER";
-  action: string;
-  canUploadDocument: boolean;
-  requiresReview: boolean;
+  actionType: "patient_status" | "patient_upload" | "clinic_review";
+  uploadType?: "referral" | "report";
 }
 
 export interface ClinicalWorkflow {
@@ -18,11 +20,11 @@ export interface ClinicalWorkflow {
   name: string;
   category: string;
   description: string;
-  steps: WorkflowStep[];
+  steps: WorkflowStepDef[];
 }
 
 /* ================================================================ */
-/*  DENTAL CLEARANCE WORKFLOW                                       */
+/*  DENTAL CLEARANCE WORKFLOW — 6 Schritte                          */
 /* ================================================================ */
 export const DENTAL_CLEARANCE_WORKFLOW: ClinicalWorkflow = {
   id: "dental-clearance",
@@ -33,71 +35,46 @@ export const DENTAL_CLEARANCE_WORKFLOW: ClinicalWorkflow = {
     {
       stepNumber: 1,
       name: "Überweisung anfordern",
-      description: "Überweisung/Verordnung beim Hausarzt oder Zahnarzt anfordern",
-      ownerType: "PATIENT",
-      action: "Verordnung beim Arzt anfordern",
-      canUploadDocument: false,
-      requiresReview: false,
+      description: "Verordnung beim Hausarzt oder Zahnarzt anfordern",
+      actionType: "patient_status",
     },
     {
       stepNumber: 2,
       name: "Verordnung hochladen",
       description: "Die erhaltene Überweisung/Verordnung im Portal hochladen",
-      ownerType: "PATIENT",
-      action: "Verordnung hochladen",
-      canUploadDocument: true,
-      requiresReview: false,
+      actionType: "patient_upload",
+      uploadType: "referral",
     },
     {
       stepNumber: 3,
       name: "Zahnarzttermin vereinbaren",
       description: "Termin beim Zahnarzt vereinbaren (nach Erhalt der Verordnung)",
-      ownerType: "PATIENT",
-      action: "Zahnarzttermin vereinbaren",
-      canUploadDocument: false,
-      requiresReview: false,
+      actionType: "patient_status",
     },
     {
       stepNumber: 4,
-      name: "Termin wahrnehmen",
-      description: "Den vereinbarten Zahnarzttermin wahrnehmen",
-      ownerType: "PATIENT",
-      action: "Termin wahrnehmen",
-      canUploadDocument: false,
-      requiresReview: false,
+      name: "Bericht anfordern",
+      description: "Zahnarztbericht/Dental Clearance Bericht anfordern",
+      actionType: "patient_status",
     },
     {
       stepNumber: 5,
-      name: "Bericht anfordern",
-      description: "Zahnarztbericht/Dental Clearance Bericht anfordern",
-      ownerType: "PATIENT",
-      action: "Bericht vom Zahnarzt anfordern",
-      canUploadDocument: false,
-      requiresReview: false,
+      name: "Bericht hochladen",
+      description: "Den erhaltenen Zahnarztbericht im Portal hochladen",
+      actionType: "patient_upload",
+      uploadType: "report",
     },
     {
       stepNumber: 6,
-      name: "Bericht hochladen",
-      description: "Den erhaltenen Zahnarztbericht im Portal hochladen",
-      ownerType: "PATIENT",
-      action: "Bericht hochladen",
-      canUploadDocument: true,
-      requiresReview: false,
-    },
-    {
-      stepNumber: 7,
       name: "Prüfung durch Transplantationszentrum",
       description: "Der Bericht wird durch das Transplantationszentrum geprüft",
-      ownerType: "TRANSPLANT_CENTER",
-      action: "Prüfung abwarten",
-      canUploadDocument: false,
-      requiresReview: true,
+      actionType: "clinic_review",
     },
   ],
 };
 
 /* ================================================================ */
-/*  CARDIAC CLEARANCE WORKFLOW                                      */
+/*  CARDIAC CLEARANCE WORKFLOW — 6 Schritte                           */
 /* ================================================================ */
 export const CARDIAC_CLEARANCE_WORKFLOW: ClinicalWorkflow = {
   id: "cardiac-clearance",
@@ -109,70 +86,45 @@ export const CARDIAC_CLEARANCE_WORKFLOW: ClinicalWorkflow = {
       stepNumber: 1,
       name: "Überweisung anfordern",
       description: "Überweisung zum Kardiologen anfordern",
-      ownerType: "PATIENT",
-      action: "Verordnung beim Hausarzt anfordern",
-      canUploadDocument: false,
-      requiresReview: false,
+      actionType: "patient_status",
     },
     {
       stepNumber: 2,
       name: "Verordnung hochladen",
       description: "Die erhaltene Überweisung im Portal hochladen",
-      ownerType: "PATIENT",
-      action: "Verordnung hochladen",
-      canUploadDocument: true,
-      requiresReview: false,
+      actionType: "patient_upload",
+      uploadType: "referral",
     },
     {
       stepNumber: 3,
       name: "Kardiologentermin vereinbaren",
       description: "Termin beim Kardiologen vereinbaren",
-      ownerType: "PATIENT",
-      action: "Termin vereinbaren",
-      canUploadDocument: false,
-      requiresReview: false,
+      actionType: "patient_status",
     },
     {
       stepNumber: 4,
-      name: "Untersuchung durchführen",
-      description: "EKG, Echokardiografie und weitere Untersuchungen durchführen lassen",
-      ownerType: "PATIENT",
-      action: "Untersuchung wahrnehmen",
-      canUploadDocument: false,
-      requiresReview: false,
+      name: "Bericht anfordern",
+      description: "Kardiologie-Bericht anfordern",
+      actionType: "patient_status",
     },
     {
       stepNumber: 5,
-      name: "Bericht anfordern",
-      description: "Kardiologie-Bericht anfordern",
-      ownerType: "PATIENT",
-      action: "Bericht anfordern",
-      canUploadDocument: false,
-      requiresReview: false,
+      name: "Bericht hochladen",
+      description: "Den erhaltenen Kardiologie-Bericht im Portal hochladen",
+      actionType: "patient_upload",
+      uploadType: "report",
     },
     {
       stepNumber: 6,
-      name: "Bericht hochladen",
-      description: "Den erhaltenen Kardiologie-Bericht im Portal hochladen",
-      ownerType: "PATIENT",
-      action: "Bericht hochladen",
-      canUploadDocument: true,
-      requiresReview: false,
-    },
-    {
-      stepNumber: 7,
       name: "Prüfung durch Transplantationszentrum",
       description: "Der Bericht wird durch das Transplantationszentrum geprüft",
-      ownerType: "TRANSPLANT_CENTER",
-      action: "Prüfung abwarten",
-      canUploadDocument: false,
-      requiresReview: true,
+      actionType: "clinic_review",
     },
   ],
 };
 
 /* ================================================================ */
-/*  REGISTRY                                                       */
+/*  REGISTRY                                                        */
 /* ================================================================ */
 export const WORKFLOWS: Record<string, ClinicalWorkflow> = {
   "dental-clearance": DENTAL_CLEARANCE_WORKFLOW,
@@ -185,4 +137,44 @@ export function getWorkflow(id: string): ClinicalWorkflow | undefined {
 
 export function getAllWorkflows(): ClinicalWorkflow[] {
   return Object.values(WORKFLOWS);
+}
+
+/**
+ * Prüft ob ein User einen bestimmten Schritt erledigen darf
+ */
+export function canCompleteStep(
+  userRole: string,
+  step: WorkflowStepDef
+): boolean {
+  switch (step.actionType) {
+    case "patient_status":
+    case "patient_upload":
+      return userRole === "PATIENT" || userRole === "CAREGIVER";
+    case "clinic_review":
+      return [
+        "ADMIN",
+        "COORDINATOR",
+        "PHYSICIAN",
+        "NURSE",
+        "DIALYSIS_STAFF",
+      ].includes(userRole);
+    default:
+      return false;
+  }
+}
+
+/**
+ * Beschreibung der Aktion für den Nutzer
+ */
+export function getStepActionLabel(step: WorkflowStepDef): string {
+  switch (step.actionType) {
+    case "patient_status":
+      return "Als erledigt markieren";
+    case "patient_upload":
+      return "Dokument hochladen";
+    case "clinic_review":
+      return "Prüfen und bestätigen";
+    default:
+      return "Erledigen";
+  }
 }
