@@ -1,16 +1,15 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
 import LoginForm from "@/components/login-form";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-export default async function HomePage() {
-  const session = await auth();
-
-  if (session) {
-    redirect("/dashboard");
-  }
+export default function HomePage() {
+  // Prüfe ob bereits eingeloggt (Client-Side)
+  useEffect(() => {
+    fetch("/api/auth/check", { method: "GET" }).catch(() => {
+      // Ignoriere Fehler
+    });
+  }, []);
 
   return <LoginForm />;
 }

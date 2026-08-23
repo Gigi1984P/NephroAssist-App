@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginForm() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,18 +23,26 @@ export default function LoginForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        cache: "no-store",
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
 
       if (!res.ok) {
-        setError(data.error || "Ungültige Anmeldedaten");
+        setError(data.error || `HTTP ${res.status}: Anmeldung fehlgeschlagen`);
+      } else if (data.user) {
+        // Hard redirect statt router.push (verhindert Next.js Navigation Probleme)
+        window.location.href = "/dashboard";
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        setError("Ungültige Server-Antwort");
       }
-    } catch {
-      setError("Ein Fehler ist aufgetreten");
+    } catch (err) {
+      setError(`Netzwerk-Fehler: ${err instanceof Error ? err.message : "Unbekannt"}`);
     } finally {
       setLoading(false);
     }
@@ -58,7 +64,7 @@ export default function LoginForm() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+              <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
                 {error}
               </div>
             )}
