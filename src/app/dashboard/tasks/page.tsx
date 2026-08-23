@@ -20,12 +20,17 @@ interface Task {
   } | null;
 }
 
+type UserRole = "ADMIN" | "COORDINATOR" | "PHYSICIAN" | "NURSE" | "PATIENT" | "CAREGIVER" | "DIALYSIS_STAFF";
+
+const CAN_CREATE_INVESTIGATION: UserRole[] = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"];
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const itemsPerPage = 10;
 
   const loadTasks = async () => {
@@ -42,9 +47,24 @@ export default function TasksPage() {
     }
   };
 
+  const loadProfile = async () => {
+    try {
+      const res = await fetch("/api/user/profile");
+      if (res.ok) {
+        const data = await res.json();
+        setUserRole(data.user?.role || null);
+      }
+    } catch (error) {
+      console.error("Failed to load profile:", error);
+    }
+  };
+
   useEffect(() => {
     loadTasks();
+    loadProfile();
   }, []);
+
+  const canCreate = userRole ? CAN_CREATE_INVESTIGATION.includes(userRole) : false;
 
   const filteredTasks = tasks
     .filter((task) => {
@@ -108,10 +128,12 @@ export default function TasksPage() {
         title="Untersuchungen"
         description="Verwalten Sie offene und laufende Untersuchungen"
         action={
-          <button className="btn-custom btn-primary-custom">
-            <Plus size={16} />
-            Neue Untersuchung
-          </button>
+          canCreate ? (
+            <button className="btn-custom btn-primary-custom">
+              <Plus size={16} />
+              Neue Untersuchung
+            </button>
+          ) : undefined
         }
       />
 
@@ -174,10 +196,12 @@ export default function TasksPage() {
                   ? "Versuchen Sie andere Filtereinstellungen"
                   : "Alle Untersuchungen sind erledigt!"}
               </div>
-              <button className="btn-custom btn-primary-custom">
-                <Plus size={16} />
-                Neue Untersuchung
-              </button>
+              {canCreate && (
+                <button className="btn-custom btn-primary-custom">
+                  <Plus size={16} />
+                  Neue Untersuchung
+                </button>
+              )}
             </div>
           ) : (
             <>
