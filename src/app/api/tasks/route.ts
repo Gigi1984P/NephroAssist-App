@@ -1,36 +1,30 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAuth, getAllowedPatientIds, patientScopeWhere } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
 
-    const user = session.user;
-    const userRole = user.role;
+    const allowedIds = await getAllowedPatientIds(user);
+    const scope = patientScopeWhere(allowedIds, "patientId");
 
-    let whereClause: any = {
+    const whereClause: any = {
       status: { in: ["PENDING", "IN_PROGRESS"] },
+      ...(scope || {}),
     };
 
-    // PATIENT: Nur eigene Aufgaben sehen
-    if (userRole === "PATIENT") {
-      const patient = await prisma.patient.findFirst({
-        where: { userId: user.id },
-        select: { id: true },
-      });
-      if (!patient) {
-        return NextResponse.json({ tasks: [] });
-      }
-      whereClause = {
-        ...whereClause,
-        patientId: patient.id,
-      };
+    // PATIENT/CAREGIVER: Nur Tasks sehen wo sie owner sind ODER patientId passt
+    if (user.role === "PATIENT" || user.role === "CAREGIVER") {
+      whereClause.OR = [
+        { patientId: { in: allowedIds || [] } },
+        { ownerId: user.id },
+      ];
     }
 
     const tasks = await prisma.task.findMany({

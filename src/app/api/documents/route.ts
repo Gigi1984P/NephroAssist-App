@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAuth, getAllowedPatientIds, patientScopeWhere } from "@/lib/permissions";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { createHash } from "crypto";
@@ -11,12 +12,15 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const allowedIds = await getAllowedPatientIds(user);
+    const scope = patientScopeWhere(allowedIds, "patientId");
 
     const documents = await prisma.document.findMany({
+      where: scope ? scope : {},
       orderBy: { createdAt: "desc" },
       include: {
         patient: true,
@@ -35,10 +39,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
@@ -77,20 +80,20 @@ export async function POST(request: Request) {
     await mkdir(join(UPLOAD_DIR, "documents"), { recursive: true });
     await writeFile(filePath, buffer);
 
-    // Dokument in DB speichern (Fallback: patientId = session.user.id für Demo)
-    const patientId = session.user.id;
+    // Dokument in DB speichern (Fallback: patientId = user.id für Demo)
+    const patientId = user.id;
 
     const document = await prisma.document.create({
       data: {
         patientId,
-        organizationId: session.user.id,
+        organizationId: user.id,
         fileKey,
         filename: file.name,
         mimeType: file.type,
         size: file.size,
         sha256,
         documentType: file.type.split("/")[1].toUpperCase(),
-        uploadedBy: session.user.id,
+        uploadedBy: user.id,
         source: "PATIENT_UPLOAD",
         processingStatus: "UPLOADED",
       },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAuth, getAllowedPatientIds, patientScopeWhere } from "@/lib/permissions";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -15,12 +16,24 @@ const appointmentSchema = z.object({
 
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    const allowedIds = await getAllowedPatientIds(user);
+    const scope = patientScopeWhere(allowedIds, "patientId");
+
+    // PHYSICIAN: Nur eigene Termine (als Provider)
+    let whereClause: any = scope ? scope : {};
+    if (user.role === "PHYSICIAN") {
+      whereClause = {
+        ...whereClause,
+        provider: user.id,
+      };
     }
 
     const appointments = await prisma.appointment.findMany({
+      where: whereClause,
       orderBy: { startTime: "asc" },
       include: {
         patient: true,
@@ -39,9 +52,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const { user } = authResult;
+
+    // Nur Staff darf Termine erstellen
+    if (!["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"].includes(user.role)) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
     }
 
     const body = await request.json();
