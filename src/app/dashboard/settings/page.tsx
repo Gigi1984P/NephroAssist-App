@@ -1,13 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Check, User, Lock, Globe } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PageHeader } from "@/components/page-header";
+import { AlertCircle, User, Lock, Globe } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -18,6 +13,7 @@ interface UserProfile {
 }
 
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<"profile" | "password" | "preferences">("profile");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,121 +94,139 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Einstellungen</h2>
-        <p className="text-muted-foreground">Verwalten Sie Ihr Profil und Ihre Sicherheitseinstellungen.</p>
-      </div>
+    <div className="container-fluid">
+      <PageHeader
+        title="Einstellungen"
+        description="Verwalten Sie Ihr Profil und Ihre Sicherheitseinstellungen."
+      />
 
       {message && (
-        <Alert variant={message.type === "error" ? "destructive" : "default"}>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{message.text}</AlertDescription>
-        </Alert>
+        <div className={`alert d-flex align-items-center gap-2 mb-3 ${message.type === "error" ? "alert-danger" : "alert-success"}`} role="alert">
+          <AlertCircle size={18} />
+          <span>{message.text}</span>
+        </div>
       )}
 
-      <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profile">
-            <User className="h-4 w-4 mr-2" />
-            Profil
-          </TabsTrigger>
-          <TabsTrigger value="password">
-            <Lock className="h-4 w-4 mr-2" />
-            Passwort
-          </TabsTrigger>
-          <TabsTrigger value="preferences">
-            <Globe className="h-4 w-4 mr-2" />
-            Präferenzen
-          </TabsTrigger>
-        </TabsList>
+      <div className="dashboard-card">
+        <div className="card-body-custom">
+          <ul className="nav-tabs-custom">
+            <li>
+              <button
+                type="button"
+                className={`nav-tab-item d-flex align-items-center gap-2 ${activeTab === "profile" ? "active" : ""}`}
+                onClick={() => setActiveTab("profile")}
+              >
+                <User size={16} />
+                Profil
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className={`nav-tab-item d-flex align-items-center gap-2 ${activeTab === "password" ? "active" : ""}`}
+                onClick={() => setActiveTab("password")}
+              >
+                <Lock size={16} />
+                Passwort
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className={`nav-tab-item d-flex align-items-center gap-2 ${activeTab === "preferences" ? "active" : ""}`}
+                onClick={() => setActiveTab("preferences")}
+              >
+                <Globe size={16} />
+                Präferenzen
+              </button>
+            </li>
+          </ul>
 
-        <TabsContent value="profile" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profilinformationen</CardTitle>
-              <CardDescription>Aktualisieren Sie Ihre persönlichen Daten.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">E-Mail</Label>
-                <Input id="email" value={profile?.email || ""} disabled />
+          <div className="tab-content-custom">
+            <div className={`tab-pane-custom ${activeTab === "profile" ? "active" : ""}`}>
+              <div className="mb-3">
+                <h5 className="fw-semibold">Profilinformationen</h5>
+                <p className="text-muted mb-0">Aktualisieren Sie Ihre persönlichen Daten.</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+              <div className="mb-3">
+                <label htmlFor="email" className="form-label">E-Mail</label>
+                <input id="email" className="form-control" value={profile?.email || ""} disabled readOnly />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Rolle</Label>
-                <Input id="role" value={profile?.role || ""} disabled />
+              <div className="mb-3">
+                <label htmlFor="name" className="form-label">Name</label>
+                <input
+                  id="name"
+                  className="form-control"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
-              <Button onClick={updateProfile} disabled={loading}>
+              <div className="mb-3">
+                <label htmlFor="role" className="form-label">Rolle</label>
+                <input id="role" className="form-control" value={profile?.role || ""} disabled readOnly />
+              </div>
+              <button className="btn btn-primary" onClick={updateProfile} disabled={loading}>
                 {loading ? "Speichern..." : "Speichern"}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </button>
+            </div>
 
-        <TabsContent value="password" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Passwort ändern</CardTitle>
-              <CardDescription>Ändern Sie Ihr Passwort für mehr Sicherheit.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Aktuelles Passwort</Label>
-                <Input
+            <div className={`tab-pane-custom ${activeTab === "password" ? "active" : ""}`}>
+              <div className="mb-3">
+                <h5 className="fw-semibold">Passwort ändern</h5>
+                <p className="text-muted mb-0">Ändern Sie Ihr Passwort für mehr Sicherheit.</p>
+              </div>
+              <div className="mb-3">
+                <label htmlFor="currentPassword" className="form-label">Aktuelles Passwort</label>
+                <input
                   id="currentPassword"
                   type="password"
+                  className="form-control"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">Neues Passwort</Label>
-                <Input
+              <div className="mb-3">
+                <label htmlFor="newPassword" className="form-label">Neues Passwort</label>
+                <input
                   id="newPassword"
                   type="password"
+                  className="form-control"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Passwort bestätigen</Label>
-                <Input
+              <div className="mb-3">
+                <label htmlFor="confirmPassword" className="form-label">Passwort bestätigen</label>
+                <input
                   id="confirmPassword"
                   type="password"
+                  className="form-control"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
-              <Button onClick={changePassword} disabled={loading}>
+              <button className="btn btn-primary" onClick={changePassword} disabled={loading}>
                 {loading ? "Ändern..." : "Passwort ändern"}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </button>
+            </div>
 
-        <TabsContent value="preferences" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Präferenzen</CardTitle>
-              <CardDescription>Sprache und Regionaleinstellungen.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Sprache</Label>
-                <p className="text-sm text-muted-foreground">Deutsch (vorerst festgelegt)</p>
+            <div className={`tab-pane-custom ${activeTab === "preferences" ? "active" : ""}`}>
+              <div className="mb-3">
+                <h5 className="fw-semibold">Präferenzen</h5>
+                <p className="text-muted mb-0">Sprache und Regionaleinstellungen.</p>
               </div>
-              <div className="space-y-2">
-                <Label>Zeitzone</Label>
-                <p className="text-sm text-muted-foreground">Europe/Berlin (vorerst festgelegt)</p>
+              <div className="mb-3">
+                <label className="form-label">Sprache</label>
+                <p className="text-muted mb-0">Deutsch (vorerst festgelegt)</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <div className="mb-3">
+                <label className="form-label">Zeitzone</label>
+                <p className="text-muted mb-0">Europe/Berlin (vorerst festgelegt)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
