@@ -8,9 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Force dynamic to prevent CDN caching of login page
-export const dynamic = "force-dynamic";
-
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -24,16 +21,27 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/login?_t=${Date.now()}`, {
+      const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      if (res.status === 404) {
+        setError("Login-API nicht gefunden. Bitte Seite neu laden (Strg+Umschalt+R).");
+        setLoading(false);
+        return;
+      }
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
 
       if (!res.ok) {
-        setError(data.error || "Ungültige Anmeldedaten");
+        setError(data.error || `Ungültige Anmeldedaten (HTTP ${res.status})`);
       } else {
         router.push("/dashboard");
         router.refresh();
