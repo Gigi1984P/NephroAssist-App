@@ -7,6 +7,7 @@ const secret = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production"
 );
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
