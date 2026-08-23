@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sendStatusChangeNotification } from "@/lib/email";
 
+export const dynamic = "force-dynamic";
+
 const updateSchema = z.object({
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "OVERDUE", "CANCELLED"]),
   notes: z.string().optional(),

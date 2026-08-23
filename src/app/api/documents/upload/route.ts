@@ -6,6 +6,8 @@ import { join } from "path";
 import { createHash } from "crypto";
 import { sendDocumentUploadedNotification } from "@/lib/email";
 
+export const dynamic = "force-dynamic";
+
 const UPLOAD_DIR = join(process.cwd(), "uploads");
 
 export async function POST(request: Request) {
