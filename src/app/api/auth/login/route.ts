@@ -67,7 +67,9 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     console.error("[LOGIN-API] Error:", error);
-    return NextResponse.json({ error: "Ein Fehler ist aufgetreten" }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : "";
+    return NextResponse.json({ error: "Ein Fehler ist aufgetreten", details: message, stack: stack?.split("\n").slice(0,5) }, { status: 500 });
   }
 }
 
