@@ -38,7 +38,7 @@ export default function LoginPage() {
       console.log("[LOGIN] Response data:", data);
 
       if (!res.ok) {
-        setError(data.error || "Ungültige Anmeldedaten");
+        setError(`Ungültige Anmeldedaten (HTTP ${res.status})`);
       } else {
         router.push("/dashboard");
         router.refresh();
