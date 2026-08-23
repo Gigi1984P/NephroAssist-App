@@ -94,17 +94,17 @@ export async function sendTaskNotification(taskId: string) {
             <h1>NephroAssist</h1>
           </div>
           <div class="content">
-            <h2>Neue Aufgabe: ${task.title}</h2>
+            <h2>Neue Untersuchung: ${task.title}</h2>
             <p>Hallo ${patient.firstName},</p>
-            <p>Sie haben eine neue Aufgabe in Ihrem NephroAssist-Portal:</p>
+            <p>Sie haben eine neue Untersuchung in Ihrem NephroAssist-Portal:</p>
             <ul>
-              <li><strong>Aufgabe:</strong> ${task.title}</li>
+              <li><strong>Untersuchung:</strong> ${task.title}</li>
               <li><strong>Beschreibung:</strong> ${task.description || "Keine Beschreibung"}</li>
               <li><strong>Fällig bis:</strong> ${dueDate}</li>
             </ul>
-            <p>Bitte loggen Sie sich ein, um die Aufgabe zu bearbeiten.</p>
+            <p>Bitte loggen Sie sich ein, um die Untersuchung zu bearbeiten.</p>
             <a href="${process.env.NEXTAUTH_URL}/dashboard/tasks/${task.id}" class="button">
-              Aufgabe anzeigen
+              Untersuchung anzeigen
             </a>
             <div class="footer">
               <p>Dies ist eine automatische Nachricht von NephroAssist.</p>
@@ -118,7 +118,7 @@ export async function sendTaskNotification(taskId: string) {
 
   return sendEmail({
     to: patientEmail,
-    subject: `NephroAssist: Neue Aufgabe - ${task.title}`,
+    subject: `NephroAssist: Neue Untersuchung - ${task.title}`,
     html,
   });
 }

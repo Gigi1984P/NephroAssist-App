@@ -41,10 +41,10 @@ export async function PATCH(
     });
 
     if (!task) {
-      return NextResponse.json({ error: "Aufgabe nicht gefunden" }, { status: 404 });
+      return NextResponse.json({ error: "Untersuchung nicht gefunden" }, { status: 404 });
     }
 
-    // PATIENT: Nur eigene Aufgaben bearbeiten
+    // PATIENT: Nur eigene Untersuchungen bearbeiten
     if (userRole === "PATIENT") {
       const patient = await prisma.patient.findFirst({
         where: { userId: user.id },
@@ -52,7 +52,7 @@ export async function PATCH(
       });
       if (!patient || task.patientId !== patient.id) {
         return NextResponse.json(
-          { error: "Sie können nur Ihre eigenen Aufgaben bearbeiten" },
+          { error: "Sie können nur Ihre eigenen Untersuchungen bearbeiten" },
           { status: 403 }
         );
       }
@@ -77,7 +77,7 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json({ message: "Aufgabe aktualisiert", task: updatedTask });
+    return NextResponse.json({ message: "Untersuchung aktualisiert", task: updatedTask });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

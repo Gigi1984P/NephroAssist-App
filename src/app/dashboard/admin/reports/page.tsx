@@ -58,7 +58,7 @@ export default function ReportsPage() {
           <Activity className="h-6 w-6" />
           Statistiken & Reports
         </h2>
-        <p className="text-muted-foreground">Übersicht über Patienten, Fälle und Aufgaben.</p>
+        <p className="text-muted-foreground">Übersicht über Patienten, Fälle und Untersuchungen.</p>
       </div>
 
       {/* KPI Cards */}
@@ -85,7 +85,7 @@ export default function ReportsPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Offene Aufgaben</span>
+              <span className="text-sm font-medium">Offene Untersuchungen</span>
             </div>
             <p className="text-2xl font-bold">{data.pendingTasks}</p>
           </CardContent>

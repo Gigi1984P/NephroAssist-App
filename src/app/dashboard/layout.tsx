@@ -45,7 +45,7 @@ export default function DashboardLayout({
   useEffect(() => {
     const titleMap: Record<string, string> = {
       "/dashboard": "Dashboard",
-      "/dashboard/tasks": "Aufgaben",
+      "/dashboard/tasks": "Untersuchungen",
       "/dashboard/patients": "Patienten",
       "/dashboard/appointments": "Termine",
       "/dashboard/documents": "Dokumente",

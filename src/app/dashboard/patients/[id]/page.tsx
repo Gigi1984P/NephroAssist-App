@@ -129,7 +129,7 @@ export default async function PatientPage({ params }: PatientPageProps) {
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Offene Aufgaben</span>
+              <span className="text-sm font-medium">Offene Untersuchungen</span>
             </div>
             <p className="text-2xl font-bold">{pendingTasks.length}</p>
           </CardContent>
@@ -211,11 +211,11 @@ export default async function PatientPage({ params }: PatientPageProps) {
             </Card>
           </div>
 
-          {/* Offene Aufgaben */}
+          {/* Offene Untersuchungen */}
           {pendingTasks.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Offene Aufgaben</CardTitle>
+                <CardTitle>Offene Untersuchungen</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">

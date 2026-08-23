@@ -80,7 +80,7 @@ export function TaskDetail({ task }: TaskDetailProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Aufgabe bearbeiten</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Untersuchung bearbeiten</h2>
           <p className="text-muted-foreground">Details und Status verwalten</p>
         </div>
         <Badge className={currentStatus.color}>
@@ -92,7 +92,7 @@ export function TaskDetail({ task }: TaskDetailProps) {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Aufgaben-Details</CardTitle>
+            <CardTitle>Untersuchungen-Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

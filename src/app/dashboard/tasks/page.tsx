@@ -105,12 +105,12 @@ export default function TasksPage() {
   return (
     <div>
       <PageHeader
-        title="Aufgaben"
-        description="Verwalten Sie offene und laufende Aufgaben"
+        title="Untersuchungen"
+        description="Verwalten Sie offene und laufende Untersuchungen"
         action={
           <button className="btn-custom btn-primary-custom">
             <Plus size={16} />
-            Neue Aufgabe
+            Neue Untersuchung
           </button>
         }
       />
@@ -151,7 +151,7 @@ export default function TasksPage() {
             </div>
             <div className="col-md-3 text-md-end">
               <span className="text-muted" style={{ fontSize: "0.85rem" }}>
-                {filteredTasks.length} Aufgaben
+                {filteredTasks.length} Untersuchungen
               </span>
             </div>
           </div>
@@ -168,15 +168,15 @@ export default function TasksPage() {
               <div className="empty-state-icon">
                 <CheckSquare size={24} />
               </div>
-              <div className="empty-state-title">Keine Aufgaben gefunden</div>
+              <div className="empty-state-title">Keine Untersuchungen gefunden</div>
               <div className="empty-state-desc">
                 {searchTerm || statusFilter !== "ALL"
                   ? "Versuchen Sie andere Filtereinstellungen"
-                  : "Alle Aufgaben sind erledigt!"}
+                  : "Alle Untersuchungen sind erledigt!"}
               </div>
               <button className="btn-custom btn-primary-custom">
                 <Plus size={16} />
-                Neue Aufgabe
+                Neue Untersuchung
               </button>
             </div>
           ) : (

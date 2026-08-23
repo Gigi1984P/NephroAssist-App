@@ -16,7 +16,7 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
 
   const breadcrumbMap: Record<string, string> = {
     dashboard: "Dashboard",
-    tasks: "Aufgaben",
+    tasks: "Untersuchungen",
     patients: "Patienten",
     appointments: "Termine",
     documents: "Dokumente",

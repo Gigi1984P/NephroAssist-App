@@ -51,7 +51,7 @@ export async function GET() {
   } catch (error) {
     console.error("Get tasks error:", error);
     return NextResponse.json(
-      { error: "Fehler beim Laden der Aufgaben" },
+      { error: "Fehler beim Laden der Untersuchungen" },
       { status: 500 }
     );
   }
