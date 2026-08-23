@@ -21,30 +21,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      console.log("[LOGIN] Sending request...");
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      console.log("[LOGIN] Response status:", res.status);
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        data = {};
-      }
-      console.log("[LOGIN] Response data:", data);
+      const data = await res.json();
 
       if (!res.ok) {
-        setError(`Ungültige Anmeldedaten (HTTP ${res.status})`);
+        setError(data.error || "Ungültige Anmeldedaten");
       } else {
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (err) {
-      console.error("[LOGIN] Fetch error:", err);
+    } catch {
       setError("Ein Fehler ist aufgetreten");
     } finally {
       setLoading(false);
