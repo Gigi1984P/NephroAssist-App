@@ -45,6 +45,14 @@ export default function LoginPage() {
     }
   };
 
+  const fillDemoCredentials = () => {
+    const emailInput = document.getElementById("email") as HTMLInputElement;
+    const passwordInput = document.getElementById("password") as HTMLInputElement;
+    if (emailInput) emailInput.value = "admin@nephroassist.de";
+    if (passwordInput) passwordInput.value = "Test1234!";
+    setError("");
+  };
+
   return (
     <div className="login-page">
       <div className="login-card">
@@ -124,6 +132,51 @@ export default function LoginPage() {
           <a href="/register" className="text-decoration-none" style={{ color: "#2563eb", fontWeight: 500 }}>
             Registrieren
           </a>
+        </div>
+
+        {/* Demo Zugangsdaten */}
+        <div
+          className="mt-4 p-3 border rounded-3 cursor-pointer"
+          style={{
+            backgroundColor: "#f8fafc",
+            borderColor: "#e2e8f0",
+            transition: "all 0.15s ease",
+          }}
+          onClick={fillDemoCredentials}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#eff6ff";
+            e.currentTarget.style.borderColor = "#2563eb";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#f8fafc";
+            e.currentTarget.style.borderColor = "#e2e8f0";
+          }}
+        >
+          <div className="d-flex align-items-center gap-2 mb-2">
+            <svg width="16" height="16" fill="#2563eb" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+            </svg>
+            <span className="fw-semibold" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
+              Demo-Zugangsdaten
+            </span>
+          </div>
+          <div className="d-flex flex-column gap-1">
+            <div className="d-flex justify-content-between">
+              <span style={{ fontSize: "0.75rem", color: "#64748b" }}>E-Mail:</span>
+              <span className="fw-medium" style={{ fontSize: "0.75rem", color: "#334155" }}>
+                admin@nephroassist.de
+              </span>
+            </div>
+            <div className="d-flex justify-content-between">
+              <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Passwort:</span>
+              <span className="fw-medium" style={{ fontSize: "0.75rem", color: "#334155" }}>
+                Test1234!
+              </span>
+            </div>
+          </div>
+          <div className="text-center mt-2" style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
+            Klicken zum Ausfüllen
+          </div>
         </div>
       </div>
     </div>
