@@ -8,6 +8,9 @@ import {
   FileText,
   Settings,
   ShieldCheck,
+  BarChart3,
+  ClipboardList,
+  UserCog,
 } from "lucide-react";
 
 interface NavItem {
@@ -52,6 +55,18 @@ const navItems: NavItem[] = [
     title: "Einstellungen",
     href: "/dashboard/settings",
     icon: Settings,
+    roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"],
+  },
+  {
+    title: "Audit Log",
+    href: "/dashboard/admin/audit",
+    icon: ClipboardList,
+    roles: ["ADMIN"],
+  },
+  {
+    title: "Statistiken",
+    href: "/dashboard/admin/reports",
+    icon: BarChart3,
     roles: ["ADMIN", "COORDINATOR"],
   },
   {

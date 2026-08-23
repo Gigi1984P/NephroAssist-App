@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/components/toast-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -16,7 +17,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de">
-      <body className={`${inter.className} font-sans`}>{children}</body>
+      <body className={`${inter.className} font-sans`}>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

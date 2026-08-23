@@ -1,6 +1,7 @@
 "use client";
 
 import { signOut } from "next-auth/react";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { User, Settings, LogOut } from "lucide-react";
 
 interface UserNavProps {
   user: {
@@ -49,10 +51,18 @@ export function UserNav({ user }: UserNavProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/settings" className="cursor-pointer w-full flex items-center">
+            <Settings className="mr-2 h-4 w-4" />
+            Einstellungen
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer"
+          className="cursor-pointer text-red-600 focus:text-red-600"
           onSelect={() => signOut({ callbackUrl: "/login" })}
         >
+          <LogOut className="mr-2 h-4 w-4" />
           Abmelden
         </DropdownMenuItem>
       </DropdownMenuContent>
