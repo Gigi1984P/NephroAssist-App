@@ -296,19 +296,22 @@ export default function TasksPage() {
                               )}
                             </div>
                             <div className="step-content">
-                              <div className="d-flex align-items-center gap-2">
-                                <span className="fw-medium" style={{ fontSize: "0.9rem" }}>
-                                  {step.stepNumber}. {step.stepName}
-                                </span>
-                                <span className={`badge-custom ${getStatusBadgeClass(step.status, false)}`} style={{ fontSize: "0.7rem" }}>
-                                  {getStatusLabel(step.status, false)}
-                                </span>
+                              <div className="d-flex align-items-start justify-content-between">
+                                <div className="flex-grow-1">
+                                  <div className="d-flex align-items-center gap-2 mb-1">
+                                    <span className="step-number">{step.stepNumber}.</span>
+                                    <span className="step-title">{step.stepName}</span>
+                                  </div>
+                                  <p className="step-desc mb-2">{step.stepDescription}</p>
+                                </div>
+                                <div className="ms-2 text-end">
+                                  <span className={`step-status ${isCompleted ? "done" : isActive ? "active" : ""}`}>
+                                    {isCompleted ? "✓ Erledigt" : isActive ? "● Aktiv" : "○ Ausstehend"}
+                                  </span>
+                                </div>
                               </div>
-                              <p className="text-muted mb-1" style={{ fontSize: "0.8rem" }}>
-                                {step.stepDescription}
-                              </p>
                               {isActive && (
-                                <button className="btn btn-sm btn-outline-primary" style={{ fontSize: "0.75rem" }}>
+                                <button className="btn btn-sm btn-outline-primary step-action-btn">
                                   Als erledigt markieren
                                 </button>
                               )}
