@@ -19,29 +19,19 @@ export default async function DashboardLayout({
   const user = session.user;
 
   return (
-    <div className="flex min-h-screen bg-[#f1f5f9]">
+    <div className="flex min-h-screen bg-slate-100">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block">
-        <Sidebar
-          role={user.role}
-          userName={user.name}
-          userEmail={user.email}
-        />
-      </div>
+      <Sidebar role={user.role} userName={user.name} userEmail={user.email} />
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col md:ml-[260px]">
+      <div className="flex flex-1 flex-col min-w-0 md:ml-[260px]">
         {/* Top Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white px-4 shadow-sm">
-          <MobileSidebar
-            role={user.role}
-            userName={user.name}
-            userEmail={user.email}
-          />
+          <MobileSidebar role={user.role} userName={user.name} userEmail={user.email} />
 
-          <div className="flex flex-1 items-center justify-between">
-            <h1 className="text-lg font-semibold text-slate-800">Dashboard</h1>
-            <div className="flex items-center gap-3">
+          <div className="flex flex-1 items-center justify-between min-w-0">
+            <h1 className="text-lg font-semibold text-slate-800 truncate">Dashboard</h1>
+            <div className="flex items-center gap-3 shrink-0">
               <NotificationCenter />
               <Separator orientation="vertical" className="h-6" />
               <UserNav user={user} />
@@ -49,8 +39,10 @@ export default async function DashboardLayout({
           </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 p-6">{children}</main>
+        {/* Content - overflow auto ermöglicht Scroll */}
+        <main className="flex-1 p-6 min-w-0 overflow-auto">
+          <div className="max-w-full">{children}</div>
+        </main>
       </div>
     </div>
   );

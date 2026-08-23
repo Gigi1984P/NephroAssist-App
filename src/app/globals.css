@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Plain CSS - No Tailwind needed */
 /* Next.js 16 compatible */
 
