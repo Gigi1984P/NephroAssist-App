@@ -25,22 +25,108 @@ export async function requireAuth(): Promise<
 }
 
 /* ================================================================ */
-/*  2. Role Checks                                                  */
+/*  2. Organisation des Users                                       */
 /* ================================================================ */
-export function isAdmin(role: UserRole) {
-  return role === "ADMIN";
+export async function getUserOrganizations(userId: string) {
+  const memberships = await prisma.organizationMembership.findMany({
+    where: { userId },
+    include: { organization: true },
+  });
+  return memberships.map((m) => m.organization);
 }
 
-export function isStaff(role: UserRole) {
-  return ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"].includes(role);
-}
-
-export function isPatientOrCaregiver(role: UserRole) {
-  return role === "PATIENT" || role === "CAREGIVER";
+export async function isIndependentUser(userId: string): Promise<boolean> {
+  const memberships = await prisma.organizationMembership.findMany({
+    where: { userId },
+  });
+  return memberships.length === 0;
 }
 
 /* ================================================================ */
-/*  3. Get Patient IDs for User (Scope)                             */
+/*  3. Prüfung: Darf User Untersuchungen ERSTELLEN?                 */
+/* ================================================================ */
+export async function canCreateInvestigation(user: SessionUser): Promise<{
+  allowed: boolean;
+  reason?: string;
+  organizationId?: string | null;
+}> {
+  const { id: userId, role } = user;
+
+  switch (role) {
+    case "ADMIN":
+      return { allowed: true };
+
+    case "COORDINATOR":
+    case "PHYSICIAN": {
+      // Klinik-Mitarbeiter dürfen immer erstellen
+      const orgs = await getUserOrganizations(userId);
+      const clinic = orgs.find(
+        (o) => o.type === "TRANSPLANT_CENTER" || o.type === "NEPHROLOGY"
+      );
+      if (clinic) {
+        return { allowed: true, organizationId: clinic.id };
+      }
+      return {
+        allowed: false,
+        reason: "Nur Klinik-Mitarbeiter dürfen Untersuchungen erstellen",
+      };
+    }
+
+    case "NURSE": {
+      // Pfleger nur wenn UNABHÄNGIG (keine Org-Membership)
+      const independent = await isIndependentUser(userId);
+      if (independent) {
+        return { allowed: true, organizationId: null };
+      }
+      return {
+        allowed: false,
+        reason: "Pfleger in einer Klinik/Dialyse dürfen keine Untersuchungen erstellen",
+      };
+    }
+
+    case "DIALYSIS_STAFF": {
+      const orgs = await getUserOrganizations(userId);
+      const dialysis = orgs.find((o) => o.type === "DIALYSIS_CENTER");
+      if (dialysis) {
+        // Prüfe ob Dialyse einer Klinik unterstellt ist
+        if (dialysis.parentOrganizationId) {
+          return {
+            allowed: false,
+            reason: "Dialyse unter Klinik: Untersuchungen müssen von der Klinik erstellt werden",
+          };
+        }
+        return { allowed: true, organizationId: dialysis.id };
+      }
+      // Dialyse-User ohne Org → unabhängig
+      const independent = await isIndependentUser(userId);
+      if (independent) {
+        return { allowed: true, organizationId: null };
+      }
+      return {
+        allowed: false,
+        reason: "Dialyse nicht gefunden",
+      };
+    }
+
+    case "PATIENT":
+      return {
+        allowed: false,
+        reason: "Patienten dürfen keine Untersuchungen erstellen",
+      };
+
+    case "CAREGIVER":
+      return {
+        allowed: false,
+        reason: "Pfleger dürfen keine Untersuchungen erstellen",
+      };
+
+    default:
+      return { allowed: false, reason: "Rolle nicht berechtigt" };
+  }
+}
+
+/* ================================================================ */
+/*  4. Prüfung: Darf User Untersuchungen SEHEN?                     */
 /* ================================================================ */
 export async function getAllowedPatientIds(user: SessionUser): Promise<string[] | null> {
   const { id: userId, role } = user;
@@ -73,56 +159,64 @@ export async function getAllowedPatientIds(user: SessionUser): Promise<string[] 
       select: { patientId: true },
     });
     const ids = cases.map((c) => c.patientId);
-    return [...new Set(ids)];
+    return Array.from(new Set(ids));
+  }
+
+  // PHYSICIAN: Alle Patienten in seiner Klinik (über Org-Membership)
+  if (role === "PHYSICIAN") {
+    const orgs = await getUserOrganizations(userId);
+    const clinicIds = orgs
+      .filter((o) => o.type === "TRANSPLANT_CENTER" || o.type === "NEPHROLOGY")
+      .map((o) => o.id);
+    if (clinicIds.length === 0) return [];
+    const cases = await prisma.patientCase.findMany({
+      where: { organizationId: { in: clinicIds } },
+      select: { patientId: true },
+    });
+    const ids = cases.map((c) => c.patientId);
+    return Array.from(new Set(ids));
   }
 
   // NURSE: Alle Patienten in ihrer Organisation
   if (role === "NURSE") {
-    const memberships = await prisma.organizationMembership.findMany({
-      where: { userId },
-      select: { organizationId: true },
-    });
-    const orgIds = memberships.map((m) => m.organizationId);
-    if (orgIds.length === 0) return [];
+    const orgs = await getUserOrganizations(userId);
+    const orgIds = orgs.map((o) => o.id);
+    if (orgIds.length === 0) {
+      // Unabhängig: nur Patienten mit CaregiverAccess
+      const accesses = await prisma.caregiverAccess.findMany({
+        where: { caregiverId: userId, status: "ACTIVE" },
+        select: { patientId: true },
+      });
+      return accesses.map((a) => a.patientId);
+    }
     const cases = await prisma.patientCase.findMany({
       where: { organizationId: { in: orgIds } },
       select: { patientId: true },
     });
     const ids = cases.map((c) => c.patientId);
-    return [...new Set(ids)];
+    return Array.from(new Set(ids));
   }
 
-  // PHYSICIAN: Alle Patienten bei denen er Provider ist (Appointments)
-  if (role === "PHYSICIAN") {
-    const appts = await prisma.appointment.findMany({
-      where: { provider: userId },
-      select: { patientId: true },
-    });
-    const ids = appts.map((a) => a.patientId);
-    return [...new Set(ids)];
-  }
-
-  // DIALYSIS_STAFF: Alle Patienten in ihrer Organisation
+  // DIALYSIS_STAFF: Alle Patienten in ihrer Dialyse
   if (role === "DIALYSIS_STAFF") {
-    const memberships = await prisma.organizationMembership.findMany({
-      where: { userId },
-      select: { organizationId: true },
-    });
-    const orgIds = memberships.map((m) => m.organizationId);
-    if (orgIds.length === 0) return [];
+    const orgs = await getUserOrganizations(userId);
+    const dialysisIds = orgs
+      .filter((o) => o.type === "DIALYSIS_CENTER")
+      .map((o) => o.id);
+    if (dialysisIds.length === 0) return [];
     const cases = await prisma.patientCase.findMany({
-      where: { organizationId: { in: orgIds } },
+      where: { organizationId: { in: dialysisIds } },
       select: { patientId: true },
     });
     const ids = cases.map((c) => c.patientId);
-    return [...new Set(ids)];
+    return Array.from(new Set(ids));
   }
 
   return [];
 }
 
 /* ================================================================ */
-/*  4. Patient Scope WHERE clause                                   */
+/*  5. Patient Scope WHERE clause                                   */
 /* ================================================================ */
 export function patientScopeWhere(
   allowedPatientIds: string[] | null,
@@ -134,20 +228,20 @@ export function patientScopeWhere(
 }
 
 /* ================================================================ */
-/*  5. Check if user can access specific resource                   */
+/*  6. Check if user can access specific resource                   */
 /* ================================================================ */
 export async function canAccessPatient(
   user: SessionUser,
   patientId: string
 ): Promise<boolean> {
-  if (isAdmin(user.role)) return true;
+  if (user.role === "ADMIN") return true;
   const allowed = await getAllowedPatientIds(user);
   if (allowed === null) return true;
   return allowed.includes(patientId);
 }
 
 export async function canAccessTask(user: SessionUser, taskId: string): Promise<boolean> {
-  if (isAdmin(user.role)) return true;
+  if (user.role === "ADMIN") return true;
 
   const task = await prisma.task.findUnique({
     where: { id: taskId },
