@@ -1,29 +1,27 @@
-// Prisma Client mit Lazy Initialization
-// Verhindert, dass Prisma zur Build-Zeit initialisiert wird
+// Prisma Client für Next.js
+// Verhindert mehrfache Instanzen in Development (Hot Reload)
+// Verzögert Produktiv-Initialisierung bis zur ersten Verwendung
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
+  prisma: PrismaClient | undefined;
+};
 
-function getPrismaClient(): PrismaClient {
-  if (process.env.NODE_ENV === 'production') {
-    return new PrismaClient()
+function getPrisma(): PrismaClient {
+  if (process.env.NODE_ENV === "production") {
+    return new PrismaClient({
+      log: ["error"],
+    });
   }
-  
+
   if (!globalForPrisma.prisma) {
     globalForPrisma.prisma = new PrismaClient({
-      log: ['query', 'error', 'warn'],
-    })
+      log: ["query", "error", "warn"],
+    });
   }
-  
-  return globalForPrisma.prisma
+
+  return globalForPrisma.prisma;
 }
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop) {
-    const client = getPrismaClient()
-    return client[prop as keyof PrismaClient]
-  },
-})
+export const prisma = getPrisma();
