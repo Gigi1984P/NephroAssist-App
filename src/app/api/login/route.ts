@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT } from "jose";
 
 const secret = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production"
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 
@@ -71,16 +71,4 @@ export async function POST(request: Request) {
     const stack = error instanceof Error ? error.stack : "";
     return NextResponse.json({ error: "Ein Fehler ist aufgetreten", details: message, stack: stack?.split("\n").slice(0,5) }, { status: 500 });
   }
-}
-
-export async function DELETE() {
-  const response = NextResponse.json({ success: true });
-  response.cookies.set("nephro-token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
-    path: "/",
-  });
-  return response;
 }
