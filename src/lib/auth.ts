@@ -58,6 +58,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email: credentials.email as string },
         });
 
+        console.log("[AUTH] User query result:", user ? `found ${user.email}` : "not found");
+        console.log("[AUTH] User has password:", !!user?.password);
+
         if (!user || !user.password) {
           console.log("[AUTH] User not found or no password:", credentials.email);
           return null;
