@@ -7,6 +7,7 @@ import {
   CheckSquare,
   FileText,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
 interface NavItem {
@@ -52,6 +53,12 @@ const navItems: NavItem[] = [
     href: "/dashboard/settings",
     icon: Settings,
     roles: ["ADMIN", "COORDINATOR"],
+  },
+  {
+    title: "Admin",
+    href: "/dashboard/admin",
+    icon: ShieldCheck,
+    roles: ["ADMIN"],
   },
 ];
 
