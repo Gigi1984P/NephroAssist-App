@@ -3,13 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { CheckSquare, Plus, Search, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { CheckSquare, Plus, Search, ChevronLeft, ChevronRight, Clock, CheckCircle, Upload, FileText, Stethoscope, ArrowRight, AlertCircle } from "lucide-react";
 
-interface Task {
+interface WorkflowTask {
   id: string;
   title: string;
+  description: string;
   status: string;
+  stepNumber: number;
+  stepName: string;
+  stepDescription: string;
+  isWorkflowStep: boolean;
   dueDate: string | null;
+  ownerType: string;
   requirement: {
     patientCase: {
       patient: {
@@ -25,7 +31,7 @@ type UserRole = "ADMIN" | "COORDINATOR" | "PHYSICIAN" | "NURSE" | "PATIENT" | "C
 const CAN_CREATE_INVESTIGATION: UserRole[] = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"];
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<WorkflowTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -66,6 +72,22 @@ export default function TasksPage() {
 
   const canCreate = userRole ? CAN_CREATE_INVESTIGATION.includes(userRole) : false;
 
+  // Nur Workflow-Schritte anzeigen
+  const workflowTasks = tasks.filter((t) => t.isWorkflowStep);
+
+  // Nach Requirement gruppieren
+  const groupedByRequirement = workflowTasks.reduce((acc, task) => {
+    const reqTitle = task.title.split(":")[0] || "Untersuchung";
+    if (!acc[reqTitle]) acc[reqTitle] = [];
+    acc[reqTitle].push(task);
+    return acc;
+  }, {} as Record<string, WorkflowTask[]>);
+
+  // Sortiere jede Gruppe nach stepNumber
+  Object.keys(groupedByRequirement).forEach((key) => {
+    groupedByRequirement[key].sort((a, b) => a.stepNumber - b.stepNumber);
+  });
+
   const filteredTasks = tasks
     .filter((task) => {
       const patient = task.requirement?.patientCase?.patient;
@@ -99,6 +121,8 @@ export default function TasksPage() {
     switch (status) {
       case "IN_PROGRESS":
         return "badge-yellow";
+      case "COMPLETED":
+        return "badge-green";
       case "PENDING":
         return "badge-blue";
       default:
@@ -110,11 +134,25 @@ export default function TasksPage() {
     if (isOverdue) return "Überfällig";
     switch (status) {
       case "IN_PROGRESS":
-        return "In Bearbeitung";
+        return "Aktiv";
+      case "COMPLETED":
+        return "Erledigt";
       case "PENDING":
         return "Ausstehend";
       default:
         return status;
+    }
+  };
+
+  const getStepIcon = (stepNumber: number, status: string) => {
+    if (status === "COMPLETED") return <CheckCircle size={20} className="text-success" />;
+    if (status === "IN_PROGRESS") return <Clock size={20} className="text-warning" />;
+    switch (stepNumber) {
+      case 1: return <FileText size={20} className="text-muted" />;
+      case 2: return <Upload size={20} className="text-muted" />;
+      case 3: return <Stethoscope size={20} className="text-muted" />;
+      case 7: return <AlertCircle size={20} className="text-muted" />;
+      default: return <ArrowRight size={20} className="text-muted" />;
     }
   };
 
@@ -167,7 +205,8 @@ export default function TasksPage() {
               >
                 <option value="ALL">Alle Status</option>
                 <option value="PENDING">Ausstehend</option>
-                <option value="IN_PROGRESS">In Bearbeitung</option>
+                <option value="IN_PROGRESS">Aktiv</option>
+                <option value="COMPLETED">Erledigt</option>
                 <option value="OVERDUE">Überfällig</option>
               </select>
             </div>
@@ -180,12 +219,12 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Workflow Steps View */}
       <div className="dashboard-card">
         <div className="card-body-custom p-0">
           {loading ? (
             <div className="p-4 text-center text-muted">Laden...</div>
-          ) : filteredTasks.length === 0 ? (
+          ) : Object.keys(groupedByRequirement).length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">
                 <CheckSquare size={24} />
@@ -204,99 +243,84 @@ export default function TasksPage() {
               )}
             </div>
           ) : (
-            <>
-              <table className="table-custom">
-                <thead>
-                  <tr>
-                    <th>Status</th>
-                    <th>Titel</th>
-                    <th>Patient</th>
-                    <th>Fällig am</th>
-                    <th>Status</th>
-                    <th className="actions">Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedTasks.map((task) => {
-                    const patient = task.requirement?.patientCase?.patient;
-                    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
-                    return (
-                      <tr key={task.id}>
-                        <td>
-                          <div className={`avatar-sm ${isOverdue ? "avatar-red" : "avatar-blue"}`}>
-                            <Clock size={16} />
-                          </div>
-                        </td>
-                        <td>
-                          <span className="fw-medium">{task.title}</span>
-                        </td>
-                        <td>
-                          {patient ? `${patient.firstName} ${patient.lastName}` : "—"}
-                        </td>
-                        <td>
-                          {task.dueDate ? (
-                            <span style={isOverdue ? { color: "#dc3545", fontWeight: 600 } : {}}>
-                              {formatDate(task.dueDate)}
-                            </span>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td>
-                          <span className={`badge-custom ${getStatusBadgeClass(task.status, !!isOverdue)}`}>
-                            {getStatusLabel(task.status, !!isOverdue)}
-                          </span>
-                        </td>
-                        <td className="actions">
-                          <Link
-                            href={`/dashboard/tasks/${task.id}`}
-                            className="btn-custom btn-outline-custom btn-sm-custom"
-                          >
-                            Details
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="p-3">
+              {Object.entries(groupedByRequirement).map(([workflowName, steps]) => {
+                const currentStep = steps.find((s) => s.status === "IN_PROGRESS") || steps[0];
+                const completedSteps = steps.filter((s) => s.status === "COMPLETED").length;
+                const progress = Math.round((completedSteps / steps.length) * 100);
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="d-flex justify-content-center p-3 border-top">
-                  <ul className="pagination-custom">
-                    <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
-                      <button
-                        className="page-link"
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft size={14} />
-                      </button>
-                    </li>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <li
-                        key={page}
-                        className={`page-item ${currentPage === page ? "active" : ""}`}
-                      >
-                        <button className="page-link" onClick={() => setCurrentPage(page)}>
-                          {page}
-                        </button>
-                      </li>
-                    ))}
-                    <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
-                      <button
-                        className="page-link"
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight size={14} />
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              )}
-            </>
+                return (
+                  <div key={workflowName} className="mb-4">
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div>
+                        <h5 className="fw-semibold mb-0">{workflowName}</h5>
+                        <span className="text-muted" style={{ fontSize: "0.8rem" }}>
+                          {completedSteps} von {steps.length} Schritten erledigt
+                        </span>
+                      </div>
+                      <span className="badge-custom badge-blue" style={{ fontSize: "0.75rem" }}>
+                        {progress}%
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="progress mb-3" style={{ height: "6px" }}>
+                      <div
+                        className="progress-bar bg-primary"
+                        role="progressbar"
+                        style={{ width: `${progress}%` }}
+                        aria-valuenow={progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      />
+                    </div>
+
+                    {/* Steps Timeline */}
+                    <div className="timeline-steps">
+                      {steps.map((step, index) => {
+                        const isCompleted = step.status === "COMPLETED";
+                        const isActive = step.status === "IN_PROGRESS";
+                        const isPending = step.status === "PENDING";
+
+                        return (
+                          <div
+                            key={step.id}
+                            className={`timeline-step ${isActive ? "active" : ""} ${isCompleted ? "completed" : ""}`}
+                          >
+                            <div className="step-indicator">
+                              <div className={`step-circle ${isActive ? "active" : ""} ${isCompleted ? "completed" : ""}`}>
+                                {getStepIcon(step.stepNumber, step.status)}
+                              </div>
+                              {index < steps.length - 1 && (
+                                <div className={`step-line ${isCompleted ? "completed" : ""}`} />
+                              )}
+                            </div>
+                            <div className="step-content">
+                              <div className="d-flex align-items-center gap-2">
+                                <span className="fw-medium" style={{ fontSize: "0.9rem" }}>
+                                  {step.stepNumber}. {step.stepName}
+                                </span>
+                                <span className={`badge-custom ${getStatusBadgeClass(step.status, false)}`} style={{ fontSize: "0.7rem" }}>
+                                  {getStatusLabel(step.status, false)}
+                                </span>
+                              </div>
+                              <p className="text-muted mb-1" style={{ fontSize: "0.8rem" }}>
+                                {step.stepDescription}
+                              </p>
+                              {isActive && (
+                                <button className="btn btn-sm btn-outline-primary" style={{ fontSize: "0.75rem" }}>
+                                  Als erledigt markieren
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

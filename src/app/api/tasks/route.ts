@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getAllowedPatientIds, patientScopeWhere } from "@/lib/permissions";
+import { requireAuth, getAllowedPatientIds } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,14 +12,12 @@ export async function GET() {
     const { user } = authResult;
 
     const allowedIds = await getAllowedPatientIds(user);
-    const scope = patientScopeWhere(allowedIds, "patientId");
 
-    const whereClause: any = {
+    let whereClause: any = {
       status: { in: ["PENDING", "IN_PROGRESS"] },
-      ...(scope || {}),
     };
 
-    // PATIENT/CAREGIVER: Nur Tasks sehen wo sie owner sind ODER patientId passt
+    // PATIENT/CAREGIVER: Nur eigene Tasks
     if (user.role === "PATIENT" || user.role === "CAREGIVER") {
       whereClause.OR = [
         { patientId: { in: allowedIds || [] } },
@@ -30,10 +28,12 @@ export async function GET() {
     const tasks = await prisma.task.findMany({
       where: whereClause,
       orderBy: [
+        { isWorkflowStep: "desc" },
+        { stepNumber: "asc" },
         { status: "asc" },
         { dueDate: "asc" },
       ],
-      take: 50,
+      take: 100,
       include: {
         requirement: {
           include: {

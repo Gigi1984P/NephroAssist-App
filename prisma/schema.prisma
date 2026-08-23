@@ -338,6 +338,13 @@ model Task {
   reminders     Json?
   dependencyOf  String?    @map("dependency_of")
 
+  // Workflow step fields
+  stepNumber      Int?     @map("step_number")
+  stepName        String?  @map("step_name")
+  stepDescription String?  @map("step_description")
+  previousStepId  String?  @map("previous_step_id")
+  isWorkflowStep  Boolean  @default(false) @map("is_workflow_step")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -348,6 +355,7 @@ model Task {
   @@index([status])
   @@index([dueDate])
   @@index([ownerId])
+  @@index([stepNumber])
   @@map("tasks")
 }
 

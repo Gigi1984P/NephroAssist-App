@@ -673,3 +673,81 @@ body {
 .tab-content-custom { padding-top: 1rem; }
 .tab-pane-custom { display: none; }
 .tab-pane-custom.active { display: block; }
+
+/* ================================================================ */
+/*  WORKFLOW TIMELINE STEPS                                         */
+/* ================================================================ */
+.timeline-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 40px;
+}
+
+.step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  transition: all 0.2s;
+}
+
+.step-circle.active {
+  background: #dbeafe;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+.step-circle.completed {
+  background: #dcfce7;
+  border-color: #16a34a;
+}
+
+.step-line {
+  width: 2px;
+  flex: 1;
+  min-height: 30px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+.step-line.completed {
+  background: #16a34a;
+}
+
+.step-content {
+  flex: 1;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.timeline-step:last-child .step-content {
+  border-bottom: none;
+}
+
+/* Status colors for workflow */
+.badge-green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.text-success { color: #16a34a; }
+.text-warning { color: #ca8a04; }
