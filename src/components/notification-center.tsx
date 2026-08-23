@@ -1,16 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Bell, Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useEffect, useRef } from "react";
+import { Bell, Check } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -24,11 +15,23 @@ interface Notification {
 export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Alle 30 Sekunden
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const fetchNotifications = async () => {
@@ -59,9 +62,7 @@ export function NotificationCenter() {
 
   const markAllAsRead = async () => {
     try {
-      await fetch("/api/notifications/mark-all-read", {
-        method: "POST",
-      });
+      await fetch("/api/notifications/mark-all-read", { method: "POST" });
       fetchNotifications();
     } catch (error) {
       console.error("Failed to mark all as read:", error);
@@ -69,69 +70,95 @@ export function NotificationCenter() {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
-        <div className="flex items-center justify-between p-2 border-b">
-          <h4 className="font-semibold">Benachrichtigungen</h4>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-              Alle gelesen
-            </Button>
-          )}
-        </div>
-        <ScrollArea className="h-[300px]">
-          {notifications.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              Keine Benachrichtigungen
-            </div>
-          ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`p-3 border-b last:border-0 ${
-                  !notification.read ? "bg-blue-50" : ""
-                }`}
+    <div ref={dropdownRef} className="position-relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="btn btn-light btn-sm position-relative p-2"
+        style={{ borderRadius: "0.5rem" }}
+      >
+        <Bell size={18} style={{ color: "#64748b" }} />
+        {unreadCount > 0 && (
+          <span
+            className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+            style={{ fontSize: "0.65rem", padding: "0.25em 0.45em" }}
+          >
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          className="position-absolute end-0 mt-1 bg-white border shadow-sm"
+          style={{
+            width: "320px",
+            zIndex: 1050,
+            borderRadius: "0.75rem",
+            borderColor: "#e2e8f0",
+            overflow: "hidden",
+          }}
+        >
+          <div className="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+            <span className="fw-semibold" style={{ fontSize: "0.875rem" }}>Benachrichtigungen</span>
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="btn btn-link text-decoration-none p-0"
+                style={{ fontSize: "0.75rem", color: "#2563eb" }}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{notification.title}</p>
-                    <p className="text-sm text-muted-foreground">
+                Alle gelesen
+              </button>
+            )}
+          </div>
+          <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+            {notifications.length === 0 ? (
+              <div className="text-center py-4 text-muted" style={{ fontSize: "0.85rem" }}>
+                Keine Benachrichtigungen
+              </div>
+            ) : (
+              notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="d-flex align-items-start justify-content-between p-3 border-bottom"
+                  style={{
+                    backgroundColor: !notification.read ? "#eff6ff" : "transparent",
+                    borderColor: "#f1f5f9",
+                  }}
+                >
+                  <div className="flex-grow-1">
+                    <div className="fw-medium" style={{ fontSize: "0.8rem" }}>
+                      {notification.title}
+                    </div>
+                    <div className="text-muted" style={{ fontSize: "0.75rem" }}>
                       {notification.message}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    </div>
+                    <div
+                      className="text-muted mt-1"
+                      style={{ fontSize: "0.7rem" }}
+                    >
                       {new Date(notification.createdAt).toLocaleDateString("de-DE", {
                         day: "numeric",
                         month: "short",
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                    </p>
+                    </div>
                   </div>
                   {!notification.read && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
                       onClick={() => markAsRead(notification.id)}
+                      className="btn btn-link text-decoration-none p-1 ms-2 flex-shrink-0"
+                      style={{ color: "#2563eb" }}
                     >
-                      <Check className="h-4 w-4" />
-                    </Button>
+                      <Check size={16} />
+                    </button>
                   )}
                 </div>
-              </div>
-            ))
-          )}
-        </ScrollArea>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

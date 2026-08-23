@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { Sidebar, MobileSidebar } from "@/components/sidebar";
 import { UserNav } from "@/components/user-nav";
 import { NotificationCenter } from "@/components/notification-center";
-import { Separator } from "@/components/ui/separator";
 
 export default async function DashboardLayout({
   children,
@@ -19,30 +18,24 @@ export default async function DashboardLayout({
   const user = session.user;
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
-      {/* Desktop Sidebar */}
+    <div className="d-flex">
       <Sidebar role={user.role} userName={user.name} userEmail={user.email} />
 
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col min-w-0 md:ml-[260px]">
-        {/* Top Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white px-4 shadow-sm">
+      <div className="main-wrapper">
+        <header className="main-header">
           <MobileSidebar role={user.role} userName={user.name} userEmail={user.email} />
 
-          <div className="flex flex-1 items-center justify-between min-w-0">
-            <h1 className="text-lg font-semibold text-slate-800 truncate">Dashboard</h1>
-            <div className="flex items-center gap-3 shrink-0">
+          <div className="d-flex flex-grow-1 align-items-center justify-content-between">
+            <h1 className="h5 fw-semibold mb-0 text-truncate" style={{ color: "#334155" }}>Dashboard</h1>
+            <div className="d-flex align-items-center gap-3 flex-shrink-0">
               <NotificationCenter />
-              <Separator orientation="vertical" className="h-6" />
+              <div style={{ width: "1px", height: "24px", background: "#e2e8f0" }} />
               <UserNav user={user} />
             </div>
           </div>
         </header>
 
-        {/* Content - overflow auto ermöglicht Scroll */}
-        <main className="flex-1 p-6 min-w-0 overflow-auto">
-          <div className="max-w-full">{children}</div>
-        </main>
+        <main className="main-content">{children}</main>
       </div>
     </div>
   );

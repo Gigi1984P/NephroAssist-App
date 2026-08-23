@@ -1,20 +1,14 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 import {
   Calendar,
   FileText,
   CheckSquare,
   Users,
   AlertTriangle,
-  MessageSquare,
-  HelpCircle,
 } from "lucide-react";
-import Link from "next/link";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -63,190 +57,162 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">
+    <div>
+      <div className="mb-4">
+        <h2 className="h3 fw-bold mb-1" style={{ color: "#1e293b" }}>
           Willkommen zurück{session?.user?.name ? `, ${session.user.name}` : ""}!
         </h2>
-        <p className="text-muted-foreground">
-          Hier ist ein Überblick über Ihre aktuellen Aktivitäten.
-        </p>
+        <p className="text-muted mb-0">Hier ist ein Überblick über Ihre aktuellen Aktivitäten.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Patienten</span>
+      {/* Stats Cards */}
+      <div className="row g-3 mb-4">
+        <div className="col-6 col-lg-3">
+          <div className="stat-card">
+            <div className="stat-icon blue">
+              <Users size={22} />
             </div>
-            <p className="text-2xl font-bold">{patientCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Termine</span>
+            <div>
+              <div className="stat-value">{patientCount}</div>
+              <div className="stat-label">Patienten</div>
             </div>
-            <p className="text-2xl font-bold">{upcomingAppointments}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <CheckSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Aufgaben</span>
+          </div>
+        </div>
+        <div className="col-6 col-lg-3">
+          <div className="stat-card">
+            <div className="stat-icon green">
+              <Calendar size={22} />
             </div>
-            <p className="text-2xl font-bold">{pendingTasks}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Blocker</span>
+            <div>
+              <div className="stat-value">{upcomingAppointments}</div>
+              <div className="stat-label">Termine</div>
             </div>
-            <p className="text-2xl font-bold">{activeBlockers}</p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+        <div className="col-6 col-lg-3">
+          <div className="stat-card">
+            <div className="stat-icon orange">
+              <CheckSquare size={22} />
+            </div>
+            <div>
+              <div className="stat-value">{pendingTasks}</div>
+              <div className="stat-label">Aufgaben</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-6 col-lg-3">
+          <div className="stat-card">
+            <div className="stat-icon red">
+              <AlertTriangle size={22} />
+            </div>
+            <div>
+              <div className="stat-value">{activeBlockers}</div>
+              <div className="stat-label">Blocker</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Übersicht</TabsTrigger>
-          <TabsTrigger value="tasks">Aufgaben</TabsTrigger>
-          <TabsTrigger value="appointments">Termine</TabsTrigger>
-          <TabsTrigger value="documents">Dokumente</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Letzte Aufgaben</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {recentTasks.map((task) => (
-                    <div key={task.id} className="flex items-center justify-between border-b pb-2">
-                      <div>
-                        <p className="font-medium">{task.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {task.requirement?.patientCase?.patient.firstName}{" "}
-                          {task.requirement?.patientCase?.patient.lastName}
-                        </p>
-                        {task.dueDate && (
-                          <p className="text-sm text-muted-foreground">
-                            Fällig: {new Date(task.dueDate).toLocaleDateString("de-DE")}
-                          </p>
-                        )}
-                      </div>
-                      <Link href={`/dashboard/tasks/${task.id}`}>
-                        <Button variant="outline" size="sm">Details</Button>
-                      </Link>
-                    </div>
-                  ))}
+      {/* Content Grid */}
+      <div className="row g-3">
+        <div className="col-lg-6">
+          <div className="dashboard-card">
+            <div className="card-header-custom">
+              <span className="fw-semibold">Letzte Aufgaben</span>
+              <Link
+                href="/dashboard/tasks"
+                className="text-decoration-none"
+                style={{ fontSize: "0.8rem", color: "#2563eb" }}
+              >
+                Alle anzeigen
+              </Link>
+            </div>
+            <div className="card-body-custom">
+              {recentTasks.length === 0 ? (
+                <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
+                  Keine Aufgaben vorhanden
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Letzte Termine</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {recentAppointments.map((apt) => (
-                    <div key={apt.id} className="flex items-center justify-between border-b pb-2">
-                      <div>
-                        <p className="font-medium">{apt.type}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {apt.patient.firstName} {apt.patient.lastName}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(apt.startTime).toLocaleDateString("de-DE")}
-                        </p>
-                      </div>
-                      <Link href={`/dashboard/appointments/${apt.id}`}>
-                        <Button variant="outline" size="sm">Details</Button>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tasks" className="space-y-4">
-          <div className="grid gap-4">
-            {recentTasks.map((task) => (
-              <Card key={task.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div>
-                    <p className="font-medium">{task.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {task.requirement?.patientCase?.patient.firstName}{" "}
-                      {task.requirement?.patientCase?.patient.lastName}
-                    </p>
-                  </div>
-                  <Badge variant="outline">{task.status}</Badge>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="appointments" className="space-y-4">
-          <div className="grid gap-4">
-            {recentAppointments.map((apt) => (
-              <Card key={apt.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div>
-                    <p className="font-medium">{apt.type}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {apt.patient.firstName} {apt.patient.lastName}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(apt.startTime).toLocaleDateString("de-DE", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                  <Badge variant="outline">{apt.status}</Badge>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="documents" className="space-y-4">
-          <div className="grid gap-4">
-            {recentDocuments.map((doc) => (
-              <Card key={doc.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-purple-600" />
+              ) : (
+                recentTasks.map((task) => (
+                  <div key={task.id} className="list-item-custom">
                     <div>
-                      <p className="font-medium">{doc.filename}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {doc.patient.firstName} {doc.patient.lastName}
-                      </p>
+                      <div className="fw-medium" style={{ fontSize: "0.85rem" }}>
+                        {task.title}
+                      </div>
+                      <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                        {task.requirement?.patientCase?.patient.firstName}{" "}
+                        {task.requirement?.patientCase?.patient.lastName}
+                      </div>
+                      {task.dueDate && (
+                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                          Fällig: {new Date(task.dueDate).toLocaleDateString("de-DE")}
+                        </div>
+                      )}
                     </div>
+                    <Link
+                      href={`/dashboard/tasks/${task.id}`}
+                      className="btn btn-outline-secondary btn-sm-custom"
+                      style={{ fontSize: "0.75rem" }}
+                    >
+                      Details
+                    </Link>
                   </div>
-                  <Badge variant="outline">{doc.processingStatus}</Badge>
-                </CardContent>
-              </Card>
-            ))}
+                ))
+              )}
+            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+
+        <div className="col-lg-6">
+          <div className="dashboard-card">
+            <div className="card-header-custom">
+              <span className="fw-semibold">Letzte Termine</span>
+              <Link
+                href="/dashboard/appointments"
+                className="text-decoration-none"
+                style={{ fontSize: "0.8rem", color: "#2563eb" }}
+              >
+                Alle anzeigen
+              </Link>
+            </div>
+            <div className="card-body-custom">
+              {recentAppointments.length === 0 ? (
+                <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
+                  Keine Termine vorhanden
+                </div>
+              ) : (
+                recentAppointments.map((apt) => (
+                  <div key={apt.id} className="list-item-custom">
+                    <div>
+                      <div className="fw-medium" style={{ fontSize: "0.85rem" }}>
+                        {apt.type}
+                      </div>
+                      <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                        {apt.patient.firstName} {apt.patient.lastName}
+                      </div>
+                      <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                        {new Date(apt.startTime).toLocaleDateString("de-DE", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    </div>
+                    <span
+                      className="badge-custom badge-outline"
+                      style={{ fontSize: "0.7rem" }}
+                    >
+                      {apt.status}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

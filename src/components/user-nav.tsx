@@ -1,18 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, ChevronDown } from "lucide-react";
 
 interface UserNavProps {
   user: {
@@ -24,6 +15,8 @@ interface UserNavProps {
 
 export function UserNav({ user }: UserNavProps) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+
   const initials = user.name
     ? user.name
         .split(" ")
@@ -39,40 +32,108 @@ export function UserNav({ user }: UserNavProps) {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name || "Benutzer"}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-            <p className="text-xs leading-none text-muted-foreground capitalize">
-              {user.role.toLowerCase()}
-            </p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/dashboard/settings" className="cursor-pointer w-full flex items-center">
-            <Settings className="mr-2 h-4 w-4" />
-            Einstellungen
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer text-red-600 focus:text-red-600"
-          onSelect={handleLogout}
+    <div className="position-relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="btn btn-link text-decoration-none p-0 d-flex align-items-center gap-2"
+        style={{ color: "#64748b" }}
+      >
+        <div
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%",
+            background: "#e2e8f0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            color: "#475569",
+          }}
         >
-          <LogOut className="mr-2 h-4 w-4" />
-          Abmelden
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          {initials}
+        </div>
+        <span className="d-none d-md-inline text-truncate" style={{ fontSize: "0.85rem", fontWeight: 500, maxWidth: "120px" }}>
+          {user.name || user.email}
+        </span>
+        <ChevronDown size={14} />
+      </button>
+
+      {open && (
+        <>
+          <div
+            className="position-fixed inset-0"
+            style={{ zIndex: 1040 }}
+            onClick={() => setOpen(false)}
+          />
+          <div
+            className="position-absolute end-0 mt-1 bg-white border rounded-3 shadow-sm"
+            style={{
+              minWidth: "220px",
+              zIndex: 1050,
+              borderColor: "#e2e8f0",
+              borderRadius: "0.5rem",
+            }}
+          >
+            <div className="p-3 border-bottom">
+              <div className="fw-semibold" style={{ fontSize: "0.875rem" }}>
+                {user.name || "Benutzer"}
+              </div>
+              <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                {user.email}
+              </div>
+              <div
+                className="text-uppercase"
+                style={{ fontSize: "0.7rem", color: "#94a3b8", letterSpacing: "0.05em" }}
+              >
+                {user.role}
+              </div>
+            </div>
+            <div className="p-1">
+              <Link
+                href="/dashboard/settings"
+                className="d-flex align-items-center gap-2 text-decoration-none px-3 py-2 rounded-2"
+                style={{ color: "#374151", fontSize: "0.85rem" }}
+                onClick={() => setOpen(false)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#f8fafc";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
+                <Settings size={16} />
+                Einstellungen
+              </Link>
+              <hr className="my-1 mx-3" style={{ borderColor: "#f1f5f9" }} />
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  handleLogout();
+                }}
+                className="d-flex align-items-center gap-2 w-100 text-start px-3 py-2 rounded-2"
+                style={{
+                  color: "#dc2626",
+                  fontSize: "0.85rem",
+                  border: "none",
+                  background: "none",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#fef2f2";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
+                <LogOut size={16} />
+                Abmelden
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

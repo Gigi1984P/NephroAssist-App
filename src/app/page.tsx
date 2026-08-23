@@ -11,14 +11,10 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // Direkt aus DOM lesen - garantiert korrekt
     const emailInput = document.getElementById("email") as HTMLInputElement;
     const passwordInput = document.getElementById("password") as HTMLInputElement;
     const email = emailInput.value.trim();
     const password = passwordInput.value;
-
-    console.log("[LOGIN] Email:", email);
-    console.log("[LOGIN] Password empty?", password.length === 0);
 
     try {
       const res = await fetch("/api/login", {
@@ -27,11 +23,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      console.log("[LOGIN] Status:", res.status);
-
       const text = await res.text();
-      console.log("[LOGIN] Response:", text);
-
       let data;
       try {
         data = JSON.parse(text);
@@ -47,7 +39,6 @@ export default function LoginPage() {
         setError("Ungültige Antwort");
       }
     } catch (err) {
-      console.error("[LOGIN] Error:", err);
       setError(`Netzwerk: ${err instanceof Error ? err.message : "Unbekannt"}`);
     } finally {
       setLoading(false);
@@ -55,98 +46,84 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "#f1f5f9",
-      padding: "1rem",
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    }}>
-      <div style={{
-        background: "white",
-        borderRadius: "0.75rem",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        border: "1px solid #e2e8f0",
-        width: "100%",
-        maxWidth: "400px",
-        padding: "2rem",
-      }}>
-        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-            <div style={{ width: "2rem", height: "2rem", background: "#2563eb", borderRadius: "0.5rem" }} />
-            <span style={{ fontSize: "1.25rem", fontWeight: 600, color: "#0f172a" }}>NephroAssist</span>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="text-center mb-4">
+          <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                background: "#2563eb",
+                borderRadius: "0.5rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                <path d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm-1-13v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z" />
+              </svg>
+            </div>
+            <span style={{ fontSize: "1.25rem", fontWeight: 600, color: "#1e293b" }}>NephroAssist</span>
           </div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 600, color: "#0f172a", margin: 0 }}>Anmelden</h1>
-          <p style={{ color: "#64748b", fontSize: "0.875rem", marginTop: "0.25rem" }}>Melden Sie sich mit Ihren Zugangsdaten an</p>
+          <h1 className="h4 fw-bold" style={{ color: "#1e293b" }}>Anmelden</h1>
+          <p className="text-muted mb-0" style={{ fontSize: "0.9rem" }}>
+            Melden Sie sich mit Ihren Zugangsdaten an
+          </p>
         </div>
 
         {error && (
-          <div style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            color: "#dc2626",
-            padding: "0.75rem",
-            borderRadius: "0.375rem",
-            fontSize: "0.875rem",
-            marginBottom: "1rem",
-          }}>{error}</div>
+          <div className="alert alert-danger py-2 mb-3" role="alert">{error}</div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "1rem" }}>
-            <label htmlFor="email" style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#0f172a", marginBottom: "0.375rem" }}>E-Mail</label>
+          <div className="mb-3">
+            <label htmlFor="email" className="form-label-custom">E-Mail</label>
             <input
               type="email"
               id="email"
               defaultValue="admin@nephroassist.de"
-              style={{
-                width: "100%",
-                padding: "0.5rem 0.75rem",
-                border: "1px solid #e2e8f0",
-                borderRadius: "0.375rem",
-                fontSize: "0.875rem",
-              }}
+              className="form-control form-input-custom"
+              placeholder="name@beispiel.de"
             />
           </div>
-          <div style={{ marginBottom: "1rem" }}>
-            <label htmlFor="password" style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#0f172a", marginBottom: "0.375rem" }}>Passwort</label>
+          <div className="mb-4">
+            <label htmlFor="password" className="form-label-custom">Passwort</label>
             <input
               type="password"
               id="password"
               defaultValue="Test1234!"
-              style={{
-                width: "100%",
-                padding: "0.5rem 0.75rem",
-                border: "1px solid #e2e8f0",
-                borderRadius: "0.375rem",
-                fontSize: "0.875rem",
-              }}
+              className="form-control form-input-custom"
+              placeholder="••••••••"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            style={{
-              width: "100%",
-              padding: "0.625rem",
-              background: loading ? "#93c5fd" : "#2563eb",
-              color: "white",
-              border: "none",
-              borderRadius: "0.375rem",
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
+            className="btn btn-primary w-100 py-2 fw-medium"
+            style={{ borderRadius: "0.5rem" }}
           >
-            {loading ? "Anmelden..." : "Anmelden"}
+            {loading ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Anmelden...
+              </>
+            ) : (
+              "Anmelden"
+            )}
           </button>
         </form>
 
-        <div style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.875rem", color: "#64748b" }}>
-          Noch kein Konto?{" "}
-          <a href="/register" style={{ color: "#2563eb", textDecoration: "none" }}>Registrieren</a>
+        <div className="text-center mt-3" style={{ fontSize: "0.875rem" }}>
+          <span className="text-muted">Noch kein Konto?{" "}</span>
+          <a href="/register" className="text-decoration-none" style={{ color: "#2563eb", fontWeight: 500 }}>
+            Registrieren
+          </a>
         </div>
       </div>
     </div>
