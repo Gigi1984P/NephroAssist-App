@@ -3,7 +3,13 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { jwtVerify } from "jose";
 import type { UserRole } from "@prisma/client";
+import { cookies } from "next/headers";
+
+const secret = new TextEncoder().encode(
+  process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production"
+);
 
 declare module "next-auth" {
   interface Session {
@@ -30,7 +36,7 @@ declare module "@auth/core/adapters" {
   }
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   trustHost: true,
@@ -57,9 +63,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
         });
-
-        console.log("[AUTH] User query result:", user ? `found ${user.email}` : "not found");
-        console.log("[AUTH] User has password:", !!user?.password);
 
         if (!user || !user.password) {
           console.log("[AUTH] User not found or no password:", credentials.email);
@@ -104,3 +107,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+// Custom auth function that checks our nephro-token (fallback for our custom login API)
+export async function auth(): Promise<{ user: { id: string; email: string; name?: string | null; role: string } } | null> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("nephro-token")?.value;
+    if (token) {
+      const { payload } = await jwtVerify(token, secret, { clockTolerance: 60 });
+      if (payload.sub && payload.email) {
+        return {
+          user: {
+            id: payload.sub as string,
+            email: payload.email as string,
+            name: payload.name as string | null | undefined,
+            role: payload.role as string,
+          },
+        };
+      }
+    }
+  } catch {
+    // Invalid token
+  }
+  return null;
+}

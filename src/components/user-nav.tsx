@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Settings, LogOut } from "lucide-react";
+import { Settings, LogOut } from "lucide-react";
 
 interface UserNavProps {
   user: {
@@ -23,6 +23,7 @@ interface UserNavProps {
 }
 
 export function UserNav({ user }: UserNavProps) {
+  const router = useRouter();
   const initials = user.name
     ? user.name
         .split(" ")
@@ -30,6 +31,12 @@ export function UserNav({ user }: UserNavProps) {
         .join("")
         .toUpperCase()
     : user.email[0].toUpperCase();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <DropdownMenu>
@@ -60,7 +67,7 @@ export function UserNav({ user }: UserNavProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer text-red-600 focus:text-red-600"
-          onSelect={() => signOut({ callbackUrl: "/login" })}
+          onSelect={handleLogout}
         >
           <LogOut className="mr-2 h-4 w-4" />
           Abmelden
