@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
-import { CheckCircle, Clock, AlertCircle, XCircle, ArrowLeft, Upload, FileText, Stethoscope, AlertTriangle, ChevronRight } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, Upload, FileText, Stethoscope, AlertTriangle, ChevronRight } from "lucide-react";
 
 interface WorkflowStep {
   id: string;
@@ -12,7 +12,6 @@ interface WorkflowStep {
   stepDescription: string;
   status: string;
   ownerType: string;
-  canUploadDocument: boolean;
 }
 
 interface TaskDetailData {
@@ -35,14 +34,19 @@ interface TaskDetailData {
   } | null;
 }
 
+type UserRole = "ADMIN" | "COORDINATOR" | "PHYSICIAN" | "NURSE" | "PATIENT" | "CAREGIVER" | "DIALYSIS_STAFF";
+
+const CAN_COMPLETE_ROLES: UserRole[] = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"];
+
 export default function TaskDetailPage({ task: initialTask }: { task: TaskDetailData }) {
   const router = useRouter();
   const [task, setTask] = useState<TaskDetailData>(initialTask);
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState(initialTask.status);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [notes, setNotes] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadWorkflowSteps = async () => {
     try {
@@ -58,32 +62,51 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     }
   };
 
+  const loadProfile = async () => {
+    try {
+      const res = await fetch("/api/user/profile");
+      if (res.ok) {
+        const data = await res.json();
+        setUserRole(data.user?.role || null);
+      }
+    } catch (error) {
+      console.error("Failed to load profile:", error);
+    }
+  };
+
   useEffect(() => {
     loadWorkflowSteps();
+    loadProfile();
   }, [task.id]);
 
-  const handleStatusUpdate = async () => {
+  const canComplete = userRole ? CAN_COMPLETE_ROLES.includes(userRole) : false;
+
+  const handleCompleteStep = async (stepId: string) => {
     setUpdating(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
+      const res = await fetch(`/api/tasks/${stepId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, notes }),
+        body: JSON.stringify({ status: "COMPLETED", notes }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error("Update fehlgeschlagen");
+        setError(data.error || "Fehler beim Aktualisieren");
+        return;
       }
 
-      router.refresh();
-    } catch (error) {
-      console.error("Update error:", error);
+      // Reload workflow
+      await loadWorkflowSteps();
+      setNotes("");
+    } catch (err) {
+      setError("Netzwerkfehler");
     } finally {
       setUpdating(false);
     }
   };
-
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && status !== "COMPLETED";
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -128,6 +151,12 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
         ]}
       />
 
+      {error && (
+        <div className="alert alert-danger mb-3" role="alert">
+          {error}
+        </div>
+      )}
+
       <div className="row g-4">
         {/* Left: Task Info */}
         <div className="col-lg-4">
@@ -160,65 +189,11 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
               </div>
 
               <div className="mb-3">
-                <label className="form-label text-muted" style={{ fontSize: "0.8rem" }}>Fällig am</label>
-                <p className={`mb-0 fw-medium ${isOverdue ? "text-danger" : ""}`} style={{ fontSize: "0.9rem" }}>
-                  {task.dueDate
-                    ? new Date(task.dueDate).toLocaleDateString("de-DE", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })
-                    : "Kein Datum"}
-                </p>
-              </div>
-
-              <div className="mb-3">
                 <label className="form-label text-muted" style={{ fontSize: "0.8rem" }}>Kategorie</label>
                 <p className="mb-0" style={{ fontSize: "0.9rem" }}>
                   {task.requirement?.category || "—"}
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* Status Update */}
-          <div className="dashboard-card mt-3">
-            <div className="card-header-custom">
-              <span className="fw-semibold">Status aktualisieren</span>
-            </div>
-            <div className="card-body-custom">
-              <div className="mb-3">
-                <label className="form-label">Status</label>
-                <select
-                  className="form-select"
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                >
-                  <option value="PENDING">Ausstehend</option>
-                  <option value="IN_PROGRESS">In Bearbeitung</option>
-                  <option value="COMPLETED">Erledigt</option>
-                </select>
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Notizen</label>
-                <textarea
-                  className="form-control"
-                  placeholder="Optionaler Kommentar..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              <button
-                className="btn btn-primary w-100"
-                onClick={handleStatusUpdate}
-                disabled={updating || status === task.status}
-              >
-                {updating ? "Wird aktualisiert..." : "Status speichern"}
-              </button>
             </div>
           </div>
         </div>
@@ -297,10 +272,31 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                                 </span>
                               </div>
                             </div>
-                            {isActive && (
-                              <button className="btn btn-sm btn-outline-primary step-action-btn">
-                                Als erledigt markieren
-                              </button>
+                            {isActive && canComplete && (
+                              <>
+                                <div className="mb-2">
+                                  <textarea
+                                    className="form-control form-control-sm"
+                                    placeholder="Optionaler Kommentar..."
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    rows={2}
+                                    style={{ fontSize: "0.85rem" }}
+                                  />
+                                </div>
+                                <button
+                                  className="btn btn-sm btn-outline-primary step-action-btn"
+                                  onClick={() => handleCompleteStep(step.id)}
+                                  disabled={updating}
+                                >
+                                  {updating ? "Wird aktualisiert..." : "✓ Als erledigt markieren"}
+                                </button>
+                              </>
+                            )}
+                            {isActive && !canComplete && (
+                              <div className="alert alert-info py-2 px-3 mt-2" style={{ fontSize: "0.8rem" }}>
+                                ⏳ Warten auf Bestätigung durch die Klinik...
+                              </div>
                             )}
                           </div>
                         </div>

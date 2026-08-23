@@ -345,6 +345,10 @@ model Task {
   previousStepId  String?  @map("previous_step_id")
   isWorkflowStep  Boolean  @default(false) @map("is_workflow_step")
 
+  // Completion tracking
+  completedById   String?  @map("completed_by_id")
+  completedByRole String?  @map("completed_by_role")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

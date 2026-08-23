@@ -252,3 +252,50 @@ export async function canAccessTask(user: SessionUser, taskId: string): Promise<
 
   return canAccessPatient(user, task.patientId);
 }
+
+/* ================================================================ */
+/*  7. Check if user can COMPLETE a task (Erledigt markieren)       */
+/* ================================================================ */
+export async function canCompleteTask(user: SessionUser): Promise<boolean> {
+  // Klinik-Mitarbeiter: Immer erlaubt
+  if (["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"].includes(user.role)) {
+    return true;
+  }
+
+  // Dialyse: Nur wenn unabhängig (keiner Klinik zugeordnet)
+  if (user.role === "DIALYSIS_STAFF") {
+    const userOrgs = await getUserOrganizations(user.id);
+    const isIndependent = userOrgs.every(
+      (org) => org.parentOrganizationId === null
+    );
+    return isIndependent;
+  }
+
+  // Patient, Caregiver: Nie erlaubt
+  return false;
+}
+
+export async function getCanCompleteTaskReason(user: SessionUser): Promise<{ allowed: boolean; reason: string }> {
+  if (["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"].includes(user.role)) {
+    return { allowed: true, reason: "Klinik-Mitarbeiter" };
+  }
+
+  if (user.role === "DIALYSIS_STAFF") {
+    const userOrgs = await getUserOrganizations(user.id);
+    const isIndependent = userOrgs.every(
+      (org) => org.parentOrganizationId === null
+    );
+    if (isIndependent) {
+      return { allowed: true, reason: "Unabhängige Dialyse" };
+    }
+    return {
+      allowed: false,
+      reason: "Dialyse ist einer Klinik zugeordnet. Nur Klinik-Mitarbeiter können Untersuchungen als erledigt markieren.",
+    };
+  }
+
+  return {
+    allowed: false,
+    reason: "Nur Klinik-Mitarbeiter oder unabhängige Dialysen können Untersuchungen als erledigt markieren.",
+  };
+}

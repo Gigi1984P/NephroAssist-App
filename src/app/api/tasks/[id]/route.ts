@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUserOrganizations } from "@/lib/permissions";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,9 @@ const updateSchema = z.object({
   notes: z.string().optional(),
 });
 
+/* ================================================================ */
+/*  Status-Update mit strikten "Erledigt"-Regeln                    */
+/* ================================================================ */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -24,60 +28,112 @@ export async function PATCH(
     const user = session.user;
     const userRole = user.role;
 
-    // Task laden
+    const body = await request.json();
+    const validated = updateSchema.parse(body);
+    const newStatus = validated.status;
+
+    // 1. Task laden
     const task = await prisma.task.findUnique({
       where: { id },
-      include: {
-        requirement: {
-          include: {
-            patientCase: {
-              include: {
-                patient: true,
-              },
-            },
-          },
-        },
+      select: {
+        id: true,
+        patientId: true,
+        status: true,
+        isWorkflowStep: true,
+        stepNumber: true,
+        requirementId: true,
       },
     });
 
     if (!task) {
-      return NextResponse.json({ error: "Untersuchung nicht gefunden" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Untersuchung nicht gefunden" },
+        { status: 404 }
+      );
     }
 
-    // PATIENT: Nur eigene Untersuchungen bearbeiten
-    if (userRole === "PATIENT") {
-      const patient = await prisma.patient.findFirst({
-        where: { userId: user.id },
-        select: { id: true },
-      });
-      if (!patient || task.patientId !== patient.id) {
-        return NextResponse.json(
-          { error: "Sie können nur Ihre eigenen Untersuchungen bearbeiten" },
-          { status: 403 }
-        );
-      }
-      // Patient darf nur auf COMPLETED oder IN_PROGRESS setzen
-      const body = await request.json();
-      if (!["COMPLETED", "IN_PROGRESS", "PENDING"].includes(body.status)) {
-        return NextResponse.json(
-          { error: "Ungültiger Status" },
-          { status: 400 }
-        );
+    // 2. PATIENT / CAREGIVER: Keine Status-Updates erlaubt
+    if (userRole === "PATIENT" || userRole === "CAREGIVER") {
+      return NextResponse.json(
+        { error: "Sie dürfen den Status dieser Untersuchung nicht ändern." },
+        { status: 403 }
+      );
+    }
+
+    // 3. "ERLEDIGT" (COMPLETED) darf nur Klinik oder unabhängige Dialyse
+    if (newStatus === "COMPLETED") {
+      const isKlinik = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"].includes(userRole);
+
+      if (!isKlinik) {
+        // Dialyse prüfen: nur wenn unabhängig
+        if (userRole === "DIALYSIS_STAFF") {
+          const userOrgs = await getUserOrganizations(user.id);
+          const isIndependent = userOrgs.every(
+            (org) => org.parentOrganizationId === null
+          );
+
+          if (!isIndependent) {
+            return NextResponse.json(
+              {
+                error:
+                  "Ihre Dialyse ist einer Klinik zugeordnet. Nur Klinik-Mitarbeiter können Untersuchungen als erledigt markieren.",
+              },
+              { status: 403 }
+            );
+          }
+          // Unabhängige Dialyse darf → OK
+        } else {
+          // Andere Rollen (z.B. EXTERNAL_PROVIDER) nicht erlaubt
+          return NextResponse.json(
+            {
+              error:
+                "Nur Klinik-Mitarbeiter oder unabhängige Dialysen können Untersuchungen als erledigt markieren.",
+            },
+            { status: 403 }
+          );
+        }
       }
     }
 
-    const body = await request.json();
-    const validated = updateSchema.parse(body);
+    // 4. Update durchführen
+    const updateData: any = {
+      status: newStatus,
+      completedAt: newStatus === "COMPLETED" ? new Date() : null,
+    };
+
+    // Nur bei Erledigt: completedBy speichern
+    if (newStatus === "COMPLETED") {
+      updateData.completedById = user.id;
+      updateData.completedByRole = userRole;
+    }
 
     const updatedTask = await prisma.task.update({
       where: { id },
-      data: {
-        status: validated.status,
-        completedAt: validated.status === "COMPLETED" ? new Date() : null,
-      },
+      data: updateData,
     });
 
-    return NextResponse.json({ message: "Untersuchung aktualisiert", task: updatedTask });
+    // 5. Wenn COMPLETED und Workflow-Schritt: Nächsten Schritt aktivieren
+    if (newStatus === "COMPLETED" && task.isWorkflowStep) {
+      const nextStep = await prisma.task.findFirst({
+        where: {
+          requirementId: task.requirementId,
+          stepNumber: (task.stepNumber || 0) + 1,
+          isWorkflowStep: true,
+        },
+      });
+
+      if (nextStep && nextStep.status === "PENDING") {
+        await prisma.task.update({
+          where: { id: nextStep.id },
+          data: { status: "IN_PROGRESS" },
+        });
+      }
+    }
+
+    return NextResponse.json({
+      message: "Untersuchung aktualisiert",
+      task: updatedTask,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
