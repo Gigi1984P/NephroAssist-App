@@ -45,6 +45,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
   const [notes, setNotes] = useState("");
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Record<string, File>>({});
 
   const loadWorkflowSteps = async () => {
     try {
@@ -77,7 +78,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     loadProfile();
   }, [task.id]);
 
-  const handleCompleteStep = async (stepId: string) => {
+  const handleCompleteStep = async (stepId: string, isUpload: boolean = false) => {
     setUpdating(true);
     setError(null);
     try {
@@ -103,28 +104,23 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     }
   };
 
+  const handleFileSelect = (stepId: string, file: File | null) => {
+    if (file) {
+      setSelectedFiles((prev) => ({ ...prev, [stepId]: file }));
+    }
+  };
+
   // Bestimmt ob der aktuelle User einen Schritt erledigen darf
   const canUserCompleteStep = (step: WorkflowStep): boolean => {
     if (!userRole) return false;
-
     const stepName = step.stepName;
-    const isUploadStep = stepName.includes("hochladen");
     const isClinicReview = stepName.includes("Prüfung durch");
 
     if (isClinicReview) {
       return ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"].includes(userRole);
     }
-
     // Upload + Status: Nur Patient/Caregiver
     return userRole === "PATIENT" || userRole === "CAREGIVER";
-  };
-
-  // Beschreibung der Aktion
-  const getActionLabel = (step: WorkflowStep): string => {
-    const stepName = step.stepName;
-    if (stepName.includes("hochladen")) return "📎 Dokument hochladen";
-    if (stepName.includes("Prüfung durch")) return "✓ Prüfen und bestätigen";
-    return "✓ Als erledigt markieren";
   };
 
   const getStatusConfig = (status: string) => {
@@ -263,6 +259,8 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                       const isCompleted = step.status === "COMPLETED";
                       const isActive = step.status === "IN_PROGRESS";
                       const userCanComplete = canUserCompleteStep(step);
+                      const isUploadStep = step.stepName.includes("hochladen");
+                      const selectedFile = selectedFiles[step.id];
 
                       return (
                         <div
@@ -296,27 +294,60 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                             {/* Aktions-Buttons nur fuer aktive Schritte */}
                             {isActive && userCanComplete && (
                               <>
-                                <div className="mb-2">
-                                  <textarea
-                                    className="form-control form-control-sm"
-                                    placeholder="Optionaler Kommentar..."
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    rows={2}
-                                    style={{ fontSize: "0.85rem" }}
-                                  />
-                                </div>
-                                <button
-                                  className="btn btn-sm btn-outline-primary step-action-btn"
-                                  onClick={() => handleCompleteStep(step.id)}
-                                  disabled={updating}
-                                >
-                                  {updating ? "Wird aktualisiert..." : getActionLabel(step)}
-                                </button>
+                                {isUploadStep ? (
+                                  <div className="mt-2">
+                                    <div className="mb-2">
+                                      <input
+                                        type="file"
+                                        className="form-control form-control-sm"
+                                        id={`file-${step.id}`}
+                                        onChange={(e) => handleFileSelect(step.id, e.target.files?.[0] || null)}
+                                        style={{ fontSize: "0.85rem" }}
+                                      />
+                                    </div>
+                                    <div className="mb-2">
+                                      <textarea
+                                        className="form-control form-control-sm"
+                                        placeholder="Optionaler Kommentar..."
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        rows={2}
+                                        style={{ fontSize: "0.85rem" }}
+                                      />
+                                    </div>
+                                    <button
+                                      className="btn btn-sm btn-outline-primary step-action-btn"
+                                      onClick={() => handleCompleteStep(step.id, true)}
+                                      disabled={updating || !selectedFile}
+                                    >
+                                      {updating ? "Wird hochgeladen..." : selectedFile ? `📎 "${selectedFile.name}" hochladen & erledigen` : "Bitte Datei auswählen"}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="mb-2">
+                                      <textarea
+                                        className="form-control form-control-sm"
+                                        placeholder="Optionaler Kommentar..."
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        rows={2}
+                                        style={{ fontSize: "0.85rem" }}
+                                      />
+                                    </div>
+                                    <button
+                                      className="btn btn-sm btn-outline-primary step-action-btn"
+                                      onClick={() => handleCompleteStep(step.id)}
+                                      disabled={updating}
+                                    >
+                                      {updating ? "Wird aktualisiert..." : "✓ Als erledigt markieren"}
+                                    </button>
+                                  </>
+                                )}
                               </>
                             )}
 
-                            {/* Hinweis wenn Patient nicht handeln darf */}
+                            {/* Hinweis wenn User nicht handeln darf */}
                             {isActive && !userCanComplete && (
                               <div className="alert alert-info py-2 px-3 mt-2" style={{ fontSize: "0.8rem" }}>
                                 {step.stepName.includes("Prüfung durch")
