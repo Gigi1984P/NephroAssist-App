@@ -3,8 +3,6 @@
 import { useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -13,24 +11,26 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    console.log("[LOGIN] Email:", email);
-    console.log("[LOGIN] Password length:", password.length);
+    // Direkt aus DOM lesen - garantiert korrekt
+    const emailInput = document.getElementById("email") as HTMLInputElement;
+    const passwordInput = document.getElementById("password") as HTMLInputElement;
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
 
-    const body = JSON.stringify({ email, password });
-    console.log("[LOGIN] Body:", body);
+    console.log("[LOGIN] Email:", email);
+    console.log("[LOGIN] Password empty?", password.length === 0);
 
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: body,
+        body: JSON.stringify({ email, password }),
       });
 
       console.log("[LOGIN] Status:", res.status);
-      console.log("[LOGIN] StatusText:", res.statusText);
 
       const text = await res.text();
-      console.log("[LOGIN] Raw response:", text);
+      console.log("[LOGIN] Response:", text);
 
       let data;
       try {
@@ -40,15 +40,15 @@ export default function LoginPage() {
       }
 
       if (!res.ok) {
-        setError(data.error || `HTTP ${res.status}: ${res.statusText}`);
+        setError(data.error || `HTTP ${res.status}`);
       } else if (data.user) {
         window.location.href = "/dashboard";
       } else {
-        setError("Ungültige Server-Antwort: " + text);
+        setError("Ungültige Antwort");
       }
     } catch (err) {
       console.error("[LOGIN] Error:", err);
-      setError(`Netzwerk-Fehler: ${err instanceof Error ? err.message : "Unbekannt"}`);
+      setError(`Netzwerk: ${err instanceof Error ? err.message : "Unbekannt"}`);
     } finally {
       setLoading(false);
     }
@@ -91,9 +91,7 @@ export default function LoginPage() {
             borderRadius: "0.375rem",
             fontSize: "0.875rem",
             marginBottom: "1rem",
-          }}>
-            {error}
-          </div>
+          }}>{error}</div>
         )}
 
         <form onSubmit={handleSubmit}>
@@ -102,17 +100,13 @@ export default function LoginPage() {
             <input
               type="email"
               id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@beispiel.de"
-              required
+              defaultValue="admin@nephroassist.de"
               style={{
                 width: "100%",
                 padding: "0.5rem 0.75rem",
                 border: "1px solid #e2e8f0",
                 borderRadius: "0.375rem",
                 fontSize: "0.875rem",
-                fontFamily: 'inherit',
               }}
             />
           </div>
@@ -121,16 +115,13 @@ export default function LoginPage() {
             <input
               type="password"
               id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              defaultValue="Test1234!"
               style={{
                 width: "100%",
                 padding: "0.5rem 0.75rem",
                 border: "1px solid #e2e8f0",
                 borderRadius: "0.375rem",
                 fontSize: "0.875rem",
-                fontFamily: 'inherit',
               }}
             />
           </div>
@@ -147,7 +138,6 @@ export default function LoginPage() {
               fontSize: "0.875rem",
               fontWeight: 500,
               cursor: loading ? "not-allowed" : "pointer",
-              fontFamily: 'inherit',
             }}
           >
             {loading ? "Anmelden..." : "Anmelden"}
