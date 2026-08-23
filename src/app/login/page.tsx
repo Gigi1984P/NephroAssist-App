@@ -21,13 +21,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      console.log("[LOGIN] Sending request...");
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      console.log("[LOGIN] Response status:", res.status);
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+      console.log("[LOGIN] Response data:", data);
 
       if (!res.ok) {
         setError(data.error || "Ungültige Anmeldedaten");
@@ -35,7 +43,8 @@ export default function LoginPage() {
         router.push("/dashboard");
         router.refresh();
       }
-    } catch {
+    } catch (err) {
+      console.error("[LOGIN] Fetch error:", err);
       setError("Ein Fehler ist aufgetreten");
     } finally {
       setLoading(false);
