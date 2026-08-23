@@ -8,34 +8,48 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function fixDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
-  if (!url) {
+  const rawUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
+  if (!rawUrl) {
     console.error("[PRISMA] No DATABASE_URL found!");
     return "";
   }
 
-  // Validate that URL starts with postgresql://
-  if (!url.startsWith("postgresql://")) {
+  // Validate prefix
+  if (!rawUrl.startsWith("postgresql://")) {
     console.error("[PRISMA] Invalid DATABASE_URL protocol");
     return "";
   }
 
+  // Try standard URL parsing first
   try {
-    const parsed = new URL(url);
-    // Ensure port is a valid number
+    const parsed = new URL(rawUrl);
+    // Ensure port is valid
     if (parsed.port) {
       const portNum = parseInt(parsed.port, 10);
       if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
-        console.error("[PRISMA] Invalid port in DATABASE_URL, using default 5432");
         parsed.port = "5432";
       }
     }
     return parsed.toString();
   } catch {
-    // If URL parsing fails, return as-is and let Prisma handle it
-    console.error("[PRISMA] URL parsing failed, returning raw string");
-    return url;
+    // URL parsing failed - likely unescaped special chars in password
   }
+
+  // Manual parse: postgresql://user:password@host:port/database
+  const match = rawUrl.match(/^postgresql:\/\/([^:]+):(.+)@(.+)$/);
+  if (!match) {
+    console.error("[PRISMA] Could not parse DATABASE_URL manually");
+    return rawUrl;
+  }
+
+  const [, user, password, rest] = match;
+
+  // Encode password to handle unescaped special characters (; % @ etc.)
+  const encodedPassword = encodeURIComponent(password);
+
+  const fixedUrl = `postgresql://${user}:${encodedPassword}@${rest}`;
+  console.log("[PRISMA] Fixed DATABASE_URL encoding");
+  return fixedUrl;
 }
 
 function getPrisma(): PrismaClient {
