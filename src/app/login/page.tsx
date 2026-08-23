@@ -27,21 +27,10 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      if (res.status === 404) {
-        setError("Login-API nicht gefunden. Bitte Seite neu laden (Strg+Umschalt+R).");
-        setLoading(false);
-        return;
-      }
-
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        data = {};
-      }
+      const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || `Ungültige Anmeldedaten (HTTP ${res.status})`);
+        setError(data.error || "Ungültige Anmeldedaten");
       } else {
         router.push("/dashboard");
         router.refresh();
