@@ -35,3 +35,6 @@ next-env.d.ts
 # Testing
 coverage/
 repo/
+
+# Legacy git directory (root-owned backup)
+.git.root-owned/
