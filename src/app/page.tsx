@@ -8,45 +8,43 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const tryLogin = async (url: string) => {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    return res;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    console.log("[LOGIN] Starting login...");
+    console.log("[LOGIN] Email:", email);
+    console.log("[LOGIN] Password length:", password.length);
+
+    const body = JSON.stringify({ email, password });
+    console.log("[LOGIN] Body:", body);
 
     try {
-      let res = await tryLogin("/api/login");
-      console.log("[LOGIN] /api/login status:", res.status);
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: body,
+      });
 
-      if (!res.ok && res.status === 404) {
-        console.log("[LOGIN] Trying fallback /api/auth/login...");
-        res = await tryLogin("/api/auth/login");
-        console.log("[LOGIN] /api/auth/login status:", res.status);
-      }
+      console.log("[LOGIN] Status:", res.status);
+      console.log("[LOGIN] StatusText:", res.statusText);
+
+      const text = await res.text();
+      console.log("[LOGIN] Raw response:", text);
 
       let data;
       try {
-        data = await res.json();
+        data = JSON.parse(text);
       } catch {
         data = {};
       }
 
       if (!res.ok) {
-        setError(data.error || `HTTP ${res.status}: Anmeldung fehlgeschlagen`);
+        setError(data.error || `HTTP ${res.status}: ${res.statusText}`);
       } else if (data.user) {
         window.location.href = "/dashboard";
       } else {
-        setError("Ungültige Server-Antwort");
+        setError("Ungültige Server-Antwort: " + text);
       }
     } catch (err) {
       console.error("[LOGIN] Error:", err);
