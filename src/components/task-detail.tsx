@@ -284,7 +284,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     if (step.status === "COMPLETED") return "completed";
     // Vorheriger Schritt muss COMPLETED sein
     if (index === 0) return "active"; // Erster Schritt immer aktiv
-    const prevStep = workflowSteps[index - 1];
+    const prevStep = sortedSteps[index - 1];
     if (prevStep?.status === "COMPLETED") return "active";
     return "locked";
   };
