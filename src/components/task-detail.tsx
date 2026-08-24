@@ -302,21 +302,24 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
       )}
 
       <div className="row g-4">
-        <div className="col-lg-4">
-          <div className="card">
-            <div className="card-header"><strong>Informationen</strong></div>
-            <div className="card-body">
-              <p><strong>Patient:</strong><br/>{task.requirement?.patientCase?.patient.firstName} {task.requirement?.patientCase?.patient.lastName}</p>
-              <p><strong>Kategorie:</strong><br/>{task.requirement?.category || "—"}</p>
-              <p className="mb-0"><strong>Fortschritt:</strong><br/>{completedSteps} / {workflowSteps.length} ({progress}%)</p>
-              <div className="progress mt-2" style={{ height: "10px" }}>
-                <div className="progress-bar" style={{ width: `${progress}%` }} />
+        {/* Informationen nur fuer Klinik-Mitarbeiter */}
+        {userLoaded && CLINIC_ROLES.includes(userRole || "") && (
+          <div className="col-lg-4">
+            <div className="card">
+              <div className="card-header"><strong>Informationen</strong></div>
+              <div className="card-body">
+                <p><strong>Patient:</strong><br/>{task.requirement?.patientCase?.patient.firstName} {task.requirement?.patientCase?.patient.lastName}</p>
+                <p><strong>Kategorie:</strong><br/>{task.requirement?.category || "—"}</p>
+                <p className="mb-0"><strong>Fortschritt:</strong><br/>{completedSteps} / {workflowSteps.length} ({progress}%)</p>
+                <div className="progress mt-2" style={{ height: "10px" }}>
+                  <div className="progress-bar" style={{ width: `${progress}%` }} />
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="col-lg-8">
+        <div className={userLoaded && CLINIC_ROLES.includes(userRole || "") ? "col-lg-8" : "col-lg-12"}>
           <div className="card">
             <div className="card-header"><strong>Workflow-Schritte</strong></div>
             <div className="card-body">
