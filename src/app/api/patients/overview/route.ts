@@ -6,10 +6,6 @@ export const dynamic = "force-dynamic";
 
 const CLINIC_ROLES = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"];
 
-/* ================================================================ */
-/*  GET: Patienten mit Untersuchungen, Status + Dokumenten           */
-/*  Fuer Klinik-Uebersicht                                            */
-/* ================================================================ */
 export async function GET() {
   try {
     const session = await auth();
@@ -22,36 +18,30 @@ export async function GET() {
       return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
     }
 
-    // Patienten laden mit Cases, Tasks, Dokumenten
     const patients = await prisma.patient.findMany({
       select: {
         id: true,
         firstName: true,
         lastName: true,
         email: true,
-        consentStatus: true,
+        phone: true,
+        generalPractitionerName: true,
+        generalPractitionerEmail: true,
+        generalPractitionerPhone: true,
         cases: {
           select: {
             id: true,
             requirements: {
               select: {
                 id: true,
-                title: true,
-                category: true,
-                status: true,
                 tasks: {
                   select: {
                     id: true,
-                    title: true,
-                    status: true,
                     stepNumber: true,
-                    stepName: true,
-                    stepDescription: true,
+                    status: true,
                     isWorkflowStep: true,
-                    metadata: true,
-                    completedAt: true,
                   },
-                  orderBy: { stepNumber: "asc" },
+                  where: { isWorkflowStep: true },
                 },
               },
             },
@@ -62,60 +52,36 @@ export async function GET() {
       take: 50,
     });
 
-    // Dokumente laden
     const documents = await prisma.document.findMany({
       select: {
-        id: true,
         patientId: true,
-        filename: true,
         documentType: true,
-        createdAt: true,
+        filename: true,
       },
-      orderBy: { createdAt: "desc" },
     });
 
-    // Daten aufbereiten
     const enriched = patients.map((patient) => {
-      // Alle Untersuchungen (Requirements) sammeln
-      const investigations = patient.cases.flatMap((c) =>
-        c.requirements.map((req) => {
-          const topLevelTask = req.tasks.find((t) => !t.isWorkflowStep);
-          const workflowSteps = req.tasks.filter((t) => t.isWorkflowStep);
-          const step6 = workflowSteps.find((s) => s.stepNumber === 6);
-          
-          return {
-            requirementId: req.id,
-            title: req.title,
-            category: req.category,
-            status: req.status,
-            topLevelTaskId: topLevelTask?.id || null,
-            step6: step6 ? {
-              id: step6.id,
-              status: step6.status,
-              name: step6.stepName,
-              completedAt: step6.completedAt,
-            } : null,
-            steps: workflowSteps.map((s) => ({
-              id: s.id,
-              stepNumber: s.stepNumber,
-              stepName: s.stepName,
-              status: s.status,
-            })),
-          };
-        })
-      );
+      const patientDocs = documents.filter((doc) => doc.patientId === patient.id);
+      const hasReport = patientDocs.length > 0;
 
-      // Dokumente des Patienten
-      const patientDocs = documents.filter((d) => d.patientId === patient.id);
+      const allSteps = patient.cases.flatMap((c) =>
+        c.requirements.flatMap((r) =>
+          r.tasks.filter((t) => t.stepNumber === 5)
+        )
+      );
+      const step5Completed = allSteps.some((s) => s.status === "COMPLETED");
 
       return {
         id: patient.id,
         firstName: patient.firstName,
         lastName: patient.lastName,
         email: patient.email,
-        consentStatus: patient.consentStatus,
-        investigations,
-        documents: patientDocs,
+        phone: patient.phone,
+        hasReport: hasReport || step5Completed,
+        documentCount: patientDocs.length,
+        gpName: patient.generalPractitionerName,
+        gpEmail: patient.generalPractitionerEmail,
+        gpPhone: patient.generalPractitionerPhone,
       };
     });
 
