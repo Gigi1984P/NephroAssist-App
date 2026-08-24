@@ -279,6 +279,19 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
   const completedSteps = workflowSteps.filter((s) => s.status === "COMPLETED").length;
   const progress = workflowSteps.length > 0 ? Math.round((completedSteps / workflowSteps.length) * 100) : 0;
 
+  // Schrittweise Freischaltung fuer Patienten
+  const getStepAccess = (step: WorkflowStep, index: number): "completed" | "active" | "locked" => {
+    if (step.status === "COMPLETED") return "completed";
+    // Vorheriger Schritt muss COMPLETED sein
+    if (index === 0) return "active"; // Erster Schritt immer aktiv
+    const prevStep = workflowSteps[index - 1];
+    if (prevStep?.status === "COMPLETED") return "active";
+    return "locked";
+  };
+
+  // Sortierte Schritte fuer Index-basierte Pruefung
+  const sortedSteps = [...workflowSteps].sort((a, b) => a.stepNumber - b.stepNumber);
+
   return (
     <div>
       <PageHeader
@@ -329,319 +342,313 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                 <p className="text-muted">Keine Workflow-Schritte.</p>
               ) : (
                 <div className="d-flex flex-column gap-3">
-                  {workflowSteps.map((step) => {
+                  {sortedSteps.map((step, index) => {
                     const isCompleted = step.status === "COMPLETED";
                     const isActive = step.status === "IN_PROGRESS";
                     const isUploadStep = step.stepName.toLowerCase().includes("hochladen");
                     const isAppointmentStep = step.stepName.toLowerCase().includes("termin vereinbaren");
                     const isClinicReview = step.stepName.toLowerCase().includes("prüfung durch");
                     const existingAppointment = step.metadata?.appointment;
+                    const access = getStepAccess(step, index);
+                    const isPatientUser = userRole === "PATIENT" || userRole === "CAREGIVER";
 
                     return (
                       <div
                         key={step.id}
                         className={`p-3 border rounded ${
-                          isActive ? "border-primary border-2" : isCompleted ? "border-success" : ""
+                          isActive && access === "active" ? "border-primary border-2" :
+                          isCompleted ? "border-success" :
+                          access === "locked" ? "border-secondary opacity-75" : ""
                         }`}
-                        style={{ background: isCompleted ? "#f0f9f4" : isActive ? "#fff" : "#f8f9fa" }}
+                        style={{
+                          background: isCompleted ? "#f0f9f4" :
+                                      access === "locked" ? "#e9ecef" :
+                                      isActive ? "#fff" : "#f8f9fa"
+                        }}
                       >
                         <div className="d-flex justify-content-between align-items-start mb-2">
                           <div>
-                            <strong style={{ fontSize: "1.05rem" }}>
+                            <strong style={{ fontSize: "1.05rem", opacity: access === "locked" ? 0.5 : 1 }}>
                               {step.stepNumber}. {step.stepName}
                             </strong>
-                            <p className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>
+                            <p className="text-muted mb-0" style={{ fontSize: "0.85rem", opacity: access === "locked" ? 0.5 : 1 }}>
                               {step.stepDescription}
                             </p>
                           </div>
-                          <div>{getStatusBadge(step.status)}</div>
+                          <div>
+                            {access === "locked" ? (
+                              <span className="badge bg-secondary">🔒 Gesperrt</span>
+                            ) : getStatusBadge(step.status)}
+                          </div>
                         </div>
 
-                        {step.stepNumber === 1 ? (
-                          /* SCHRITT 1: Ueberweisungsanfrage */
-                          <div className="mt-2">
-                            {/* Immer: Status-Dropdown fuer manuelle Bearbeitung */}
-                            <div className="d-flex align-items-center gap-2 mb-2">
-                              <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
-                              <select
-                                className="form-select form-select-sm"
-                                style={{ width: "auto", fontSize: "0.85rem" }}
-                                value={step.status}
-                                onChange={(e) => handleStatusChange(step.id, e.target.value)}
-                                disabled={updatingStepId === step.id}
-                              >
-                                <option value="PENDING">Ausstehend</option>
-                                <option value="IN_PROGRESS">In Bearbeitung</option>
-                                <option value="COMPLETED">Erledigt</option>
-                              </select>
-                              {updatingStepId === step.id && (
-                                <span className="spinner-border spinner-border-sm" role="status" />
-                              )}
-                            </div>
-
-                            {/* Zusaetzlich: Email-Button wenn Hausarzt hinterlegt */}
-                            {gpEmail && step.status !== "COMPLETED" && (
-                              <div className="mt-2 p-2 border rounded bg-white">
-                                <div className="text-muted mb-2" style={{ fontSize: "0.8rem" }}>
-                                  Hausarzt: <strong>{gpEmail}</strong>
-                                </div>
-                                <button
-                                  className="btn btn-primary btn-sm w-100"
-                                  onClick={() => handleReferralRequest(step.id)}
-                                  disabled={updatingStepId === step.id}
-                                >
-                                  {updatingStepId === step.id ? (
-                                    <span className="spinner-border spinner-border-sm" role="status" />
-                                  ) : (
-                                    "📧 Überweisung per Email anfordern"
-                                  )}
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Hinweis wenn kein Hausarzt hinterlegt */}
-                            {!gpEmail && (
-                              <div className="alert alert-info py-2 mb-0 mt-2" style={{ fontSize: "0.8rem" }}>
-                                💡 <a href="/dashboard/settings" className="alert-link">Hausarzt hinterlegen</a> für automatische Email-Anfrage.
-                                <br/>Sie können den Schritt auch manuell als erledigt markieren (z.B. nach telefonischer Anfrage).
-                              </div>
-                            )}
+                        {/* GESPERRTER SCHRITT fuer Patienten */}
+                        {access === "locked" && isPatientUser && (
+                          <div className="alert alert-secondary py-2 mb-0" style={{ fontSize: "0.85rem" }}>
+                            🔒 Bitte schließen Sie zuerst <strong>Schritt {index}: {sortedSteps[index]?.stepName}</strong> ab, um diesen Schritt zu bearbeiten.
                           </div>
-                        ) : isClinicReview ? (
-                          <div className="mt-2">
-                            {!userLoaded ? (
-                              <span className="text-muted" style={{ fontSize: "0.85rem" }}>Lade Berechtigungen...</span>
-                            ) : canEditClinicStep() ? (
-                              /* Klinik-Mitarbeiter sehen Dropdown */
-                              <div className="d-flex align-items-center gap-2">
-                                <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
-                                <select
-                                  className="form-select form-select-sm"
-                                  style={{ width: "auto", fontSize: "0.85rem" }}
-                                  value={step.status}
-                                  onChange={(e) => handleStatusChange(step.id, e.target.value)}
-                                  disabled={updatingStepId === step.id}
-                                >
-                                  <option value="PENDING">Ausstehend</option>
-                                  <option value="IN_PROGRESS">In Bearbeitung</option>
-                                  <option value="COMPLETED">Erledigt</option>
-                                </select>
-                                {updatingStepId === step.id && (
-                                  <span className="spinner-border spinner-border-sm" role="status" />
-                                )}
-                              </div>
-                            ) : (
-                              /* Patient/Pfleger sehen nur Info */
-                              <div className="alert alert-info py-2 mb-0" style={{ fontSize: "0.85rem" }}>
-                                🔒 <strong>Nur Klinik-Mitarbeiter</strong> können diesen Schritt bearbeiten.
-                                <br/>
-                                Ihre Rolle: <strong>{userRole || "Unbekannt"}</strong>
-                              </div>
-                            )}
-                          </div>
-                        ) : isAppointmentStep ? (
-                          /* APPOINTMENT SCHRITT: Kalenderformular mit Facharzt-Kontaktdaten */
-                          <div className="mt-3 p-3 bg-white border rounded">
-                            <div className="fw-semibold mb-2" style={{ fontSize: "0.9rem", color: "#0d6efd" }}>
-                              📅 Termin eintragen
-                            </div>
-                            
-                            {existingAppointment ? (
-                              <div className="alert alert-success py-2 mb-0">
-                                <div className="fw-medium">Termin vereinbart:</div>
-                                <div style={{ fontSize: "0.9rem" }}>
-                                  📅 {existingAppointment.date} um {existingAppointment.time}<br/>
-                                  👨‍⚕️ {existingAppointment.doctorName}
-                                  {existingAppointment.doctorPhone && (
-                                    <> · 📞 {existingAppointment.doctorPhone}</>
-                                  )}
-                                  {existingAppointment.doctorEmail && (
-                                    <> · 📧 {existingAppointment.doctorEmail}</>
-                                  )}
-                                  {existingAppointment.doctorFax && (
-                                    <> · 📠 {existingAppointment.doctorFax}</>
-                                  )}
-                                  <br/>
-                                  📍 {existingAppointment.location}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="row g-2">
-                                <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Datum *</label>
-                                  <input
-                                    type="date"
-                                    className="form-control form-control-sm"
-                                    value={appointmentForms[step.id]?.date || ""}
-                                    onChange={(e) => updateAppointmentField(step.id, "date", e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Uhrzeit *</label>
-                                  <input
-                                    type="time"
-                                    className="form-control form-control-sm"
-                                    value={appointmentForms[step.id]?.time || ""}
-                                    onChange={(e) => updateAppointmentField(step.id, "time", e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Arztname *</label>
-                                  <input
-                                    type="text"
-                                    className="form-control form-control-sm"
-                                    placeholder="z.B. Dr. Müller"
-                                    value={appointmentForms[step.id]?.doctorName || ""}
-                                    onChange={(e) => updateAppointmentField(step.id, "doctorName", e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>E-Mail des Facharztes</label>
-                                  <input
-                                    type="email"
-                                    className="form-control form-control-sm"
-                                    placeholder="z.B. dr.mueller@kardiologie.de"
-                                    value={appointmentForms[step.id]?.doctorEmail || ""}
-                                    onChange={(e) => updateAppointmentField(step.id, "doctorEmail", e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Telefon</label>
-                                  <input
-                                    type="tel"
-                                    className="form-control form-control-sm"
-                                    placeholder="z.B. 030 98765432"
-                                    value={appointmentForms[step.id]?.doctorPhone || ""}
-                                    onChange={(e) => updateAppointmentField(step.id, "doctorPhone", e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Fax</label>
-                                  <input
-                                    type="tel"
-                                    className="form-control form-control-sm"
-                                    placeholder="z.B. 030 98765433"
-                                    value={appointmentForms[step.id]?.doctorFax || ""}
-                                    onChange={(e) => updateAppointmentField(step.id, "doctorFax", e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-12">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Ort *</label>
-                                  <input
-                                    type="text"
-                                    className="form-control form-control-sm"
-                                    placeholder="z.B. Uniklinik Musterstadt"
-                                    value={appointmentForms[step.id]?.location || ""}
-                                    onChange={(e) => updateAppointmentField(step.id, "location", e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-12">
-                                  <button
-                                    className="btn btn-primary btn-sm w-100"
-                                    onClick={() => handleAppointmentSave(step.id)}
+                        )}
+
+                        {/* Controls nur wenn Schritt aktiv oder Klinik-Mitarbeiter */}
+                        {(access === "active" || access === "completed" || !isPatientUser) && (
+                          <>
+                            {/* Schritt 1: Ueberweisungsanfrage */}
+                            {step.stepNumber === 1 && (
+                              <div className="mt-2">
+                                {/* Status-Dropdown */}
+                                <div className="d-flex align-items-center gap-2 mb-2">
+                                  <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
+                                  <select
+                                    className="form-select form-select-sm"
+                                    style={{ width: "auto", fontSize: "0.85rem" }}
+                                    value={step.status}
+                                    onChange={(e) => handleStatusChange(step.id, e.target.value)}
                                     disabled={updatingStepId === step.id}
                                   >
-                                    {updatingStepId === step.id ? (
-                                      <span className="spinner-border spinner-border-sm" role="status" />
-                                    ) : (
-                                      "✓ Termin speichern"
-                                    )}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : isUploadStep ? (
-                          /* UPLOAD-SCHRITT: Datei hochladen */
-                          <div className="mt-3 p-2 bg-white border rounded">
-                            <label className="fw-semibold mb-2 d-block" style={{ fontSize: "0.9rem", color: "#0d6efd" }}>
-                              📎 Dokument hochladen
-                            </label>
-                            <div className="d-flex align-items-center gap-2">
-                              <input
-                                type="file"
-                                className="form-control"
-                                style={{ fontSize: "0.9rem" }}
-                                disabled={updatingStepId === step.id || isCompleted}
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) handleUpload(step.id, file);
-                                }}
-                              />
-                              {updatingStepId === step.id && (
-                                <span className="spinner-border spinner-border-sm" role="status" />
-                              )}
-                            </div>
-                          </div>
-                        ) : step.stepNumber === 4 ? (
-                          /* SCHRITT 4: Bericht anfordern (wie Schritt 1) */
-                          <div className="mt-2">
-                            {/* Immer: Status-Dropdown fuer manuelle Bearbeitung */}
-                            <div className="d-flex align-items-center gap-2 mb-2">
-                              <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
-                              <select
-                                className="form-select form-select-sm"
-                                style={{ width: "auto", fontSize: "0.85rem" }}
-                                value={step.status}
-                                onChange={(e) => handleStatusChange(step.id, e.target.value)}
-                                disabled={updatingStepId === step.id}
-                              >
-                                <option value="PENDING">Ausstehend</option>
-                                <option value="IN_PROGRESS">In Bearbeitung</option>
-                                <option value="COMPLETED">Erledigt</option>
-                              </select>
-                              {updatingStepId === step.id && (
-                                <span className="spinner-border spinner-border-sm" role="status" />
-                              )}
-                            </div>
-
-                            {/* Zusaetzlich: Email-Button wenn Facharzt-Email aus Schritt 3 vorhanden */}
-                            {specialistEmail && step.status !== "COMPLETED" && (
-                              <div className="mt-2 p-2 border rounded bg-white">
-                                <div className="text-muted mb-2" style={{ fontSize: "0.8rem" }}>
-                                  Facharzt: <strong>{specialistEmail}</strong>
-                                </div>
-                                <button
-                                  className="btn btn-primary btn-sm w-100"
-                                  onClick={() => handleReportRequest(step.id)}
-                                  disabled={updatingStepId === step.id}
-                                >
-                                  {updatingStepId === step.id ? (
+                                    <option value="PENDING">Ausstehend</option>
+                                    <option value="IN_PROGRESS">In Bearbeitung</option>
+                                    <option value="COMPLETED">Erledigt</option>
+                                  </select>
+                                  {updatingStepId === step.id && (
                                     <span className="spinner-border spinner-border-sm" role="status" />
-                                  ) : (
-                                    "📧 Bericht per Email anfordern"
                                   )}
-                                </button>
+                                </div>
+                                {gpEmail && step.status !== "COMPLETED" && (
+                                  <div className="mt-2 p-2 border rounded bg-white">
+                                    <div className="text-muted mb-2" style={{ fontSize: "0.8rem" }}>
+                                      Hausarzt: <strong>{gpEmail}</strong>
+                                    </div>
+                                    <button
+                                      className="btn btn-primary btn-sm w-100"
+                                      onClick={() => handleReferralRequest(step.id)}
+                                      disabled={updatingStepId === step.id}
+                                    >
+                                      {updatingStepId === step.id ? (
+                                        <span className="spinner-border spinner-border-sm" role="status" />
+                                      ) : (
+                                        "📧 Überweisung per Email anfordern"
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
+                                {!gpEmail && (
+                                  <div className="alert alert-info py-2 mb-0 mt-2" style={{ fontSize: "0.8rem" }}>
+                                    💡 <a href="/dashboard/settings" className="alert-link">Hausarzt hinterlegen</a> für automatische Email-Anfrage.
+                                    <br/>Sie können den Schritt auch manuell als erledigt markieren (z.B. nach telefonischer Anfrage).
+                                  </div>
+                                )}
                               </div>
                             )}
 
-                            {/* Hinweis wenn keine Facharzt-Email */}
-                            {!specialistEmail && (
-                              <div className="alert alert-info py-2 mb-0 mt-2" style={{ fontSize: "0.8rem" }}>
-                                💡 Fügen Sie in <a href="#" onClick={(e) => { e.preventDefault(); window.location.href = `/dashboard/tasks/${task.id}`; }} className="alert-link">Schritt 3</a> die E-Mail des Facharztes hinzu, um den Bericht automatisch anzufordern.
-                                <br/>Sie können den Schritt auch manuell als erledigt markieren.
+                            {/* Schritt 6: Klinik-Pruefung */}
+                            {isClinicReview && (
+                              <div className="mt-2">
+                                {!userLoaded ? (
+                                  <span className="text-muted" style={{ fontSize: "0.85rem" }}>Lade Berechtigungen...</span>
+                                ) : canEditClinicStep() ? (
+                                  <div className="d-flex align-items-center gap-2">
+                                    <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
+                                    <select
+                                      className="form-select form-select-sm"
+                                      style={{ width: "auto", fontSize: "0.85rem" }}
+                                      value={step.status}
+                                      onChange={(e) => handleStatusChange(step.id, e.target.value)}
+                                      disabled={updatingStepId === step.id}
+                                    >
+                                      <option value="PENDING">Ausstehend</option>
+                                      <option value="IN_PROGRESS">In Bearbeitung</option>
+                                      <option value="COMPLETED">Erledigt</option>
+                                    </select>
+                                    {updatingStepId === step.id && (
+                                      <span className="spinner-border spinner-border-sm" role="status" />
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="alert alert-info py-2 mb-0" style={{ fontSize: "0.85rem" }}>
+                                    🔒 <strong>Nur Klinik-Mitarbeiter</strong> können diesen Schritt bearbeiten.
+                                    <br/>Ihre Rolle: <strong>{userRole || "Unbekannt"}</strong>
+                                  </div>
+                                )}
                               </div>
                             )}
-                          </div>
-                        ) : (
-                          /* NORMALER SCHRITT: Dropdown */
-                          <div className="d-flex align-items-center gap-2 mt-2">
-                            <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
-                            <select
-                              className="form-select form-select-sm"
-                              style={{ width: "auto", fontSize: "0.85rem" }}
-                              value={step.status}
-                              onChange={(e) => handleStatusChange(step.id, e.target.value)}
-                              disabled={updatingStepId === step.id}
-                            >
-                              <option value="PENDING">Ausstehend</option>
-                              <option value="IN_PROGRESS">In Bearbeitung</option>
-                              <option value="COMPLETED">Erledigt</option>
-                            </select>
-                            {updatingStepId === step.id && (
-                              <span className="spinner-border spinner-border-sm" role="status" />
+
+                            {/* Schritt 3: Terminvereinbarung */}
+                            {isAppointmentStep && (
+                              <div className="mt-3 p-3 bg-white border rounded">
+                                <div className="fw-semibold mb-2" style={{ fontSize: "0.9rem", color: "#0d6efd" }}>
+                                  📅 Termin eintragen
+                                </div>
+                                {existingAppointment ? (
+                                  <div className="alert alert-success py-2 mb-0">
+                                    <div className="fw-medium">Termin vereinbart:</div>
+                                    <div style={{ fontSize: "0.9rem" }}>
+                                      📅 {existingAppointment.date} um {existingAppointment.time}<br/>
+                                      👨‍⚕️ {existingAppointment.doctorName}
+                                      {existingAppointment.doctorPhone && (<> · 📞 {existingAppointment.doctorPhone}</>)}
+                                      {existingAppointment.doctorEmail && (<> · 📧 {existingAppointment.doctorEmail}</>)}
+                                      {existingAppointment.doctorFax && (<> · 📠 {existingAppointment.doctorFax}</>)}
+                                      <br/>📍 {existingAppointment.location}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="row g-2">
+                                    <div className="col-md-6">
+                                      <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Datum *</label>
+                                      <input
+                                        type="date"
+                                        className="form-control form-control-sm"
+                                        value={appointmentForms[step.id]?.date || ""}
+                                        onChange={(e) => updateAppointmentField(step.id, "date", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="col-md-6">
+                                      <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Uhrzeit *</label>
+                                      <input
+                                        type="time"
+                                        className="form-control form-control-sm"
+                                        value={appointmentForms[step.id]?.time || ""}
+                                        onChange={(e) => updateAppointmentField(step.id, "time", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="col-md-6">
+                                      <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Arztname *</label>
+                                      <input
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        placeholder="z.B. Dr. Müller"
+                                        value={appointmentForms[step.id]?.doctorName || ""}
+                                        onChange={(e) => updateAppointmentField(step.id, "doctorName", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="col-md-6">
+                                      <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>E-Mail des Facharztes</label>
+                                      <input
+                                        type="email"
+                                        className="form-control form-control-sm"
+                                        placeholder="z.B. dr.mueller@kardiologie.de"
+                                        value={appointmentForms[step.id]?.doctorEmail || ""}
+                                        onChange={(e) => updateAppointmentField(step.id, "doctorEmail", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="col-md-6">
+                                      <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Telefon</label>
+                                      <input
+                                        type="tel"
+                                        className="form-control form-control-sm"
+                                        placeholder="z.B. 030 98765432"
+                                        value={appointmentForms[step.id]?.doctorPhone || ""}
+                                        onChange={(e) => updateAppointmentField(step.id, "doctorPhone", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="col-md-6">
+                                      <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Fax</label>
+                                      <input
+                                        type="tel"
+                                        className="form-control form-control-sm"
+                                        placeholder="z.B. 030 98765433"
+                                        value={appointmentForms[step.id]?.doctorFax || ""}
+                                        onChange={(e) => updateAppointmentField(step.id, "doctorFax", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="col-12">
+                                      <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Ort *</label>
+                                      <input
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        placeholder="z.B. Uniklinik Musterstadt"
+                                        value={appointmentForms[step.id]?.location || ""}
+                                        onChange={(e) => updateAppointmentField(step.id, "location", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="col-12">
+                                      <button
+                                        className="btn btn-primary btn-sm w-100"
+                                        onClick={() => handleAppointmentSave(step.id)}
+                                        disabled={updatingStepId === step.id}
+                                      >
+                                        {updatingStepId === step.id ? (
+                                          <span className="spinner-border spinner-border-sm" role="status" />
+                                        ) : (
+                                          "✓ Termin speichern"
+                                        )}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             )}
-                          </div>
+
+                            {/* Upload-Schritte */}
+                            {isUploadStep && (
+                              <div className="mt-3 p-2 bg-white border rounded">
+                                <label className="fw-semibold mb-2 d-block" style={{ fontSize: "0.9rem", color: "#0d6efd" }}>
+                                  📎 Dokument hochladen
+                                </label>
+                                <div className="d-flex align-items-center gap-2">
+                                  <input
+                                    type="file"
+                                    className="form-control"
+                                    style={{ fontSize: "0.9rem" }}
+                                    disabled={updatingStepId === step.id || isCompleted}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleUpload(step.id, file);
+                                    }}
+                                  />
+                                  {updatingStepId === step.id && (
+                                    <span className="spinner-border spinner-border-sm" role="status" />
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Schritt 4: Bericht anfordern */}
+                            {step.stepNumber === 4 && (
+                              <div className="mt-2">
+                                <div className="d-flex align-items-center gap-2 mb-2">
+                                  <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
+                                  <select
+                                    className="form-select form-select-sm"
+                                    style={{ width: "auto", fontSize: "0.85rem" }}
+                                    value={step.status}
+                                    onChange={(e) => handleStatusChange(step.id, e.target.value)}
+                                    disabled={updatingStepId === step.id}
+                                  >
+                                    <option value="PENDING">Ausstehend</option>
+                                    <option value="IN_PROGRESS">In Bearbeitung</option>
+                                    <option value="COMPLETED">Erledigt</option>
+                                  </select>
+                                  {updatingStepId === step.id && (
+                                    <span className="spinner-border spinner-border-sm" role="status" />
+                                  )}
+                                </div>
+                                {specialistEmail && step.status !== "COMPLETED" && (
+                                  <div className="mt-2 p-2 border rounded bg-white">
+                                    <div className="text-muted mb-2" style={{ fontSize: "0.8rem" }}>
+                                      Facharzt: <strong>{specialistEmail}</strong>
+                                    </div>
+                                    <button
+                                      className="btn btn-primary btn-sm w-100"
+                                      onClick={() => handleReportRequest(step.id)}
+                                      disabled={updatingStepId === step.id}
+                                    >
+                                      {updatingStepId === step.id ? (
+                                        <span className="spinner-border spinner-border-sm" role="status" />
+                                      ) : (
+                                        "📧 Bericht per Email anfordern"
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
+                                {!specialistEmail && (
+                                  <div className="alert alert-info py-2 mb-0 mt-2" style={{ fontSize: "0.8rem" }}>
+                                    💡 Fügen Sie in <a href="#" onClick={(e) => { e.preventDefault(); window.location.href = `/dashboard/tasks/${task.id}`; }} className="alert-link">Schritt 3</a> die E-Mail des Facharztes hinzu, um den Bericht automatisch anzufordern.
+                                    <br/>Sie können den Schritt auch manuell als erledigt markieren.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     );
