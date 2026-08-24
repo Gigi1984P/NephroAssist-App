@@ -313,35 +313,52 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                         </div>
 
                         {step.stepNumber === 1 ? (
-                          /* SCHRITT 1: Ueberweisungsanfrage an Hausarzt */
+                          /* SCHRITT 1: Ueberweisungsanfrage */
                           <div className="mt-2">
-                            {!userLoaded ? (
-                              <span className="text-muted" style={{ fontSize: "0.85rem" }}>Lade...</span>
-                            ) : step.status === "COMPLETED" ? (
-                              <div className="alert alert-success py-2 mb-0" style={{ fontSize: "0.85rem" }}>
-                                ✅ Überweisungsanfrage gesendet
-                              </div>
-                            ) : gpEmail ? (
-                              <div className="d-flex flex-column gap-2">
-                                <div className="text-muted" style={{ fontSize: "0.85rem" }}>
+                            {/* Immer: Status-Dropdown fuer manuelle Bearbeitung */}
+                            <div className="d-flex align-items-center gap-2 mb-2">
+                              <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
+                              <select
+                                className="form-select form-select-sm"
+                                style={{ width: "auto", fontSize: "0.85rem" }}
+                                value={step.status}
+                                onChange={(e) => handleStatusChange(step.id, e.target.value)}
+                                disabled={updatingStepId === step.id}
+                              >
+                                <option value="PENDING">Ausstehend</option>
+                                <option value="IN_PROGRESS">In Bearbeitung</option>
+                                <option value="COMPLETED">Erledigt</option>
+                              </select>
+                              {updatingStepId === step.id && (
+                                <span className="spinner-border spinner-border-sm" role="status" />
+                              )}
+                            </div>
+
+                            {/* Zusaetzlich: Email-Button wenn Hausarzt hinterlegt */}
+                            {gpEmail && step.status !== "COMPLETED" && (
+                              <div className="mt-2 p-2 border rounded bg-white">
+                                <div className="text-muted mb-2" style={{ fontSize: "0.8rem" }}>
                                   Hausarzt: <strong>{gpEmail}</strong>
                                 </div>
                                 <button
-                                  className="btn btn-primary btn-sm"
+                                  className="btn btn-primary btn-sm w-100"
                                   onClick={() => handleReferralRequest(step.id)}
                                   disabled={updatingStepId === step.id}
                                 >
                                   {updatingStepId === step.id ? (
                                     <span className="spinner-border spinner-border-sm" role="status" />
                                   ) : (
-                                    "📧 Überweisung an Hausarzt anfordern"
+                                    "📧 Überweisung per Email anfordern"
                                   )}
                                 </button>
                               </div>
-                            ) : (
-                              <div className="alert alert-warning py-2 mb-0" style={{ fontSize: "0.85rem" }}>
-                                ⚠️ <strong>Kein Hausarzt hinterlegt.</strong><br/>
-                                Bitte in den <a href="/dashboard/settings" className="alert-link">Einstellungen → Hausarzt</a> die Daten Ihres Hausarztes eintragen.
+                            )}
+
+                            {/* Hinweis wenn kein Hausarzt hinterlegt */}
+                            {!gpEmail && (
+                              <div className="alert alert-info py-2 mb-0 mt-2" style={{ fontSize: "0.8rem" }}>
+                                💡 <a href="/dashboard/settings" className="alert-link">Hausarzt hinterlegen</a> für automatische Email-Anfrage.
+                                <br/>Sie können den Schritt auch manuell als erledigt markieren (z.B. nach telefonischer Anfrage).
                               </div>
                             )}
                           </div>
