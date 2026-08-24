@@ -349,6 +349,9 @@ model Task {
   completedById   String?  @map("completed_by_id")
   completedByRole String?  @map("completed_by_role")
 
+  // Flexible metadata for workflow steps (appointment data, upload info, etc.)
+  metadata Json?
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

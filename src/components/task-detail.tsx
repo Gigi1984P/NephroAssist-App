@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
-import { Upload, FileCheck } from "lucide-react";
 
 interface WorkflowStep {
   id: string;
@@ -10,6 +9,7 @@ interface WorkflowStep {
   stepName: string;
   stepDescription: string;
   status: string;
+  metadata: any;
 }
 
 interface TaskDetailData {
@@ -32,12 +32,22 @@ interface TaskDetailData {
   } | null;
 }
 
+interface AppointmentData {
+  date: string;
+  time: string;
+  doctorName: string;
+  location: string;
+}
+
 export default function TaskDetailPage({ task: initialTask }: { task: TaskDetailData }) {
   const [task] = useState<TaskDetailData>(initialTask);
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingStepId, setUpdatingStepId] = useState<string | null>(null);
+
+  // Appointment form state per step
+  const [appointmentForms, setAppointmentForms] = useState<Record<string, AppointmentData>>({});
 
   const loadWorkflowSteps = async () => {
     try {
@@ -46,7 +56,17 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
       });
       if (res.ok) {
         const data = await res.json();
-        setWorkflowSteps(data.steps || []);
+        const steps = data.steps || [];
+        setWorkflowSteps(steps);
+        
+        // Pre-fill forms from metadata
+        const forms: Record<string, AppointmentData> = {};
+        steps.forEach((s: WorkflowStep) => {
+          if (s.metadata?.appointment) {
+            forms[s.id] = s.metadata.appointment;
+          }
+        });
+        setAppointmentForms(forms);
       }
     } catch (error) {
       console.error("Failed to load workflow:", error);
@@ -87,11 +107,6 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     setUpdatingStepId(stepId);
     setError(null);
     try {
-      // Upload-Datei (noch ohne echtes Backend, zeigt nur Erfolg an)
-      // TODO: /api/upload implementieren
-      console.log("Upload:", file.name, "für Schritt", stepId);
-
-      // Nach Upload: Status auf COMPLETED setzen
       const res = await fetch(`/api/tasks/${stepId}`, {
         method: "PATCH",
         credentials: "include",
@@ -110,6 +125,47 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
       setError("Netzwerkfehler beim Hochladen");
       setUpdatingStepId(null);
     }
+  };
+
+  const handleAppointmentSave = async (stepId: string) => {
+    const form = appointmentForms[stepId];
+    if (!form?.date || !form?.time || !form?.doctorName || !form?.location) {
+      setError("Bitte alle Felder ausfüllen");
+      return;
+    }
+
+    setUpdatingStepId(stepId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tasks/${stepId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "COMPLETED",
+          notes: `Termin vereinbart: ${form.date} ${form.time}, ${form.doctorName}, ${form.location}`,
+          metadata: { appointment: form },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Fehler beim Speichern");
+        setUpdatingStepId(null);
+        return;
+      }
+      await loadWorkflowSteps();
+      setUpdatingStepId(null);
+    } catch (err) {
+      setError("Netzwerkfehler");
+      setUpdatingStepId(null);
+    }
+  };
+
+  const updateAppointmentField = (stepId: string, field: keyof AppointmentData, value: string) => {
+    setAppointmentForms((prev) => ({
+      ...prev,
+      [stepId]: { ...(prev[stepId] || {}), [field]: value } as AppointmentData,
+    }));
   };
 
   const getStatusBadge = (status: string) => {
@@ -166,6 +222,8 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                     const isCompleted = step.status === "COMPLETED";
                     const isActive = step.status === "IN_PROGRESS";
                     const isUploadStep = step.stepName.toLowerCase().includes("hochladen");
+                    const isAppointmentStep = step.stepName.toLowerCase().includes("termin vereinbaren");
+                    const existingAppointment = step.metadata?.appointment;
 
                     return (
                       <div
@@ -187,8 +245,80 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                           <div>{getStatusBadge(step.status)}</div>
                         </div>
 
-                        {/* UPLOAD-SCHRITT: Datei hochladen + Erledigt setzen */}
-                        {isUploadStep ? (
+                        {/* APPOINTMENT SCHRITT: Kalenderformular */}
+                        {isAppointmentStep ? (
+                          <div className="mt-3 p-3 bg-white border rounded">
+                            <div className="fw-semibold mb-2" style={{ fontSize: "0.9rem", color: "#0d6efd" }}>
+                              📅 Termin eintragen
+                            </div>
+                            
+                            {existingAppointment ? (
+                              <div className="alert alert-success py-2 mb-0">
+                                <div className="fw-medium">Termin vereinbart:</div>
+                                <div style={{ fontSize: "0.9rem" }}>
+                                  📅 {existingAppointment.date} um {existingAppointment.time}<br/>
+                                  👨‍⚕️ {existingAppointment.doctorName}<br/>
+                                  📍 {existingAppointment.location}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="row g-2">
+                                <div className="col-md-6">
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Datum</label>
+                                  <input
+                                    type="date"
+                                    className="form-control form-control-sm"
+                                    value={appointmentForms[step.id]?.date || ""}
+                                    onChange={(e) => updateAppointmentField(step.id, "date", e.target.value)}
+                                  />
+                                </div>
+                                <div className="col-md-6">
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Uhrzeit</label>
+                                  <input
+                                    type="time"
+                                    className="form-control form-control-sm"
+                                    value={appointmentForms[step.id]?.time || ""}
+                                    onChange={(e) => updateAppointmentField(step.id, "time", e.target.value)}
+                                  />
+                                </div>
+                                <div className="col-md-6">
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Arztname</label>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    placeholder="z.B. Dr. Müller"
+                                    value={appointmentForms[step.id]?.doctorName || ""}
+                                    onChange={(e) => updateAppointmentField(step.id, "doctorName", e.target.value)}
+                                  />
+                                </div>
+                                <div className="col-md-6">
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Ort</label>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    placeholder="z.B. Uniklinik Musterstadt"
+                                    value={appointmentForms[step.id]?.location || ""}
+                                    onChange={(e) => updateAppointmentField(step.id, "location", e.target.value)}
+                                  />
+                                </div>
+                                <div className="col-12">
+                                  <button
+                                    className="btn btn-primary btn-sm w-100"
+                                    onClick={() => handleAppointmentSave(step.id)}
+                                    disabled={updatingStepId === step.id}
+                                  >
+                                    {updatingStepId === step.id ? (
+                                      <span className="spinner-border spinner-border-sm" role="status" />
+                                    ) : (
+                                      "✓ Termin speichern"
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : isUploadStep ? (
+                          /* UPLOAD-SCHRITT: Datei hochladen */
                           <div className="mt-3 p-2 bg-white border rounded">
                             <label className="fw-semibold mb-2 d-block" style={{ fontSize: "0.9rem", color: "#0d6efd" }}>
                               📎 Dokument hochladen

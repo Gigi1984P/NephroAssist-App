@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 const updateSchema = z.object({
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "OVERDUE", "CANCELLED"]),
   notes: z.string().optional(),
+  metadata: z.any().optional(),
 });
 
 /* ================================================================ */
@@ -121,6 +122,10 @@ export async function PATCH(
     if (newStatus === "COMPLETED") {
       updateData.completedById = user.id;
       updateData.completedByRole = userRole;
+    }
+
+    if (body.metadata) {
+      updateData.metadata = body.metadata;
     }
 
     const updatedTask = await prisma.task.update({
