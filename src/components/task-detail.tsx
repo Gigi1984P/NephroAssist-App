@@ -57,6 +57,9 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
   // Hausarzt-Email fuer Ueberweisungsbutton
   const [gpEmail, setGpEmail] = useState<string | null>(null);
 
+  // Facharzt-Email aus Schritt 3 fuer Berichtsanforderung
+  const [specialistEmail, setSpecialistEmail] = useState<string | null>(null);
+
   const [appointmentForms, setAppointmentForms] = useState<Record<string, AppointmentData>>({});
 
   useEffect(() => {
@@ -78,6 +81,17 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
       .then((data) => {
         if (data.patient?.generalPractitionerEmail) {
           setGpEmail(data.patient.generalPractitionerEmail);
+        }
+      })
+      .catch(() => {});
+    // Lade Facharzt-Email aus Schritt 3 fuer Berichtsanforderung
+    fetch(`/api/tasks/${task.id}/workflow`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        const steps = data.steps || [];
+        const step3 = steps.find((s: WorkflowStep) => s.stepNumber === 3);
+        if (step3?.metadata?.appointment?.doctorEmail) {
+          setSpecialistEmail(step3.metadata.appointment.doctorEmail);
         }
       })
       .catch(() => {});
@@ -219,6 +233,30 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
       await loadWorkflowSteps();
       setUpdatingStepId(null);
       setMessage({ type: "success", text: `Überweisungsanfrage an ${data.practitionerEmail} gesendet` });
+    } catch (err) {
+      setError("Netzwerkfehler");
+      setUpdatingStepId(null);
+    }
+  };
+
+  const handleReportRequest = async (stepId: string) => {
+    setUpdatingStepId(stepId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tasks/${stepId}/report-request`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Fehler beim Senden");
+        setUpdatingStepId(null);
+        return;
+      }
+      await loadWorkflowSteps();
+      setUpdatingStepId(null);
+      setMessage({ type: "success", text: `Berichtsanforderung an ${data.specialistEmail} gesendet` });
     } catch (err) {
       setError("Netzwerkfehler");
       setUpdatingStepId(null);
@@ -531,6 +569,56 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                                 <span className="spinner-border spinner-border-sm" role="status" />
                               )}
                             </div>
+                          </div>
+                        ) : step.stepNumber === 4 ? (
+                          /* SCHRITT 4: Bericht anfordern (wie Schritt 1) */
+                          <div className="mt-2">
+                            {/* Immer: Status-Dropdown fuer manuelle Bearbeitung */}
+                            <div className="d-flex align-items-center gap-2 mb-2">
+                              <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
+                              <select
+                                className="form-select form-select-sm"
+                                style={{ width: "auto", fontSize: "0.85rem" }}
+                                value={step.status}
+                                onChange={(e) => handleStatusChange(step.id, e.target.value)}
+                                disabled={updatingStepId === step.id}
+                              >
+                                <option value="PENDING">Ausstehend</option>
+                                <option value="IN_PROGRESS">In Bearbeitung</option>
+                                <option value="COMPLETED">Erledigt</option>
+                              </select>
+                              {updatingStepId === step.id && (
+                                <span className="spinner-border spinner-border-sm" role="status" />
+                              )}
+                            </div>
+
+                            {/* Zusaetzlich: Email-Button wenn Facharzt-Email aus Schritt 3 vorhanden */}
+                            {specialistEmail && step.status !== "COMPLETED" && (
+                              <div className="mt-2 p-2 border rounded bg-white">
+                                <div className="text-muted mb-2" style={{ fontSize: "0.8rem" }}>
+                                  Facharzt: <strong>{specialistEmail}</strong>
+                                </div>
+                                <button
+                                  className="btn btn-primary btn-sm w-100"
+                                  onClick={() => handleReportRequest(step.id)}
+                                  disabled={updatingStepId === step.id}
+                                >
+                                  {updatingStepId === step.id ? (
+                                    <span className="spinner-border spinner-border-sm" role="status" />
+                                  ) : (
+                                    "📧 Bericht per Email anfordern"
+                                  )}
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Hinweis wenn keine Facharzt-Email */}
+                            {!specialistEmail && (
+                              <div className="alert alert-info py-2 mb-0 mt-2" style={{ fontSize: "0.8rem" }}>
+                                💡 Fügen Sie in <a href="#" onClick={(e) => { e.preventDefault(); window.location.href = `/dashboard/tasks/${task.id}`; }} className="alert-link">Schritt 3</a> die E-Mail des Facharztes hinzu, um den Bericht automatisch anzufordern.
+                                <br/>Sie können den Schritt auch manuell als erledigt markieren.
+                              </div>
+                            )}
                           </div>
                         ) : (
                           /* NORMALER SCHRITT: Dropdown */
