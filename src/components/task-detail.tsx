@@ -64,8 +64,9 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     fetch("/api/user/profile", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
-        if (data.role) {
-          setUserRole(data.role);
+        const user = data.user || data;
+        if (user.role) {
+          setUserRole(user.role);
         }
         setUserLoaded(true);
       })

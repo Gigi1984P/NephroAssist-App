@@ -115,10 +115,11 @@ export default function SettingsPage() {
       const res = await fetch("/api/user/profile", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
-        setProfile(data);
-        setOriginalName(data.name || "");
+        const user = data.user || data;
+        setProfile(user);
+        setOriginalName(user.name || "");
         if (!localStorage.getItem(LS_NAME)) {
-          setName(data.name || "");
+          setName(user.name || "");
         }
       }
     } catch (err) {
