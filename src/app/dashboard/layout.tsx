@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import { Sidebar, MobileSidebar } from "@/components/sidebar";
 import { UserNav } from "@/components/user-nav";
 import { NotificationCenter } from "@/components/notification-center";
+import PatientSearch from "@/components/patient-search";
 
 const STORAGE_KEY = "nephro-sidebar-width";
 const DEFAULT_WIDTH = 260;
+
+const CLINIC_ROLES = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"];
 
 export default function DashboardLayout({
   children,
@@ -84,9 +87,15 @@ export default function DashboardLayout({
         <header className="main-header">
           <MobileSidebar role={user.role} userName={user.name} userEmail={user.email} />
 
-          <div className="d-flex flex-grow-1 align-items-center justify-content-between">
-            <h1 className="h5 fw-semibold mb-0 text-truncate" style={{ color: "#334155" }}>{pageTitle}</h1>
-            <div className="d-flex align-items-center gap-3 flex-shrink-0">
+          <div className="d-flex flex-grow-1 align-items-center justify-content-between gap-3">
+            <h1 className="h5 fw-semibold mb-0 text-truncate flex-shrink-0" style={{ color: "#334155", minWidth: 120 }}>
+              {pageTitle}
+            </h1>
+
+            <div className="d-flex align-items-center gap-3 flex-grow-1 justify-content-end">
+              {/* Patienten-Suche nur für Klinik */}
+              {CLINIC_ROLES.includes(user.role) && <PatientSearch />}
+
               <NotificationCenter />
               <div style={{ width: "1px", height: "24px", background: "#e2e8f0" }} />
               <UserNav user={user} />
