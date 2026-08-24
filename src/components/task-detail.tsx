@@ -189,15 +189,15 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
 
                         {/* UPLOAD-SCHRITT: Datei hochladen + Erledigt setzen */}
                         {isUploadStep ? (
-                          <div className="mt-2">
-                            <label className="text-muted mb-1 d-block" style={{ fontSize: "0.85rem" }}>
-                              Dokument hochladen:
+                          <div className="mt-3 p-2 bg-white border rounded">
+                            <label className="fw-semibold mb-2 d-block" style={{ fontSize: "0.9rem", color: "#0d6efd" }}>
+                              📎 Dokument hochladen
                             </label>
                             <div className="d-flex align-items-center gap-2">
                               <input
                                 type="file"
-                                className="form-control form-control-sm"
-                                style={{ fontSize: "0.8rem" }}
+                                className="form-control"
+                                style={{ fontSize: "0.9rem" }}
                                 disabled={updatingStepId === step.id || isCompleted}
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
