@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PageHeader } from "@/components/page-header";
-import { AlertCircle, User, Lock, Globe, Save, RotateCcw } from "lucide-react";
+import { AlertCircle, User, Lock, Globe, Save, RotateCcw, Stethoscope } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -12,12 +12,23 @@ interface UserProfile {
   createdAt: string;
 }
 
+interface PatientProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  generalPractitionerName: string | null;
+  generalPractitionerEmail: string | null;
+  generalPractitionerPhone: string | null;
+  generalPractitionerAddress: string | null;
+  generalPractitionerCity: string | null;
+}
+
 /* localStorage keys */
 const LS_NAME = "nephro-settings-draft-name";
 const LS_TAB = "nephro-settings-active-tab";
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<"profile" | "password" | "preferences">(() => {
+  const [activeTab, setActiveTab] = useState<"profile" | "password" | "preferences" | "gp">(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem(LS_TAB) as any) || "profile";
     }
@@ -25,6 +36,7 @@ export default function SettingsPage() {
   });
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(null);
   const [originalName, setOriginalName] = useState("");
   const [name, setName] = useState(() => {
     if (typeof window !== "undefined") {
@@ -35,7 +47,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showUnsaved, setShowUnsaved] = useState(false);
-  const [pendingTab, setPendingTab] = useState<"profile" | "password" | "preferences" | null>(null);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState("");
@@ -43,11 +55,24 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordDirty, setPasswordDirty] = useState(false);
 
+  // GP form
+  const [gpForm, setGpForm] = useState({
+    generalPractitionerName: "",
+    generalPractitionerEmail: "",
+    generalPractitionerPhone: "",
+    generalPractitionerAddress: "",
+    generalPractitionerCity: "",
+  });
+  const [gpLoading, setGpLoading] = useState(false);
+
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Fetch profile on mount */
   useEffect(() => {
     fetchProfile();
+    if (typeof window !== "undefined" && localStorage.getItem(LS_TAB) === "gp") {
+      fetchPatientProfile();
+    }
   }, []);
 
   /* Auto-save name to localStorage */
@@ -58,260 +83,303 @@ export default function SettingsPage() {
       if (name !== originalName) {
         setMessage({ type: "success", text: "Entwurf automatisch gespeichert" });
       }
-    }, 2000);
-    return () => {
-      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    };
+    }, 1500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [name, originalName]);
 
-  /* Unsaved changes: beforeunload */
+  /* Warn before closing if unsaved */
   useEffect(() => {
-    const hasUnsaved = name !== originalName || passwordDirty;
-    if (!hasUnsaved) return;
-
     const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
+      if (name !== originalName) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [name, originalName, passwordDirty]);
+  }, [name, originalName]);
+
+  /* Hide success message after 3s */
+  useEffect(() => {
+    if (message?.type === "success") {
+      const t = setTimeout(() => setMessage(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [message]);
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch("/api/user/profile");
+      const res = await fetch("/api/user/profile", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
-        setProfile(data.user);
-        setOriginalName(data.user.name || "");
-        // Only overwrite name if there's no draft
-        const draft = localStorage.getItem(LS_NAME);
-        if (!draft) {
-          setName(data.user.name || "");
+        setProfile(data);
+        setOriginalName(data.name || "");
+        if (!localStorage.getItem(LS_NAME)) {
+          setName(data.name || "");
         }
       }
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
+    } catch (err) {
+      console.error("Failed to load profile:", err);
     }
   };
 
-  const updateProfile = async () => {
+  const fetchPatientProfile = async () => {
+    try {
+      const res = await fetch("/api/patients/me", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setPatientProfile(data.patient);
+        if (data.patient) {
+          setGpForm({
+            generalPractitionerName: data.patient.generalPractitionerName || "",
+            generalPractitionerEmail: data.patient.generalPractitionerEmail || "",
+            generalPractitionerPhone: data.patient.generalPractitionerPhone || "",
+            generalPractitionerAddress: data.patient.generalPractitionerAddress || "",
+            generalPractitionerCity: data.patient.generalPractitionerCity || "",
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load patient profile:", err);
+    }
+  };
+
+  const handleSaveName = async () => {
     setLoading(true);
     setMessage(null);
     try {
       const res = await fetch("/api/user/profile", {
-        method: "PUT",
+        method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       });
+      const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "Profil erfolgreich aktualisiert" });
         setOriginalName(name);
         localStorage.removeItem(LS_NAME);
-        fetchProfile();
+        setMessage({ type: "success", text: "Profil erfolgreich gespeichert" });
       } else {
-        const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Fehler beim Aktualisieren" });
+        setMessage({ type: "error", text: data.error || "Fehler beim Speichern" });
       }
-    } catch (error) {
+    } catch (err) {
       setMessage({ type: "error", text: "Netzwerkfehler" });
     } finally {
       setLoading(false);
     }
   };
 
-  const changePassword = async () => {
+  const handleSaveGP = async () => {
+    setGpLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/patients/me", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(gpForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPatientProfile(data.patient);
+        setMessage({ type: "success", text: "Hausarzt-Daten erfolgreich gespeichert" });
+      } else {
+        setMessage({ type: "error", text: data.error || "Fehler beim Speichern" });
+      }
+    } catch (err) {
+      setMessage({ type: "error", text: "Netzwerkfehler" });
+    } finally {
+      setGpLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
     if (newPassword !== confirmPassword) {
       setMessage({ type: "error", text: "Passwörter stimmen nicht überein" });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setMessage({ type: "error", text: "Passwort muss mindestens 8 Zeichen haben" });
       return;
     }
     setLoading(true);
     setMessage(null);
     try {
       const res = await fetch("/api/user/password", {
-        method: "PUT",
+        method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
+      const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "Passwort erfolgreich geändert" });
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
         setPasswordDirty(false);
+        setMessage({ type: "success", text: "Passwort erfolgreich geändert" });
       } else {
-        const data = await res.json();
         setMessage({ type: "error", text: data.error || "Fehler beim Ändern" });
       }
-    } catch (error) {
+    } catch (err) {
       setMessage({ type: "error", text: "Netzwerkfehler" });
     } finally {
       setLoading(false);
     }
   };
 
-  const discardChanges = () => {
-    setName(originalName);
-    localStorage.removeItem(LS_NAME);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setPasswordDirty(false);
-    setShowUnsaved(false);
-    setPendingTab(null);
-    setMessage({ type: "success", text: "Änderungen verworfen" });
-  };
-
-  const hasUnsavedChanges = name !== originalName || passwordDirty;
-
-  const handleTabClick = (tab: "profile" | "password" | "preferences") => {
-    if (hasUnsavedChanges && tab !== activeTab) {
+  const switchTab = (tab: "profile" | "password" | "preferences" | "gp") => {
+    if (name !== originalName) {
       setPendingTab(tab);
       setShowUnsaved(true);
       return;
     }
     setActiveTab(tab);
     localStorage.setItem(LS_TAB, tab);
+    if (tab === "gp") {
+      fetchPatientProfile();
+    }
   };
 
-  const confirmTabSwitch = () => {
+  const confirmSwitchTab = () => {
     if (pendingTab) {
-      setActiveTab(pendingTab);
+      setActiveTab(pendingTab as any);
       localStorage.setItem(LS_TAB, pendingTab);
+      setShowUnsaved(false);
+      setPendingTab(null);
+      if (pendingTab === "gp") {
+        fetchPatientProfile();
+      }
     }
+  };
+
+  const cancelSwitchTab = () => {
     setShowUnsaved(false);
     setPendingTab(null);
   };
 
+  const isPatient = profile?.role === "PATIENT";
+
   return (
-    <div className="container-fluid">
-      <PageHeader
-        title="Einstellungen"
-        description="Verwalten Sie Ihr Profil und Ihre Sicherheitseinstellungen."
-      />
+    <div>
+      <PageHeader title="Einstellungen" description="Verwalten Sie Ihre Profil- und Kontoeinstellungen" />
 
       {message && (
-        <div className={`alert d-flex align-items-center gap-2 mb-3 ${message.type === "error" ? "alert-danger" : "alert-success"}`} role="alert">
-          <AlertCircle size={18} />
+        <div
+          className={`alert ${message.type === "success" ? "alert-success" : "alert-danger"} d-flex align-items-center gap-2 mb-3`}
+          role="alert"
+        >
+          <AlertCircle size={16} />
           <span>{message.text}</span>
         </div>
       )}
 
-      {/* Unsaved Changes Banner */}
-      {hasUnsavedChanges && (
-        <div className="alert alert-warning d-flex align-items-center justify-content-between mb-3" role="alert">
-          <div className="d-flex align-items-center gap-2">
-            <AlertCircle size={18} />
-            <span>Sie haben ungespeicherte Änderungen.</span>
-          </div>
-          <div className="d-flex gap-2">
-            <button className="btn btn-sm btn-outline-secondary" onClick={discardChanges}>
-              <RotateCcw size={14} className="me-1" />
-              Verwerfen
-            </button>
-            <button className="btn btn-sm btn-primary" onClick={updateProfile} disabled={loading}>
-              <Save size={14} className="me-1" />
-              Speichern
-            </button>
+      {showUnsaved && (
+        <div className="alert alert-warning mb-3">
+          <div className="d-flex justify-content-between align-items-center">
+            <span>Sie haben ungespeicherte Änderungen. Möchten Sie diese verwerfen?</span>
+            <div className="d-flex gap-2">
+              <button className="btn btn-sm btn-secondary" onClick={cancelSwitchTab}>Abbrechen</button>
+              <button className="btn btn-sm btn-warning" onClick={confirmSwitchTab}>Verwerfen</button>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="dashboard-card">
-        <div className="card-body-custom">
-          <ul className="nav-tabs-custom">
-            <li>
+      <div className="card">
+        <div className="card-header">
+          <ul className="nav nav-tabs card-header-tabs">
+            <li className="nav-item">
               <button
-                type="button"
-                className={`nav-tab-item d-flex align-items-center gap-2 ${activeTab === "profile" ? "active" : ""}`}
-                onClick={() => handleTabClick("profile")}
+                className={`nav-link ${activeTab === "profile" ? "active" : ""}`}
+                onClick={() => switchTab("profile")}
               >
-                <User size={16} />
-                Profil
+                <User size={14} className="me-1" /> Profil
               </button>
             </li>
-            <li>
+            <li className="nav-item">
               <button
-                type="button"
-                className={`nav-tab-item d-flex align-items-center gap-2 ${activeTab === "password" ? "active" : ""}`}
-                onClick={() => handleTabClick("password")}
+                className={`nav-link ${activeTab === "password" ? "active" : ""}`}
+                onClick={() => switchTab("password")}
               >
-                <Lock size={16} />
-                Passwort
+                <Lock size={14} className="me-1" /> Passwort
               </button>
             </li>
-            <li>
+            <li className="nav-item">
               <button
-                type="button"
-                className={`nav-tab-item d-flex align-items-center gap-2 ${activeTab === "preferences" ? "active" : ""}`}
-                onClick={() => handleTabClick("preferences")}
+                className={`nav-link ${activeTab === "preferences" ? "active" : ""}`}
+                onClick={() => switchTab("preferences")}
               >
-                <Globe size={16} />
-                Präferenzen
+                <Globe size={14} className="me-1" /> Präferenzen
               </button>
             </li>
+            {isPatient && (
+              <li className="nav-item">
+                <button
+                  className={`nav-link ${activeTab === "gp" ? "active" : ""}`}
+                  onClick={() => switchTab("gp")}
+                >
+                  <Stethoscope size={14} className="me-1" /> Hausarzt
+                </button>
+              </li>
+            )}
           </ul>
+        </div>
 
-          <div className="tab-content-custom">
-            <div className={`tab-pane-custom ${activeTab === "profile" ? "active" : ""}`}>
+        <div className="card-body">
+          {activeTab === "profile" && (
+            <div>
               <div className="mb-3">
-                <h5 className="fw-semibold">Profilinformationen</h5>
-                <p className="text-muted mb-0">Aktualisieren Sie Ihre persönlichen Daten.</p>
+                <label className="form-label">E-Mail</label>
+                <input type="email" className="form-control" value={profile?.email || ""} disabled />
+                <div className="form-text">E-Mail-Adresse kann nicht geändert werden.</div>
               </div>
               <div className="mb-3">
-                <label htmlFor="email" className="form-label">E-Mail</label>
-                <input id="email" className="form-control" value={profile?.email || ""} disabled readOnly />
-              </div>
-              <div className="mb-3">
-                <label htmlFor="name" className="form-label">Name</label>
+                <label className="form-label">Name</label>
                 <input
-                  id="name"
+                  type="text"
                   className="form-control"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ihr vollständiger Name"
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="role" className="form-label">Rolle</label>
-                <input id="role" className="form-control" value={profile?.role || ""} disabled readOnly />
+                <label className="form-label">Rolle</label>
+                <input type="text" className="form-control" value={profile?.role || ""} disabled />
               </div>
-              <div className="d-flex gap-2">
-                <button className="btn btn-primary" onClick={updateProfile} disabled={loading}>
-                  {loading ? "Speichern..." : "Speichern"}
+              <div className="d-flex justify-content-between align-items-center">
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSaveName}
+                  disabled={loading || name === originalName}
+                >
+                  {loading ? (
+                    <span className="spinner-border spinner-border-sm" role="status" />
+                  ) : (
+                    <><Save size={16} className="me-1" /> Speichern</>
+                  )}
                 </button>
                 {name !== originalName && (
-                  <button className="btn btn-outline-secondary" onClick={discardChanges}>
-                    <RotateCcw size={14} className="me-1" />
-                    Verwerfen
-                  </button>
+                  <span className="text-warning" style={{ fontSize: "0.85rem" }}>Ungespeicherte Änderungen</span>
                 )}
               </div>
             </div>
+          )}
 
-            <div className={`tab-pane-custom ${activeTab === "password" ? "active" : ""}`}>
+          {activeTab === "password" && (
+            <div>
               <div className="mb-3">
-                <h5 className="fw-semibold">Passwort ändern</h5>
-                <p className="text-muted mb-0">Ändern Sie Ihr Passwort für mehr Sicherheit.</p>
-              </div>
-              <div className="mb-3">
-                <label htmlFor="currentPassword" className="form-label">Aktuelles Passwort</label>
+                <label className="form-label">Aktuelles Passwort</label>
                 <input
-                  id="currentPassword"
                   type="password"
                   className="form-control"
                   value={currentPassword}
-                  onChange={(e) => {
-                    setCurrentPassword(e.target.value);
-                    setPasswordDirty(true);
-                  }}
-                  placeholder="••••••••"
+                  onChange={(e) => setCurrentPassword(e.target.value)}
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="newPassword" className="form-label">Neues Passwort</label>
+                <label className="form-label">Neues Passwort</label>
                 <input
-                  id="newPassword"
                   type="password"
                   className="form-control"
                   value={newPassword}
@@ -319,13 +387,14 @@ export default function SettingsPage() {
                     setNewPassword(e.target.value);
                     setPasswordDirty(true);
                   }}
-                  placeholder="Min. 8 Zeichen"
                 />
+                {passwordDirty && newPassword.length < 8 && (
+                  <div className="text-danger" style={{ fontSize: "0.85rem" }}>Mindestens 8 Zeichen</div>
+                )}
               </div>
               <div className="mb-3">
-                <label htmlFor="confirmPassword" className="form-label">Passwort bestätigen</label>
+                <label className="form-label">Passwort bestätigen</label>
                 <input
-                  id="confirmPassword"
                   type="password"
                   className="form-control"
                   value={confirmPassword}
@@ -333,72 +402,120 @@ export default function SettingsPage() {
                     setConfirmPassword(e.target.value);
                     setPasswordDirty(true);
                   }}
-                  placeholder="••••••••"
                 />
+                {passwordDirty && confirmPassword && newPassword !== confirmPassword && (
+                  <div className="text-danger" style={{ fontSize: "0.85rem" }}>Passwörter stimmen nicht überein</div>
+                )}
               </div>
-              <div className="d-flex gap-2">
-                <button className="btn btn-primary" onClick={changePassword} disabled={loading}>
-                  {loading ? "Ändern..." : "Passwort ändern"}
+              <button
+                className="btn btn-primary"
+                onClick={handlePasswordChange}
+                disabled={
+                  loading ||
+                  !currentPassword ||
+                  !newPassword ||
+                  newPassword.length < 8 ||
+                  newPassword !== confirmPassword
+                }
+              >
+                {loading ? (
+                  <span className="spinner-border spinner-border-sm" role="status" />
+                ) : (
+                  <><RotateCcw size={16} className="me-1" /> Passwort ändern</>
+                )}
+              </button>
+            </div>
+          )}
+
+          {activeTab === "preferences" && (
+            <div className="text-muted">Präferenzen werden in einer zukünftigen Version verfügbar sein.</div>
+          )}
+
+          {activeTab === "gp" && isPatient && (
+            <div>
+              <p className="text-muted mb-3">
+                Hinterlegen Sie hier die Daten Ihres Hausarztes. Diese werden für Überweisungsanfragen verwendet.
+              </p>
+
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <label className="form-label">Name des Hausarztes *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="z.B. Dr. Max Mustermann"
+                    value={gpForm.generalPractitionerName}
+                    onChange={(e) => setGpForm((prev) => ({ ...prev, generalPractitionerName: e.target.value }))}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">E-Mail des Hausarztes *</label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    placeholder="z.B. dr.mustermann@praxis.de"
+                    value={gpForm.generalPractitionerEmail}
+                    onChange={(e) => setGpForm((prev) => ({ ...prev, generalPractitionerEmail: e.target.value }))}
+                  />
+                  <div className="form-text">
+                    Wird für automatische Überweisungsanfragen benötigt.
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Telefonnummer</label>
+                  <input
+                    type="tel"
+                    className="form-control"
+                    placeholder="z.B. 030 12345678"
+                    value={gpForm.generalPractitionerPhone}
+                    onChange={(e) => setGpForm((prev) => ({ ...prev, generalPractitionerPhone: e.target.value }))}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Stadt</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="z.B. Berlin"
+                    value={gpForm.generalPractitionerCity}
+                    onChange={(e) => setGpForm((prev) => ({ ...prev, generalPractitionerCity: e.target.value }))}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Adresse</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="z.B. Friedrichstraße 123, 10117 Berlin"
+                    value={gpForm.generalPractitionerAddress}
+                    onChange={(e) => setGpForm((prev) => ({ ...prev, generalPractitionerAddress: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 d-flex justify-content-between align-items-center">
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSaveGP}
+                  disabled={gpLoading || !gpForm.generalPractitionerName || !gpForm.generalPractitionerEmail}
+                >
+                  {gpLoading ? (
+                    <span className="spinner-border spinner-border-sm" role="status" />
+                  ) : (
+                    <><Save size={16} className="me-1" /> Hausarzt speichern</>
+                  )}
                 </button>
-                {passwordDirty && (
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => {
-                      setCurrentPassword("");
-                      setNewPassword("");
-                      setConfirmPassword("");
-                      setPasswordDirty(false);
-                    }}
-                  >
-                    <RotateCcw size={14} className="me-1" />
-                    Zurücksetzen
-                  </button>
+
+                {patientProfile?.generalPractitionerEmail && (
+                  <span className="text-success" style={{ fontSize: "0.85rem" }}>
+                    ✓ Gespeichert — Überweisungsanfragen möglich
+                  </span>
                 )}
               </div>
             </div>
-
-            <div className={`tab-pane-custom ${activeTab === "preferences" ? "active" : ""}`}>
-              <div className="mb-3">
-                <h5 className="fw-semibold">Präferenzen</h5>
-                <p className="text-muted mb-0">Sprache und Regionaleinstellungen.</p>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Sprache</label>
-                <p className="text-muted mb-0">Deutsch (vorerst festgelegt)</p>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Zeitzone</label>
-                <p className="text-muted mb-0">Europe/Berlin (vorerst festgelegt)</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
-
-      {/* Unsaved Changes Modal */}
-      {showUnsaved && (
-        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-          style={{ zIndex: 1060, background: "rgba(0,0,0,0.4)" }}
-        >
-          <div className="bg-white rounded-4 shadow p-4" style={{ maxWidth: "400px", width: "90%" }}>
-            <h5 className="fw-bold mb-2">Ungespeicherte Änderungen</h5>
-            <p className="text-muted mb-3">
-              Sie haben Änderungen vorgenommen, die noch nicht gespeichert sind. Wenn Sie fortfahren, gehen diese Änderungen verloren.
-            </p>
-            <div className="d-flex gap-2 justify-content-end">
-              <button className="btn btn-outline-secondary" onClick={() => setShowUnsaved(false)}>
-                Abbrechen
-              </button>
-              <button className="btn btn-danger" onClick={discardChanges}>
-                Verwerfen
-              </button>
-              <button className="btn btn-primary" onClick={confirmTabSwitch}>
-                Speichern &amp; Weiter
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

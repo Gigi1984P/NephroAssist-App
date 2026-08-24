@@ -46,9 +46,13 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [updatingStepId, setUpdatingStepId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userLoaded, setUserLoaded] = useState(false);
+
+  // Hausarzt-Email fuer Ueberweisungsbutton
+  const [gpEmail, setGpEmail] = useState<string | null>(null);
 
   const [appointmentForms, setAppointmentForms] = useState<Record<string, AppointmentData>>({});
 
@@ -63,6 +67,16 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
         setUserLoaded(true);
       })
       .catch(() => setUserLoaded(true));
+
+    // Lade Hausarzt-Email wenn Patient
+    fetch("/api/patients/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.patient?.generalPractitionerEmail) {
+          setGpEmail(data.patient.generalPractitionerEmail);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const loadWorkflowSteps = async () => {
@@ -183,6 +197,30 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     }
   };
 
+  const handleReferralRequest = async (stepId: string) => {
+    setUpdatingStepId(stepId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tasks/${stepId}/referral`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Fehler beim Senden");
+        setUpdatingStepId(null);
+        return;
+      }
+      await loadWorkflowSteps();
+      setUpdatingStepId(null);
+      setMessage({ type: "success", text: `Überweisungsanfrage an ${data.practitionerEmail} gesendet` });
+    } catch (err) {
+      setError("Netzwerkfehler");
+      setUpdatingStepId(null);
+    }
+  };
+
   const updateAppointmentField = (stepId: string, field: keyof AppointmentData, value: string) => {
     setAppointmentForms((prev) => ({
       ...prev,
@@ -213,6 +251,12 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
 
       {error && (
         <div className="alert alert-danger" role="alert">{error}</div>
+      )}
+
+      {message && (
+        <div className={`alert ${message.type === "success" ? "alert-success" : "alert-danger"}`} role="alert">
+          {message.text}
+        </div>
       )}
 
       <div className="row g-4">
@@ -268,8 +312,40 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                           <div>{getStatusBadge(step.status)}</div>
                         </div>
 
-                        {/* KLINIK-PRUEFUNG: Nur fuer Klinik-Mitarbeiter bearbeitbar */}
-                        {isClinicReview ? (
+                        {step.stepNumber === 1 ? (
+                          /* SCHRITT 1: Ueberweisungsanfrage an Hausarzt */
+                          <div className="mt-2">
+                            {!userLoaded ? (
+                              <span className="text-muted" style={{ fontSize: "0.85rem" }}>Lade...</span>
+                            ) : step.status === "COMPLETED" ? (
+                              <div className="alert alert-success py-2 mb-0" style={{ fontSize: "0.85rem" }}>
+                                ✅ Überweisungsanfrage gesendet
+                              </div>
+                            ) : gpEmail ? (
+                              <div className="d-flex flex-column gap-2">
+                                <div className="text-muted" style={{ fontSize: "0.85rem" }}>
+                                  Hausarzt: <strong>{gpEmail}</strong>
+                                </div>
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() => handleReferralRequest(step.id)}
+                                  disabled={updatingStepId === step.id}
+                                >
+                                  {updatingStepId === step.id ? (
+                                    <span className="spinner-border spinner-border-sm" role="status" />
+                                  ) : (
+                                    "📧 Überweisung an Hausarzt anfordern"
+                                  )}
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="alert alert-warning py-2 mb-0" style={{ fontSize: "0.85rem" }}>
+                                ⚠️ <strong>Kein Hausarzt hinterlegt.</strong><br/>
+                                Bitte in den <a href="/dashboard/settings" className="alert-link">Einstellungen → Hausarzt</a> die Daten Ihres Hausarztes eintragen.
+                              </div>
+                            )}
+                          </div>
+                        ) : isClinicReview ? (
                           <div className="mt-2">
                             {!userLoaded ? (
                               <span className="text-muted" style={{ fontSize: "0.85rem" }}>Lade Berechtigungen...</span>

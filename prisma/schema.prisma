@@ -114,6 +114,14 @@ model Patient {
   dateOfBirth   DateTime      @map("date_of_birth")
   email         String?
   phone         String?
+
+  // Hausarzt / Allgemeinarzt
+  generalPractitionerName    String? @map("gp_name")
+  generalPractitionerEmail   String? @map("gp_email")
+  generalPractitionerPhone   String? @map("gp_phone")
+  generalPractitionerAddress String? @map("gp_address")
+  generalPractitionerCity    String? @map("gp_city")
+
   language      String        @default("de")
   timezone      String        @default("Europe/Berlin")
   consentStatus ConsentStatus @default(CONSENT_PENDING) @map("consent_status")
