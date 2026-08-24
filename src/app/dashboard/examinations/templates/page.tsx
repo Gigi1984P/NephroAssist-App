@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import {
-  Plus, Edit3, Trash2, X, Save, AlertTriangle,
+  Plus, Edit3, Trash2, X, Save, AlertTriangle, UserPlus, ArrowLeft,
 } from "lucide-react";
 
 interface Template {
@@ -17,14 +17,30 @@ interface Template {
   status: string;
 }
 
+interface Patient {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  cases: { id: string }[];
+}
+
 export default function TemplatesPage() {
   const router = useRouter();
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Zuweisungs-Modal
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assigningTemplate, setAssigningTemplate] = useState<Template | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<string | "">("");
+  const [selectedCase, setSelectedCase] = useState<string | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<"dental-clearance" | "cardiac-clearance" | "custom">("dental-clearance");
 
   // Formular-States
   const [formName, setFormName] = useState("");
@@ -36,13 +52,20 @@ export default function TemplatesPage() {
   const loadTemplates = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/examinations/templates", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
+      const [templatesRes, patientsRes] = await Promise.all([
+        fetch("/api/examinations/templates", { credentials: "include" }),
+        fetch("/api/patients", { credentials: "include" }),
+      ]);
+      if (templatesRes.ok) {
+        const data = await templatesRes.json();
         setTemplates(data.templates || []);
       }
+      if (patientsRes.ok) {
+        const data = await patientsRes.json();
+        setPatients(data.patients || []);
+      }
     } catch (err) {
-      console.error("Failed to load templates:", err);
+      console.error("Failed to load data:", err);
     } finally {
       setLoading(false);
     }
@@ -72,6 +95,14 @@ export default function TemplatesPage() {
     setShowModal(true);
   };
 
+  const openAssign = (template: Template) => {
+    setAssigningTemplate(template);
+    setSelectedPatient("");
+    setSelectedCase(null);
+    setSelectedWorkflow("dental-clearance");
+    setShowAssignModal(true);
+  };
+
   const handleSave = async () => {
     if (!formName.trim() || !formCategory.trim()) {
       setMessage({ type: "error", text: "Name und Kategorie sind Pflichtfelder" });
@@ -92,7 +123,6 @@ export default function TemplatesPage() {
     try {
       let res;
       if (editingTemplate) {
-        // Update
         res = await fetch(`/api/examinations/templates/${editingTemplate.id}`, {
           method: "PUT",
           credentials: "include",
@@ -100,7 +130,6 @@ export default function TemplatesPage() {
           body: JSON.stringify(body),
         });
       } else {
-        // Create
         res = await fetch("/api/examinations/templates", {
           method: "POST",
           credentials: "include",
@@ -149,6 +178,45 @@ export default function TemplatesPage() {
     }
   };
 
+  const handleAssign = async () => {
+    if (!selectedCase || !assigningTemplate) {
+      setMessage({ type: "error", text: "Bitte Patient und Fall auswählen" });
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch("/api/examinations/assign", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caseId: selectedCase,
+          templateId: assigningTemplate.id,
+          workflowType: selectedWorkflow,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({
+          type: "success",
+          text: `"${assigningTemplate.name}" erfolgreich zugewiesen`,
+        });
+        setShowAssignModal(false);
+        setAssigningTemplate(null);
+      } else {
+        setMessage({ type: "error", text: data.error || "Fehler beim Zuweisen" });
+      }
+    } catch (err) {
+      setMessage({ type: "error", text: "Netzwerkfehler" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Gruppiere nach Kategorie
   const grouped: Record<string, Template[]> = {};
   templates.forEach((t) => {
@@ -160,7 +228,7 @@ export default function TemplatesPage() {
     <div>
       <PageHeader
         title="Untersuchungs-Templates"
-        description="Vordefinierte Untersuchungen verwalten"
+        description="Vordefinierte Untersuchungen verwalten und Patienten zuweisen"
         action={
           <button
             className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
@@ -188,46 +256,58 @@ export default function TemplatesPage() {
         <div className="d-flex flex-column gap-4">
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category} className="card">
-              <div className="card-header">
-                <strong>{category}</strong>
-                <span className="badge bg-secondary ms-2">{items.length}</span>
+              <div className="card-header d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{category}</strong>
+                  <span className="badge bg-secondary ms-2">{items.length}</span>
+                </div>
               </div>
-              <div className="list-group list-group-flush">
-                {items.map((template) => (
-                  <div
-                    key={template.id}
-                    className="list-group-item d-flex justify-content-between align-items-center"
-                  >
-                    <div className="flex-grow-1">
-                      <div className="d-flex align-items-center gap-2">
-                        <span className="fw-semibold">{template.name}</span>
-                        {template.required && <span className="badge bg-danger" style={{ fontSize: "0.65rem" }}>Pflicht</span>}
-                        {template.listingBlocker && <span className="badge bg-warning text-dark" style={{ fontSize: "0.65rem" }}>Blocker</span>}
-                      </div>
-                      {template.description && (
-                        <div className="text-muted mt-1" style={{ fontSize: "0.8rem" }}>
-                          {template.description}
-                        </div>
-                      )}
-                    </div>
-                    <div className="d-flex gap-2">
-                      <button
-                        className="btn btn-sm btn-outline-primary"
-                        onClick={() => openEdit(template)}
-                        title="Bearbeiten"
-                      >
-                        <Edit3 size={14} />
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => setDeleteConfirm(template.id)}
-                        title="Löschen"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <tbody>
+                    {items.map((template) => (
+                      <tr key={template.id}>
+                        <td className="align-middle">
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="fw-semibold">{template.name}</span>
+                            {template.required && <span className="badge bg-danger" style={{ fontSize: "0.65rem" }}>Pflicht</span>}
+                            {template.listingBlocker && <span className="badge bg-warning text-dark" style={{ fontSize: "0.65rem" }}>Blocker</span>}
+                          </div>
+                          {template.description && (
+                            <div className="text-muted" style={{ fontSize: "0.8rem" }}>
+                              {template.description}
+                            </div>
+                          )}
+                        </td>
+                        <td className="align-middle" style={{ width: "1%", whiteSpace: "nowrap" }}>
+                          <div className="d-flex gap-2">
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => openAssign(template)}
+                              title="Patient zuweisen"
+                            >
+                              <UserPlus size={14} />
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => openEdit(template)}
+                              title="Bearbeiten"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => setDeleteConfirm(template.id)}
+                              title="Löschen"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           ))}
@@ -338,6 +418,100 @@ export default function TemplatesPage() {
                     ) : (
                       <>
                         <Save size={14} className="me-1" /> Speichern
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modal: Template einem Patienten zuweisen */}
+      {showAssignModal && assigningTemplate && (
+        <>
+          <div className="modal show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <div className="modal-dialog modal-lg">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">
+                    <UserPlus size={16} className="me-2" />
+                    "{assigningTemplate.name}" zuweisen
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setShowAssignModal(false)}
+                  />
+                </div>
+                <div className="modal-body">
+                  <div className="alert alert-info mb-3">
+                    <strong>Template:</strong> {assigningTemplate.name}
+                    <br />
+                    <strong>Kategorie:</strong> {assigningTemplate.category}
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Patient *</label>
+                    <select
+                      className="form-select"
+                      value={selectedPatient}
+                      onChange={(e) => {
+                        const pid = e.target.value;
+                        setSelectedPatient(pid);
+                        const patient = patients.find((p) => p.id === pid);
+                        if (patient && patient.cases && patient.cases.length > 0) {
+                          setSelectedCase(patient.cases[0].id);
+                        } else {
+                          setSelectedCase(null);
+                        }
+                      }}
+                    >
+                      <option value="">Patient auswählen...</option>
+                      {patients.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.firstName} {p.lastName} {p.email ? `(${p.email})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Workflow *</label>
+                    <select
+                      className="form-select"
+                      value={selectedWorkflow}
+                      onChange={(e) => setSelectedWorkflow(e.target.value as any)}
+                    >
+                      <option value="dental-clearance">Dental Clearance (6 Schritte)</option>
+                      <option value="cardiac-clearance">Herz-Kreislauf Clearance (6 Schritte)</option>
+                      <option value="custom">Einfache Untersuchung (kein Workflow)</option>
+                    </select>
+                    <div className="form-text">
+                      Der Workflow bestimmt die Schritte, die der Patient durchlaufen muss.
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => setShowAssignModal(false)}
+                  >
+                    <ArrowLeft size={14} className="me-1" /> Abbrechen
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-success"
+                    disabled={!selectedCase || loading}
+                    onClick={handleAssign}
+                  >
+                    {loading ? (
+                      <span className="spinner-border spinner-border-sm" role="status" />
+                    ) : (
+                      <>
+                        <UserPlus size={14} className="me-1" /> Zuweisen
                       </>
                     )}
                   </button>
