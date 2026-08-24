@@ -34,7 +34,6 @@ const sidebarItems: SidebarItem[] = [
   { title: "Termine", href: "/dashboard/appointments", icon: Calendar, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
   { title: "Untersuchungen", icon: CheckSquare, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER"], children: [
     { title: "Alle Untersuchungen", href: "/dashboard/tasks" },
-    { title: "Templates verwalten", href: "/dashboard/examinations/templates" },
   ] },
   { title: "Dokumente", href: "/dashboard/documents", icon: FileText, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER"] },
   { title: "Statistiken", href: "/dashboard/admin/reports", icon: BarChart3, roles: ["ADMIN", "COORDINATOR"] },
