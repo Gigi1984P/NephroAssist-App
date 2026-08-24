@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 /* ================================================================ */
-/*  GET: Alle Patienten mit Cases fuer Dropdown                      */
+/*  GET: Verfuegbare Untersuchungs-Templates laden                   */
 /* ================================================================ */
 export async function GET() {
   try {
@@ -17,31 +17,34 @@ export async function GET() {
     const user = session.user;
     const userRole = user.role;
 
-    // Nur Klinik-Mitarbeiter duerfen Patienten sehen
+    // Nur Klinik-Mitarbeiter duerfen Templates sehen
     const clinicRoles = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"];
     if (!clinicRoles.includes(userRole)) {
       return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
     }
 
-    // Alle Patienten laden
-    const patients = await prisma.patient.findMany({
+    // Alle Requirement Templates laden
+    const templates = await prisma.requirementTemplate.findMany({
       select: {
         id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        cases: {
-          select: { id: true },
-          orderBy: { createdAt: "desc" },
-        },
+        name: true,
+        category: true,
+        description: true,
+        required: true,
       },
-      orderBy: { lastName: "asc" },
-      take: 50,
+      orderBy: { category: "asc" },
     });
 
-    return NextResponse.json({ patients });
+    // Gruppiere nach Kategorie
+    const grouped: Record<string, typeof templates> = {};
+    templates.forEach((t) => {
+      if (!grouped[t.category]) grouped[t.category] = [];
+      grouped[t.category].push(t);
+    });
+
+    return NextResponse.json({ templates, grouped });
   } catch (error) {
-    console.error("Patients fetch error:", error);
+    console.error("Templates fetch error:", error);
     return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
   }
 }
