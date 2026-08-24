@@ -36,6 +36,9 @@ interface AppointmentData {
   date: string;
   time: string;
   doctorName: string;
+  doctorEmail: string;
+  doctorPhone: string;
+  doctorFax: string;
   location: string;
 }
 
@@ -167,7 +170,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
   const handleAppointmentSave = async (stepId: string) => {
     const form = appointmentForms[stepId];
     if (!form?.date || !form?.time || !form?.doctorName || !form?.location) {
-      setError("Bitte alle Felder ausfüllen");
+      setError("Bitte Datum, Uhrzeit, Arztname und Ort ausfüllen");
       return;
     }
     setUpdatingStepId(stepId);
@@ -179,7 +182,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "COMPLETED",
-          notes: `Termin vereinbart: ${form.date} ${form.time}, ${form.doctorName}, ${form.location}`,
+          notes: `Termin vereinbart: ${form.date} ${form.time}, ${form.doctorName}${form.doctorPhone ? ", Tel: " + form.doctorPhone : ""}${form.doctorEmail ? ", Email: " + form.doctorEmail : ""}${form.doctorFax ? ", Fax: " + form.doctorFax : ""}, ${form.location}`,
           metadata: { appointment: form },
         }),
       });
@@ -395,7 +398,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                             )}
                           </div>
                         ) : isAppointmentStep ? (
-                          /* APPOINTMENT SCHRITT: Kalenderformular */
+                          /* APPOINTMENT SCHRITT: Kalenderformular mit Facharzt-Kontaktdaten */
                           <div className="mt-3 p-3 bg-white border rounded">
                             <div className="fw-semibold mb-2" style={{ fontSize: "0.9rem", color: "#0d6efd" }}>
                               📅 Termin eintragen
@@ -406,14 +409,24 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                                 <div className="fw-medium">Termin vereinbart:</div>
                                 <div style={{ fontSize: "0.9rem" }}>
                                   📅 {existingAppointment.date} um {existingAppointment.time}<br/>
-                                  👨‍⚕️ {existingAppointment.doctorName}<br/>
+                                  👨‍⚕️ {existingAppointment.doctorName}
+                                  {existingAppointment.doctorPhone && (
+                                    <> · 📞 {existingAppointment.doctorPhone}</>
+                                  )}
+                                  {existingAppointment.doctorEmail && (
+                                    <> · 📧 {existingAppointment.doctorEmail}</>
+                                  )}
+                                  {existingAppointment.doctorFax && (
+                                    <> · 📠 {existingAppointment.doctorFax}</>
+                                  )}
+                                  <br/>
                                   📍 {existingAppointment.location}
                                 </div>
                               </div>
                             ) : (
                               <div className="row g-2">
                                 <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Datum</label>
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Datum *</label>
                                   <input
                                     type="date"
                                     className="form-control form-control-sm"
@@ -422,7 +435,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                                   />
                                 </div>
                                 <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Uhrzeit</label>
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Uhrzeit *</label>
                                   <input
                                     type="time"
                                     className="form-control form-control-sm"
@@ -431,7 +444,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                                   />
                                 </div>
                                 <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Arztname</label>
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Arztname *</label>
                                   <input
                                     type="text"
                                     className="form-control form-control-sm"
@@ -441,7 +454,37 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                                   />
                                 </div>
                                 <div className="col-md-6">
-                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Ort</label>
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>E-Mail des Facharztes</label>
+                                  <input
+                                    type="email"
+                                    className="form-control form-control-sm"
+                                    placeholder="z.B. dr.mueller@kardiologie.de"
+                                    value={appointmentForms[step.id]?.doctorEmail || ""}
+                                    onChange={(e) => updateAppointmentField(step.id, "doctorEmail", e.target.value)}
+                                  />
+                                </div>
+                                <div className="col-md-6">
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Telefon</label>
+                                  <input
+                                    type="tel"
+                                    className="form-control form-control-sm"
+                                    placeholder="z.B. 030 98765432"
+                                    value={appointmentForms[step.id]?.doctorPhone || ""}
+                                    onChange={(e) => updateAppointmentField(step.id, "doctorPhone", e.target.value)}
+                                  />
+                                </div>
+                                <div className="col-md-6">
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Fax</label>
+                                  <input
+                                    type="tel"
+                                    className="form-control form-control-sm"
+                                    placeholder="z.B. 030 98765433"
+                                    value={appointmentForms[step.id]?.doctorFax || ""}
+                                    onChange={(e) => updateAppointmentField(step.id, "doctorFax", e.target.value)}
+                                  />
+                                </div>
+                                <div className="col-12">
+                                  <label className="form-label mb-1" style={{ fontSize: "0.8rem" }}>Ort *</label>
                                   <input
                                     type="text"
                                     className="form-control form-control-sm"
