@@ -30,7 +30,10 @@ const LS_TAB = "nephro-settings-active-tab";
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"profile" | "password" | "preferences" | "gp">(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem(LS_TAB) as any) || "profile";
+      const saved = localStorage.getItem(LS_TAB);
+      // Fallback auf "profile" wenn "gp" gespeichert aber noch keine Rolle geladen
+      if (saved === "gp") return "gp";
+      return (saved as any) || "profile";
     }
     return "profile";
   });
@@ -313,13 +316,32 @@ export default function SettingsPage() {
                 <Globe size={14} className="me-1" /> Präferenzen
               </button>
             </li>
-            {isPatient && (
+            {isPatient ? (
               <li className="nav-item">
                 <button
                   className={`nav-link ${activeTab === "gp" ? "active" : ""}`}
                   onClick={() => switchTab("gp")}
                 >
                   <Stethoscope size={14} className="me-1" /> Hausarzt
+                </button>
+              </li>
+            ) : profile ? (
+              <li className="nav-item">
+                <button
+                  className={`nav-link ${activeTab === "gp" ? "active" : ""}`}
+                  onClick={() => switchTab("gp")}
+                  disabled
+                  style={{ opacity: 0.5, cursor: "not-allowed" }}
+                  title="Nur für Patienten verfügbar"
+                >
+                  <Stethoscope size={14} className="me-1" /> Hausarzt
+                </button>
+              </li>
+            ) : (
+              <li className="nav-item">
+                <button className="nav-link disabled" style={{ opacity: 0.5 }}>
+                  <span className="spinner-border spinner-border-sm me-1" role="status" />
+                  Laden...
                 </button>
               </li>
             )}
