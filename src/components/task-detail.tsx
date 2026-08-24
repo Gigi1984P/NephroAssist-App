@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
+import { Upload, FileCheck } from "lucide-react";
 
 interface WorkflowStep {
   id: string;
@@ -61,7 +62,6 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
   const handleStatusChange = async (stepId: string, newStatus: string) => {
     setUpdatingStepId(stepId);
     setError(null);
-    
     try {
       const res = await fetch(`/api/tasks/${stepId}`, {
         method: "PATCH",
@@ -69,20 +69,45 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.error || "Fehler beim Aktualisieren");
         setUpdatingStepId(null);
         return;
       }
-
-      // Reload workflow
       await loadWorkflowSteps();
       setUpdatingStepId(null);
     } catch (err) {
       setError("Netzwerkfehler");
+      setUpdatingStepId(null);
+    }
+  };
+
+  const handleUpload = async (stepId: string, file: File) => {
+    setUpdatingStepId(stepId);
+    setError(null);
+    try {
+      // Upload-Datei (noch ohne echtes Backend, zeigt nur Erfolg an)
+      // TODO: /api/upload implementieren
+      console.log("Upload:", file.name, "für Schritt", stepId);
+
+      // Nach Upload: Status auf COMPLETED setzen
+      const res = await fetch(`/api/tasks/${stepId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "COMPLETED", notes: `Dokument hochgeladen: ${file.name}` }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Fehler beim Hochladen");
+        setUpdatingStepId(null);
+        return;
+      }
+      await loadWorkflowSteps();
+      setUpdatingStepId(null);
+    } catch (err) {
+      setError("Netzwerkfehler beim Hochladen");
       setUpdatingStepId(null);
     }
   };
@@ -115,23 +140,11 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
       <div className="row g-4">
         <div className="col-lg-4">
           <div className="card">
-            <div className="card-header">
-              <strong>Informationen</strong>
-            </div>
+            <div className="card-header"><strong>Informationen</strong></div>
             <div className="card-body">
-              <p>
-                <strong>Patient:</strong><br/>
-                {task.requirement?.patientCase?.patient.firstName}{" "}
-                {task.requirement?.patientCase?.patient.lastName}
-              </p>
-              <p>
-                <strong>Kategorie:</strong><br/>
-                {task.requirement?.category || "—"}
-              </p>
-              <p className="mb-0">
-                <strong>Fortschritt:</strong><br/>
-                {completedSteps} / {workflowSteps.length} ({progress}%)
-              </p>
+              <p><strong>Patient:</strong><br/>{task.requirement?.patientCase?.patient.firstName} {task.requirement?.patientCase?.patient.lastName}</p>
+              <p><strong>Kategorie:</strong><br/>{task.requirement?.category || "—"}</p>
+              <p className="mb-0"><strong>Fortschritt:</strong><br/>{completedSteps} / {workflowSteps.length} ({progress}%)</p>
               <div className="progress mt-2" style={{ height: "10px" }}>
                 <div className="progress-bar" style={{ width: `${progress}%` }} />
               </div>
@@ -141,9 +154,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
 
         <div className="col-lg-8">
           <div className="card">
-            <div className="card-header">
-              <strong>Workflow-Schritte</strong>
-            </div>
+            <div className="card-header"><strong>Workflow-Schritte</strong></div>
             <div className="card-body">
               {loading ? (
                 <p className="text-muted">Laden...</p>
@@ -176,36 +187,46 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                           <div>{getStatusBadge(step.status)}</div>
                         </div>
 
-                        {/* STATUS DROPDOWN — immer sichtbar */}
-                        <div className="d-flex align-items-center gap-2 mt-2">
-                          <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
-                          <select
-                            className="form-select form-select-sm"
-                            style={{ width: "auto", fontSize: "0.85rem" }}
-                            value={step.status}
-                            onChange={(e) => handleStatusChange(step.id, e.target.value)}
-                            disabled={updatingStepId === step.id}
-                          >
-                            <option value="PENDING">Ausstehend</option>
-                            <option value="IN_PROGRESS">In Bearbeitung</option>
-                            <option value="COMPLETED">Erledigt</option>
-                          </select>
-                          {updatingStepId === step.id && (
-                            <span className="spinner-border spinner-border-sm" role="status" />
-                          )}
-                        </div>
-
-                        {/* UPLOAD — nur fuer Upload-Schritte */}
-                        {isUploadStep && (
+                        {/* UPLOAD-SCHRITT: Datei hochladen + Erledigt setzen */}
+                        {isUploadStep ? (
                           <div className="mt-2">
                             <label className="text-muted mb-1 d-block" style={{ fontSize: "0.85rem" }}>
-                              Dokument:
+                              Dokument hochladen:
                             </label>
-                            <input
-                              type="file"
-                              className="form-control form-control-sm"
-                              style={{ fontSize: "0.8rem" }}
-                            />
+                            <div className="d-flex align-items-center gap-2">
+                              <input
+                                type="file"
+                                className="form-control form-control-sm"
+                                style={{ fontSize: "0.8rem" }}
+                                disabled={updatingStepId === step.id || isCompleted}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleUpload(step.id, file);
+                                }}
+                              />
+                              {updatingStepId === step.id && (
+                                <span className="spinner-border spinner-border-sm" role="status" />
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          /* NORMALER SCHRITT: Dropdown */
+                          <div className="d-flex align-items-center gap-2 mt-2">
+                            <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
+                            <select
+                              className="form-select form-select-sm"
+                              style={{ width: "auto", fontSize: "0.85rem" }}
+                              value={step.status}
+                              onChange={(e) => handleStatusChange(step.id, e.target.value)}
+                              disabled={updatingStepId === step.id}
+                            >
+                              <option value="PENDING">Ausstehend</option>
+                              <option value="IN_PROGRESS">In Bearbeitung</option>
+                              <option value="COMPLETED">Erledigt</option>
+                            </select>
+                            {updatingStepId === step.id && (
+                              <span className="spinner-border spinner-border-sm" role="status" />
+                            )}
                           </div>
                         )}
                       </div>
