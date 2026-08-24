@@ -39,15 +39,31 @@ interface AppointmentData {
   location: string;
 }
 
+const CLINIC_ROLES = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"];
+
 export default function TaskDetailPage({ task: initialTask }: { task: TaskDetailData }) {
   const [task] = useState<TaskDetailData>(initialTask);
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingStepId, setUpdatingStepId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userLoaded, setUserLoaded] = useState(false);
 
-  // Appointment form state per step
   const [appointmentForms, setAppointmentForms] = useState<Record<string, AppointmentData>>({});
+
+  useEffect(() => {
+    // Lade User-Profil fuer Rollen-Check
+    fetch("/api/user/profile", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.role) {
+          setUserRole(data.role);
+        }
+        setUserLoaded(true);
+      })
+      .catch(() => setUserLoaded(true));
+  }, []);
 
   const loadWorkflowSteps = async () => {
     try {
@@ -58,8 +74,6 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
         const data = await res.json();
         const steps = data.steps || [];
         setWorkflowSteps(steps);
-        
-        // Pre-fill forms from metadata
         const forms: Record<string, AppointmentData> = {};
         steps.forEach((s: WorkflowStep) => {
           if (s.metadata?.appointment) {
@@ -78,6 +92,15 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
   useEffect(() => {
     loadWorkflowSteps();
   }, [task.id]);
+
+  const canEditClinicStep = (): boolean => {
+    if (!userRole) return false;
+    if (CLINIC_ROLES.includes(userRole)) return true;
+    // DIALYSIS_STAFF nur wenn unabhaengig (parentOrganizationId = null)
+    // Das kann hier nicht geprueft werden, API blockiert es
+    if (userRole === "DIALYSIS_STAFF") return true; // API prueft genauer
+    return false;
+  };
 
   const handleStatusChange = async (stepId: string, newStatus: string) => {
     setUpdatingStepId(stepId);
@@ -133,7 +156,6 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
       setError("Bitte alle Felder ausfüllen");
       return;
     }
-
     setUpdatingStepId(stepId);
     setError(null);
     try {
@@ -223,6 +245,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                     const isActive = step.status === "IN_PROGRESS";
                     const isUploadStep = step.stepName.toLowerCase().includes("hochladen");
                     const isAppointmentStep = step.stepName.toLowerCase().includes("termin vereinbaren");
+                    const isClinicReview = step.stepName.toLowerCase().includes("prüfung durch");
                     const existingAppointment = step.metadata?.appointment;
 
                     return (
@@ -245,8 +268,41 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
                           <div>{getStatusBadge(step.status)}</div>
                         </div>
 
-                        {/* APPOINTMENT SCHRITT: Kalenderformular */}
-                        {isAppointmentStep ? (
+                        {/* KLINIK-PRUEFUNG: Nur fuer Klinik-Mitarbeiter bearbeitbar */}
+                        {isClinicReview ? (
+                          <div className="mt-2">
+                            {!userLoaded ? (
+                              <span className="text-muted" style={{ fontSize: "0.85rem" }}>Lade Berechtigungen...</span>
+                            ) : canEditClinicStep() ? (
+                              /* Klinik-Mitarbeiter sehen Dropdown */
+                              <div className="d-flex align-items-center gap-2">
+                                <label className="text-muted mb-0" style={{ fontSize: "0.85rem" }}>Status:</label>
+                                <select
+                                  className="form-select form-select-sm"
+                                  style={{ width: "auto", fontSize: "0.85rem" }}
+                                  value={step.status}
+                                  onChange={(e) => handleStatusChange(step.id, e.target.value)}
+                                  disabled={updatingStepId === step.id}
+                                >
+                                  <option value="PENDING">Ausstehend</option>
+                                  <option value="IN_PROGRESS">In Bearbeitung</option>
+                                  <option value="COMPLETED">Erledigt</option>
+                                </select>
+                                {updatingStepId === step.id && (
+                                  <span className="spinner-border spinner-border-sm" role="status" />
+                                )}
+                              </div>
+                            ) : (
+                              /* Patient/Pfleger sehen nur Info */
+                              <div className="alert alert-info py-2 mb-0" style={{ fontSize: "0.85rem" }}>
+                                🔒 <strong>Nur Klinik-Mitarbeiter</strong> können diesen Schritt bearbeiten.
+                                <br/>
+                                Ihre Rolle: <strong>{userRole || "Unbekannt"}</strong>
+                              </div>
+                            )}
+                          </div>
+                        ) : isAppointmentStep ? (
+                          /* APPOINTMENT SCHRITT: Kalenderformular */
                           <div className="mt-3 p-3 bg-white border rounded">
                             <div className="fw-semibold mb-2" style={{ fontSize: "0.9rem", color: "#0d6efd" }}>
                               📅 Termin eintragen
