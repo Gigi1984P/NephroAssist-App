@@ -40,7 +40,9 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
 
   const loadWorkflowSteps = async () => {
     try {
-      const res = await fetch(`/api/tasks/${task.id}/workflow`);
+      const res = await fetch(`/api/tasks/${task.id}/workflow`, {
+        credentials: "include",
+      });
       if (res.ok) {
         const data = await res.json();
         setWorkflowSteps(data.steps || []);
@@ -63,6 +65,7 @@ export default function TaskDetailPage({ task: initialTask }: { task: TaskDetail
     try {
       const res = await fetch(`/api/tasks/${stepId}`, {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
