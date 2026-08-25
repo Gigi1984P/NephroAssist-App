@@ -17,6 +17,7 @@ import {
   ChevronRight,
   LogOut,
   GripVertical,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,6 +37,7 @@ const sidebarItems: SidebarItem[] = [
     { title: "Alle Untersuchungen", href: "/dashboard/tasks" },
   ] },
   { title: "Dokumente", href: "/dashboard/documents", icon: FileText, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER"] },
+  { title: "Blocker", href: "/dashboard/blockers", icon: AlertTriangle, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { title: "Statistiken", href: "/dashboard/admin/reports", icon: BarChart3, roles: ["ADMIN", "COORDINATOR"] },
   { title: "Audit Log", href: "/dashboard/admin/audit", icon: ClipboardList, roles: ["ADMIN"] },
   { title: "Admin", href: "/dashboard/admin", icon: ShieldCheck, roles: ["ADMIN"] },

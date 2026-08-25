@@ -58,8 +58,64 @@ export async function PUT(
 }
 
 /* ================================================================ */
-/*  DELETE: Template löschen                                          */
+/*  POST: Template veröffentlichen (Publish + Version)                */
 /* ================================================================ */
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const user = session.user;
+    if (!CLINIC_ROLES.includes(user.role)) {
+      return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const body = await request.json().catch(() => ({}));
+    const { applyTo = "NEW_ONLY", changes } = body as { applyTo?: string; changes?: string };
+
+    const template = await prisma.requirementTemplate.findUnique({ where: { id } });
+    if (!template) {
+      return NextResponse.json({ error: "Template nicht gefunden" }, { status: 404 });
+    }
+
+    const newVersion = template.version + 1;
+
+    // Neue Version in RequirementTemplateVersion speichern
+    await prisma.requirementTemplateVersion.create({
+      data: {
+        templateId: id,
+        version: template.version,
+        changes: changes || null,
+        publishedAt: new Date(),
+        publishedBy: user.id,
+        applyTo: applyTo as any,
+      },
+    });
+
+    // Template aktualisieren
+    const updated = await prisma.requirementTemplate.update({
+      where: { id },
+      data: {
+        status: "PUBLISHED",
+        version: newVersion,
+      },
+    });
+
+    return NextResponse.json({
+      message: `Template veröffentlicht (v${newVersion})`,
+      template: updated,
+    });
+  } catch (error) {
+    console.error("Template publish error:", error);
+    return NextResponse.json({ error: "Fehler beim Veröffentlichen" }, { status: 500 });
+  }
+}
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }

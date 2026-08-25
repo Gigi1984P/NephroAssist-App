@@ -39,6 +39,7 @@ export async function PATCH(
       select: {
         id: true,
         patientId: true,
+        caseId: true,
         status: true,
         isWorkflowStep: true,
         stepNumber: true,
@@ -133,7 +134,7 @@ export async function PATCH(
       data: updateData,
     });
 
-    // 5. Wenn COMPLETED und Workflow-Schritt: Nächsten aktivieren
+    // 5. Wenn COMPLETED und Workflow-Schritt: Nächsten aktivieren + Timeline
     if (newStatus === "COMPLETED" && task.isWorkflowStep) {
       const nextStep = await prisma.task.findFirst({
         where: {
@@ -148,6 +149,54 @@ export async function PATCH(
           where: { id: nextStep.id },
           data: { status: "IN_PROGRESS" },
         });
+      }
+
+      // Timeline-Event erstellen
+      try {
+        await prisma.timelineEvent.create({
+          data: {
+            caseId: task.caseId || updatedTask.caseId,
+            eventType: "TASK_COMPLETED",
+            description: `Schritt "${task.stepName || updatedTask.title}" wurde als erledigt markiert`,
+            metadata: {
+              taskId: id,
+              stepNumber: task.stepNumber,
+              completedById: user.id,
+              completedByRole: userRole,
+            },
+          },
+        });
+      } catch (e) {
+        // Silent fail für Timeline
+        console.log("Timeline event creation failed:", e);
+      }
+    }
+
+    // Wenn Schritt 6 COMPLETED: Requirement auf ACCEPTED + Timeline
+    if (
+      newStatus === "COMPLETED" &&
+      task.isWorkflowStep &&
+      task.stepNumber === 6
+    ) {
+      try {
+        await prisma.patientRequirement.update({
+          where: { id: task.requirementId },
+          data: { status: "ACCEPTED", completedAt: new Date() },
+        });
+        await prisma.timelineEvent.create({
+          data: {
+            caseId: task.caseId || updatedTask.caseId,
+            eventType: "REQUIREMENT_ACCEPTED",
+            description: `Anforderung "${task.stepName || updatedTask.title}" wurde durch das Transplantationszentrum freigegeben`,
+            metadata: {
+              requirementId: task.requirementId,
+              reviewedById: user.id,
+              reviewedByRole: userRole,
+            },
+          },
+        });
+      } catch (e) {
+        console.log("Timeline event creation failed:", e);
       }
     }
 

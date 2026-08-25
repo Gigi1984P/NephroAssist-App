@@ -9,7 +9,9 @@ import {
   CheckSquare,
   Users,
   AlertTriangle,
+  Clock,
 } from "lucide-react";
+import PatientProgressCard from "@/components/patient-progress-card";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -22,21 +24,28 @@ export default async function DashboardPage() {
   const userRole = user.role as "ADMIN" | "COORDINATOR" | "PHYSICIAN" | "NURSE" | "PATIENT" | "CAREGIVER" | "DIALYSIS_STAFF";
   const allowedPatientIds = await getAllowedPatientIds({ ...user, role: userRole });
 
-  // Is Admin? → keine Filter
   const isAdmin = userRole === "ADMIN";
+  const isPatientOrCaregiver = userRole === "PATIENT" || userRole === "CAREGIVER";
+
   const patientFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { id: { in: allowedPatientIds } } : { id: "" });
   const taskFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" });
   const appointmentFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" });
 
-  const [patientCount, upcomingAppointments, pendingTasks, activeBlockers] = await Promise.all([
+  const [patientCount, upcomingAppointments, pendingTasks, activeBlockers, totalRequirements, completedRequirements, expiringRequirements] = await Promise.all([
     prisma.patient.count({ where: patientFilter }),
-    prisma.appointment.count({
-      where: { startTime: { gte: new Date() }, status: "PLANNED", ...appointmentFilter },
-    }),
-    prisma.task.count({
-      where: { status: "PENDING", ...taskFilter },
-    }),
+    prisma.appointment.count({ where: { startTime: { gte: new Date() }, status: "PLANNED", ...appointmentFilter } }),
+    prisma.task.count({ where: { status: "PENDING", ...taskFilter } }),
     prisma.blocker.count({ where: { status: "ACTIVE" } }),
+    // Für Klinik: Gesamt-Requirements
+    isPatientOrCaregiver ? Promise.resolve(0) : prisma.patientRequirement.count({ where: { patientCase: { patientId: isAdmin ? undefined : { in: allowedPatientIds || [] } } } }),
+    isPatientOrCaregiver ? Promise.resolve(0) : prisma.patientRequirement.count({ where: { status: "ACCEPTED", patientCase: { patientId: isAdmin ? undefined : { in: allowedPatientIds || [] } } } }),
+    // Bald ablaufende Requirements (innerhalb 60 Tage)
+    isPatientOrCaregiver ? Promise.resolve(0) : prisma.patientRequirement.count({
+      where: {
+        expiresAt: { lte: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), gte: new Date() },
+        patientCase: { patientId: isAdmin ? undefined : { in: allowedPatientIds || [] } },
+      },
+    }),
   ]);
 
   const [recentTasks, recentAppointments, recentDocuments] = await Promise.all([
@@ -68,8 +77,6 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const isPatientOrCaregiver = userRole === "PATIENT" || userRole === "CAREGIVER";
-
   return (
     <div>
       <div className="mb-4">
@@ -78,6 +85,69 @@ export default async function DashboardPage() {
         </h2>
         <p className="text-muted mb-0">Hier ist ein Überblick über Ihre aktuellen Aktivitäten.</p>
       </div>
+
+      {/* Patient Progress Card */}
+      {isPatientOrCaregiver && (
+        <PatientProgressCard />
+      )}
+
+      {/* Phase Cards für Klinik */}
+      {!isPatientOrCaregiver && (
+        <div className="row g-3 mb-4">
+          <div className="col-md-6 col-lg-3">
+            <div className="dashboard-card p-3">
+              <div className="d-flex align-items-center gap-3">
+                <div className="stat-icon blue">
+                  <Users size={22} />
+                </div>
+                <div>
+                  <div className="stat-value">{patientCount}</div>
+                  <div className="stat-label">Aktive Patienten</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-6 col-lg-3">
+            <div className="dashboard-card p-3">
+              <div className="d-flex align-items-center gap-3">
+                <div className="stat-icon green">
+                  <CheckSquare size={22} />
+                </div>
+                <div>
+                  <div className="stat-value">{completedRequirements}</div>
+                  <div className="stat-label">Freigegeben</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-6 col-lg-3">
+            <div className="dashboard-card p-3">
+              <div className="d-flex align-items-center gap-3">
+                <div className="stat-icon orange">
+                  <Clock size={22} />
+                </div>
+                <div>
+                  <div className="stat-value">{expiringRequirements}</div>
+                  <div className="stat-label">Bald ablaufend</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-6 col-lg-3">
+            <div className="dashboard-card p-3">
+              <div className="d-flex align-items-center gap-3">
+                <div className="stat-icon red">
+                  <AlertTriangle size={22} />
+                </div>
+                <div>
+                  <div className="stat-value">{activeBlockers}</div>
+                  <div className="stat-label">Aktive Blocker</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="row g-3 mb-4">
