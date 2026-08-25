@@ -218,7 +218,7 @@ export default function PatientsPage() {
                           </div>
                         </td>
                         <td className="actions">
-                          <Link href={`/dashboard/patients/${patient.id}`} className="btn-custom btn-outline-custom btn-sm-custom">
+                          <Link href={`/dashboard/patients/${patient.id}/clinic`} className="btn-custom btn-outline-custom btn-sm-custom">
                             Details
                           </Link>
                         </td>

@@ -203,7 +203,7 @@ export default async function DashboardPage() {
                         </td>
                         <td className="text-end">
                           <Link
-                            href={`/dashboard/patients/${patient.id}`}
+                            href={`/dashboard/patients/${patient.id}/clinic`}
                             className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
                           >
                             <ExternalLink size={14} /> Details
@@ -280,7 +280,7 @@ export default async function DashboardPage() {
                         </td>
                         <td className="text-end">
                           <Link
-                            href={`/dashboard/patients/${patient.id}`}
+                            href={`/dashboard/patients/${patient.id}/clinic`}
                             className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
                           >
                             <ExternalLink size={14} /> Details
