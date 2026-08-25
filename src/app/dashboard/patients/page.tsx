@@ -20,6 +20,21 @@ export default function PatientsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Modal State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Form State
+  const [formFirstName, setFormFirstName] = useState("");
+  const [formLastName, setFormLastName] = useState("");
+  const [formDateOfBirth, setFormDateOfBirth] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formGpName, setFormGpName] = useState("");
+  const [formGpEmail, setFormGpEmail] = useState("");
+  const [formGpPhone, setFormGpPhone] = useState("");
+
   const loadPatients = async () => {
     setLoading(true);
     try {
@@ -38,6 +53,55 @@ export default function PatientsPage() {
   useEffect(() => {
     loadPatients();
   }, []);
+
+  const handleCreatePatient = async () => {
+    if (!formFirstName.trim() || !formLastName.trim()) {
+      setMessage({ type: "error", text: "Vor- und Nachname sind Pflicht" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/patients", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: formFirstName.trim(),
+          lastName: formLastName.trim(),
+          dateOfBirth: formDateOfBirth || null,
+          email: formEmail.trim() || null,
+          phone: formPhone.trim() || null,
+          gpName: formGpName.trim() || null,
+          gpEmail: formGpEmail.trim() || null,
+          gpPhone: formGpPhone.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({ type: "success", text: "Patient angelegt" });
+        setShowCreateModal(false);
+        resetForm();
+        loadPatients();
+      } else {
+        setMessage({ type: "error", text: data.error || "Fehler beim Anlegen" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Netzwerkfehler" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormFirstName("");
+    setFormLastName("");
+    setFormDateOfBirth("");
+    setFormEmail("");
+    setFormPhone("");
+    setFormGpName("");
+    setFormGpEmail("");
+    setFormGpPhone("");
+  };
 
   const filteredPatients = patients.filter((patient) => {
     const matchesSearch =
@@ -59,11 +123,18 @@ export default function PatientsPage() {
         title="Patienten"
         description="Übersicht aller Patienten"
         action={
-          <button className="btn-custom btn-primary-custom">
+          <button className="btn-custom btn-primary-custom" onClick={() => setShowCreateModal(true)}>
             <Plus size={16} /> Neuer Patient
           </button>
         }
       />
+
+      {message && (
+        <div className={`alert ${message.type === "success" ? "alert-success" : "alert-danger"} alert-dismissible fade show mb-3`}>
+          {message.text}
+          <button className="btn-close" onClick={() => setMessage(null)} />
+        </div>
+      )}
 
       {/* Search */}
       <div className="dashboard-card mb-4">
@@ -182,6 +253,72 @@ export default function PatientsPage() {
           )}
         </div>
       </div>
+
+      {/* Create Patient Modal */}
+      {showCreateModal && (
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Neuer Patient</h5>
+                <button className="btn-close" onClick={() => { setShowCreateModal(false); resetForm(); }} />
+              </div>
+              <div className="modal-body">
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-medium">Vorname *</label>
+                    <input type="text" className="form-control" value={formFirstName} onChange={(e) => setFormFirstName(e.target.value)} placeholder="Max" />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-medium">Nachname *</label>
+                    <input type="text" className="form-control" value={formLastName} onChange={(e) => setFormLastName(e.target.value)} placeholder="Mustermann" />
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-medium">Geburtsdatum</label>
+                    <input type="date" className="form-control" value={formDateOfBirth} onChange={(e) => setFormDateOfBirth(e.target.value)} />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-medium">E-Mail</label>
+                    <input type="email" className="form-control" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="max@example.com" />
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-medium">Telefon</label>
+                    <input type="tel" className="form-control" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="+49 123 456789" />
+                  </div>
+                </div>
+                <hr className="my-3" />
+                <h6 className="fw-semibold mb-2">Hausarzt</h6>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-medium">Name</label>
+                    <input type="text" className="form-control" value={formGpName} onChange={(e) => setFormGpName(e.target.value)} placeholder="Dr. Schmidt" />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-medium">E-Mail</label>
+                    <input type="email" className="form-control" value={formGpEmail} onChange={(e) => setFormGpEmail(e.target.value)} placeholder="dr.schmidt@example.com" />
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-medium">Telefon</label>
+                    <input type="tel" className="form-control" value={formGpPhone} onChange={(e) => setFormGpPhone(e.target.value)} placeholder="+49 987 654321" />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => { setShowCreateModal(false); resetForm(); }}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={handleCreatePatient} disabled={saving}>
+                  {saving ? "Wird angelegt..." : "Patient anlegen"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

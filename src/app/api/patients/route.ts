@@ -5,9 +5,9 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 /* ================================================================ */
-/*  GET: Alle Patienten mit Cases fuer Dropdown                      */
+/*  POST: Neuen Patienten anlegen                                   */
 /* ================================================================ */
-export async function GET() {
+export async function POST(request: Request) {
   try {
     const session = await auth();
     if (!session) {
@@ -15,33 +15,50 @@ export async function GET() {
     }
 
     const user = session.user;
-    const userRole = user.role;
-
-    // Nur Klinik-Mitarbeiter duerfen Patienten sehen
-    const clinicRoles = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"];
-    if (!clinicRoles.includes(userRole)) {
+    const clinicRoles = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"];
+    if (!clinicRoles.includes(user.role)) {
       return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
     }
 
-    // Alle Patienten laden
-    const patients = await prisma.patient.findMany({
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        cases: {
-          select: { id: true },
-          orderBy: { createdAt: "desc" },
-        },
-      },
-      orderBy: { lastName: "asc" },
-      take: 50,
+    const body = await request.json();
+    const {
+      firstName,
+      lastName,
+      dateOfBirth,
+      email,
+      phone,
+      gpName,
+      gpEmail,
+      gpPhone,
+    } = body;
+
+    if (!firstName?.trim() || !lastName?.trim()) {
+      return NextResponse.json({ error: "Vor- und Nachname sind Pflicht" }, { status: 400 });
+    }
+
+    // Organization ID aus dem User-Kontext (optional)
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { email: true },
     });
 
-    return NextResponse.json({ patients });
+    const patient = await prisma.patient.create({
+      data: {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : new Date("1990-01-01"),
+        email: email?.trim() || null,
+        phone: phone?.trim() || null,
+        generalPractitionerName: gpName?.trim() || null,
+        generalPractitionerEmail: gpEmail?.trim() || null,
+        generalPractitionerPhone: gpPhone?.trim() || null,
+        createdBy: user.id,
+      },
+    });
+
+    return NextResponse.json({ patient }, { status: 201 });
   } catch (error) {
-    console.error("Patients fetch error:", error);
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    console.error("Patient create error:", error);
+    return NextResponse.json({ error: "Fehler beim Anlegen" }, { status: 500 });
   }
 }
