@@ -23,16 +23,11 @@ export async function GET() {
     }
 
     const templates = await prisma.requirementTemplate.findMany({
-      select: {
-        id: true,
-        name: true,
-        category: true,
-        description: true,
-        required: true,
-        listingBlocker: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        versions: {
+          orderBy: { publishedAt: "desc" },
+          take: 5,
+        },
       },
       orderBy: [{ category: "asc" }, { name: "asc" }],
     });
@@ -67,6 +62,8 @@ export async function POST(request: Request) {
       required: z.boolean().default(true),
       listingBlocker: z.boolean().default(false),
       patientFriendlyDescription: z.string().optional(),
+      validityDuration: z.number().optional(),
+      renewalLeadTime: z.number().optional(),
     });
 
     const data = schema.parse(body);
@@ -92,6 +89,8 @@ export async function POST(request: Request) {
         organizationId: program.organizationId,
         responsibleRole: "PATIENT",
         reviewRequired: true,
+        validityDuration: data.validityDuration || null,
+        renewalLeadTime: data.renewalLeadTime || null,
       },
     });
 

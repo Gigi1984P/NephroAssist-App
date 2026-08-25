@@ -4,6 +4,12 @@
   "installCommand": "npm install --include=dev",
   "framework": "nextjs",
   "regions": ["fra1"],
+  "crons": [
+    {
+      "path": "/api/cron/check-expirations",
+      "schedule": "0 2 * * *"
+    }
+  ],
   "build": {
     "env": {
       "NEXT_TELEMETRY_DISABLED": "1"

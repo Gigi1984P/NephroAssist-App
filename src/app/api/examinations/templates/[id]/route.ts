@@ -35,6 +35,8 @@ export async function PUT(
       required: z.boolean().optional(),
       listingBlocker: z.boolean().optional(),
       patientFriendlyDescription: z.string().optional(),
+      validityDuration: z.number().optional(),
+      renewalLeadTime: z.number().optional(),
     });
 
     const data = schema.parse(body);
