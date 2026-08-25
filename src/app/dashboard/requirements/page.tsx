@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/page-header";
 import {
-  Plus, Pencil, Trash2, UserPlus, History, Tag, Clock, FileText,
+  Plus, Pencil, Trash2, UserPlus, History, Tag, Clock, FileText, X,
 } from "lucide-react";
 
 interface Template {
@@ -29,20 +29,16 @@ interface Patient {
   email: string | null;
 }
 
+type ModalType = "assign" | "create" | "edit" | "delete" | "version" | null;
+
 export default function RequirementsPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Modal States
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showVersionModal, setShowVersionModal] = useState(false);
-
-  // Selected Template
+  // Single modal state
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
 
   // Assign Form
@@ -62,7 +58,7 @@ export default function RequirementsPage() {
   const [formRenewalLead, setFormRenewalLead] = useState<number | undefined>(undefined);
   const [templateSaving, setTemplateSaving] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [templatesRes, patientsRes] = await Promise.all([
@@ -79,11 +75,11 @@ export default function RequirementsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   // Patient-Cases laden wenn Patient ausgewählt
   useEffect(() => {
@@ -102,6 +98,11 @@ export default function RequirementsPage() {
       })
       .catch(() => setPatientCases([]));
   }, [selectedPatientId]);
+
+  const closeAllModals = () => {
+    setActiveModal(null);
+    setSelectedTemplate(null);
+  };
 
   // ---- Assign ----
   const handleAssign = async () => {
@@ -124,7 +125,7 @@ export default function RequirementsPage() {
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: "success", text: "Anforderung zugewiesen" });
-        setShowAssignModal(false);
+        closeAllModals();
         resetAssignForm();
       } else {
         setMessage({ type: "error", text: data.error || "Fehler" });
@@ -161,7 +162,7 @@ export default function RequirementsPage() {
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: "success", text: "Template erstellt" });
-        setShowCreateModal(false);
+        closeAllModals();
         resetCreateForm();
         loadData();
       } else {
@@ -184,7 +185,7 @@ export default function RequirementsPage() {
     setFormBlocker(template.listingBlocker);
     setFormValidity(template.validityDuration ?? undefined);
     setFormRenewalLead(template.renewalLeadTime ?? undefined);
-    setShowEditModal(true);
+    setActiveModal("edit");
   };
 
   const handleEditTemplate = async () => {
@@ -210,8 +211,8 @@ export default function RequirementsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "Template aktualisiert" });
-        setShowEditModal(false);
+        setMessage({ type: "success", text: data.message || "Template aktualisiert" });
+        closeAllModals();
         resetCreateForm();
         loadData();
       } else {
@@ -227,7 +228,7 @@ export default function RequirementsPage() {
   // ---- Delete ----
   const openDelete = (template: Template) => {
     setSelectedTemplate(template);
-    setShowDeleteConfirm(true);
+    setActiveModal("delete");
   };
 
   const handleDelete = async () => {
@@ -239,8 +240,7 @@ export default function RequirementsPage() {
       });
       if (res.ok) {
         setMessage({ type: "success", text: "Template gelöscht" });
-        setShowDeleteConfirm(false);
-        setSelectedTemplate(null);
+        closeAllModals();
         loadData();
       } else {
         const data = await res.json();
@@ -252,16 +252,23 @@ export default function RequirementsPage() {
   };
 
   // ---- Version ----
-  const handlePublishVersion = async (templateId: string, changes?: string) => {
+  const openVersion = (template: Template) => {
+    setSelectedTemplate(template);
+    setActiveModal("version");
+  };
+
+  const handlePublishVersion = async () => {
+    if (!selectedTemplate) return;
     try {
-      const res = await fetch(`/api/examinations/templates/${templateId}`, {
+      const res = await fetch(`/api/examinations/templates/${selectedTemplate.id}`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ applyTo: "NEW_ONLY", changes }),
+        body: JSON.stringify({ applyTo: "NEW_ONLY" }),
       });
       if (res.ok) {
         setMessage({ type: "success", text: "Neue Version veröffentlicht" });
+        closeAllModals();
         loadData();
       } else {
         const data = await res.json();
@@ -273,7 +280,6 @@ export default function RequirementsPage() {
   };
 
   const resetAssignForm = () => {
-    setSelectedTemplate(null);
     setSelectedPatientId("");
     setSelectedPatientCaseId("");
     setAssignDueDate("");
@@ -292,7 +298,8 @@ export default function RequirementsPage() {
 
   const openAssign = () => {
     setSelectedTemplate(null);
-    setShowAssignModal(true);
+    resetAssignForm();
+    setActiveModal("assign");
   };
 
   const formatDate = (dateStr: string) => {
@@ -313,6 +320,8 @@ export default function RequirementsPage() {
     return acc;
   }, {} as Record<string, Template[]>);
 
+  const isModalOpen = activeModal !== null;
+
   return (
     <div>
       <PageHeader title="Anforderungen (Untersuchungen)" />
@@ -329,7 +338,7 @@ export default function RequirementsPage() {
         <button className="btn btn-primary d-inline-flex align-items-center gap-2" onClick={openAssign}>
           <UserPlus size={16} /> Untersuchung anlegen
         </button>
-        <button className="btn btn-outline-primary d-inline-flex align-items-center gap-2" onClick={() => setShowCreateModal(true)}>
+        <button className="btn btn-outline-primary d-inline-flex align-items-center gap-2" onClick={() => { resetCreateForm(); setActiveModal("create"); }}>
           <Plus size={16} /> Neues Template
         </button>
       </div>
@@ -407,10 +416,7 @@ export default function RequirementsPage() {
                           </button>
                           <button
                             className="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
-                            onClick={() => {
-                              setSelectedTemplate(template);
-                              setShowVersionModal(true);
-                            }}
+                            onClick={() => openVersion(template)}
                           >
                             <History size={12} /> v{template.version + 1}
                           </button>
@@ -428,18 +434,35 @@ export default function RequirementsPage() {
         </div>
       )}
 
+      {/* Shared Backdrop */}
+      {isModalOpen && (
+        <div
+          className="modal-backdrop show"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            zIndex: 1040,
+          }}
+          onClick={closeAllModals}
+        />
+      )}
+
       {/* Assign Modal */}
-      {showAssignModal && (
-        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-lg">
+      {activeModal === "assign" && (
+        <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Untersuchung anlegen</h5>
-                <button className="btn-close" onClick={() => { setShowAssignModal(false); resetAssignForm(); }} />
+                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
               </div>
               <div className="modal-body">
                 {!selectedTemplate ? (
-                  <div>
+                  <div className="mb-3">
                     <label className="form-label fw-medium">Template auswählen</label>
                     <select className="form-select" onChange={(e) => {
                       const tmpl = templates.find((t) => t.id === e.target.value);
@@ -485,7 +508,7 @@ export default function RequirementsPage() {
                 )}
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => { setShowAssignModal(false); resetAssignForm(); }}>Abbrechen</button>
+                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
                 {selectedTemplate && (
                   <button className="btn btn-primary" onClick={handleAssign} disabled={assignLoading}>
                     {assignLoading ? "Wird angelegt..." : "Anlegen"}
@@ -498,13 +521,13 @@ export default function RequirementsPage() {
       )}
 
       {/* Create Template Modal */}
-      {showCreateModal && (
-        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-lg">
+      {activeModal === "create" && (
+        <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Neues Template erstellen</h5>
-                <button className="btn-close" onClick={() => { setShowCreateModal(false); resetCreateForm(); }} />
+                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
               </div>
               <div className="modal-body">
                 <div className="mb-3">
@@ -553,7 +576,7 @@ export default function RequirementsPage() {
                 </div>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>Abbrechen</button>
+                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
                 <button className="btn btn-primary" onClick={handleCreateTemplate} disabled={templateSaving}>
                   {templateSaving ? "Wird erstellt..." : "Template erstellen"}
                 </button>
@@ -564,13 +587,13 @@ export default function RequirementsPage() {
       )}
 
       {/* Edit Template Modal */}
-      {showEditModal && selectedTemplate && (
-        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-lg">
+      {activeModal === "edit" && selectedTemplate && (
+        <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Template bearbeiten: {selectedTemplate.name}</h5>
-                <button className="btn-close" onClick={() => { setShowEditModal(false); resetCreateForm(); }} />
+                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
               </div>
               <div className="modal-body">
                 <div className="mb-3">
@@ -619,7 +642,7 @@ export default function RequirementsPage() {
                 </div>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => { setShowEditModal(false); resetCreateForm(); }}>Abbrechen</button>
+                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
                 <button className="btn btn-primary" onClick={handleEditTemplate} disabled={templateSaving}>
                   {templateSaving ? "Wird gespeichert..." : "Speichern"}
                 </button>
@@ -630,20 +653,20 @@ export default function RequirementsPage() {
       )}
 
       {/* Delete Confirm Modal */}
-      {showDeleteConfirm && selectedTemplate && (
-        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
+      {activeModal === "delete" && selectedTemplate && (
+        <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Template löschen</h5>
-                <button className="btn-close" onClick={() => { setShowDeleteConfirm(false); setSelectedTemplate(null); }} />
+                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
               </div>
               <div className="modal-body">
                 <p>Möchten Sie das Template <strong>"{selectedTemplate.name}"</strong> wirklich löschen?</p>
                 <p className="text-muted small">Diese Aktion kann nicht rückgängig gemacht werden.</p>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => { setShowDeleteConfirm(false); setSelectedTemplate(null); }}>Abbrechen</button>
+                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
                 <button className="btn btn-danger" onClick={handleDelete}>
                   <Trash2 size={14} className="me-1" /> Löschen
                 </button>
@@ -654,13 +677,13 @@ export default function RequirementsPage() {
       )}
 
       {/* Publish Version Modal */}
-      {showVersionModal && selectedTemplate && (
-        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
+      {activeModal === "version" && selectedTemplate && (
+        <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Neue Version veröffentlichen</h5>
-                <button className="btn-close" onClick={() => { setShowVersionModal(false); setSelectedTemplate(null); }} />
+                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
               </div>
               <div className="modal-body">
                 <p>Template: <strong>{selectedTemplate.name}</strong></p>
@@ -671,15 +694,8 @@ export default function RequirementsPage() {
                 </div>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => { setShowVersionModal(false); setSelectedTemplate(null); }}>Abbrechen</button>
-                <button
-                  className="btn btn-success"
-                  onClick={() => {
-                    handlePublishVersion(selectedTemplate.id);
-                    setShowVersionModal(false);
-                    setSelectedTemplate(null);
-                  }}
-                >
+                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
+                <button className="btn btn-success" onClick={handlePublishVersion}>
                   <History size={14} className="me-1" /> v{selectedTemplate.version + 1} veröffentlichen
                 </button>
               </div>
