@@ -326,9 +326,21 @@ export default function RequirementsPage() {
                     <tr key={set.id}>
                       <td className="fw-medium">{set.name}</td>
                       <td>{set.description || "—"}</td>
-                      <td><div className="d-flex flex-wrap gap-1">{set.items?.map((it, i) => (
-                        <span key={i} className={`badge ${it.required ? "bg-danger" : "bg-secondary"}`}>{it.name}</span>
-                      ))}</div></td>
+                      <td>
+                        {set.items?.length > 0 ? (
+                          <div>
+                            <span className="badge bg-info text-dark mb-1">{set.items.length} Untersuchung{set.items.length !== 1 ? "en" : ""}</span>
+                            <div className="small text-muted" style={{ maxWidth: 300 }}>
+                              {set.items.map((it: any, i: number) => (
+                                <span key={i}>
+                                  {it.required ? <strong>{it.name}</strong> : it.name}
+                                  {i < set.items.length - 1 ? ", " : ""}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : "—"}
+                      </td>
                       <td><span className="badge bg-primary">v{set.version}</span></td>
                       <td><span className="text-muted small">{fmtDate(set.createdAt)}</span></td>
                       <td><span className="text-muted small">{fmtDateTime(set.updatedAt)}</span></td>
