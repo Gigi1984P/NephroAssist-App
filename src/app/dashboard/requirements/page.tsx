@@ -369,27 +369,29 @@ export default function RequirementsPage() {
           ) : templates.length === 0 ? (
             <div className="p-4 text-center text-muted"><div className="mb-2"><Pencil size={24} className="text-muted" /></div><div className="fw-medium">Keine Untersuchungen</div></div>
           ) : (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light"><tr><th>Name</th><th>Kategorie</th><th>Beschreibung</th><th>Pflicht</th><th>Gültigkeit</th><th>Erstellt</th><th className="text-end">Aktionen</th></tr></thead>
-                <tbody>
-                  {templates.map((t) => (
-                    <tr key={t.id}>
-                      <td className="fw-medium">{t.name}</td>
-                      <td>{t.category}</td>
-                      <td>{t.description || "—"}</td>
-                      <td>{t.required ? <span className="badge bg-danger">Ja</span> : <span className="badge bg-secondary">Nein</span>}</td>
-                      <td>{t.validityDuration ? `${t.validityDuration} Monate` : "—"}</td>
-                      <td><span className="text-muted small">{fmtDate(t.createdAt)}</span></td>
-                      <td className="text-end">
-                        <button className="btn btn-sm btn-outline-primary me-1" onClick={() => openEditT(t)}><Pencil size={12} /></button>
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => openDelT(t)}><Trash2 size={12} /></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead className="table-light"><tr><th>Name</th><th>Kategorie</th><th>Beschreibung</th><th>Pflicht</th><th>Gültigkeit</th><th>Erstellt</th><th className="text-end">Aktionen</th></tr></thead>
+                  <tbody>
+                    {templates.map((t) => (
+                      <tr key={t.id}>
+                        <td className="fw-medium">{t.name}</td>
+                        <td>{t.category}</td>
+                        <td>{t.description || "—"}</td>
+                        <td>{t.required ? <span className="badge bg-danger">Ja</span> : <span className="badge bg-secondary">Nein</span>}</td>
+                        <td>{t.validityDuration ? `${t.validityDuration} Monate` : "—"}</td>
+                        <td><span className="text-muted small">{fmtDate(t.createdAt)}</span></td>
+                        <td className="text-end">
+                          <button className="btn btn-sm btn-outline-primary me-1" onClick={() => openEditT(t)}><Pencil size={12} /></button>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => openDelT(t)}><Trash2 size={12} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
