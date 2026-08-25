@@ -28,7 +28,6 @@ export async function GET() {
         generalPractitionerName: true,
         generalPractitionerEmail: true,
         generalPractitionerPhone: true,
-        consentStatus: true,
       },
       orderBy: { lastName: "asc" },
       take: 50,
@@ -52,7 +51,6 @@ export async function GET() {
         gpName: patient.generalPractitionerName,
         gpEmail: patient.generalPractitionerEmail,
         gpPhone: patient.generalPractitionerPhone,
-        consentStatus: patient.consentStatus,
       };
     });
 

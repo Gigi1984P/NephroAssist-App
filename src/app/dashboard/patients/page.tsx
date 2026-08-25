@@ -11,14 +11,12 @@ interface Patient {
   lastName: string;
   email: string;
   phone: string;
-  consentStatus: string;
 }
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [consentFilter, setConsentFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -46,8 +44,7 @@ export default function PatientsPage() {
       searchTerm === "" ||
       `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (patient.email || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesConsent = consentFilter === "ALL" || patient.consentStatus === consentFilter;
-    return matchesSearch && matchesConsent;
+    return matchesSearch;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredPatients.length / itemsPerPage));
@@ -55,32 +52,6 @@ export default function PatientsPage() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const getConsentBadgeClass = (status: string) => {
-    switch (status) {
-      case "GRANTED":
-        return "badge-green";
-      case "PENDING":
-        return "badge-yellow";
-      case "DENIED":
-        return "badge-red";
-      default:
-        return "badge-outline";
-    }
-  };
-
-  const getConsentLabel = (status: string) => {
-    switch (status) {
-      case "GRANTED":
-        return "Einwilligt";
-      case "PENDING":
-        return "Ausstehend";
-      case "DENIED":
-        return "Abgelehnt";
-      default:
-        return status;
-    }
-  };
 
   return (
     <div>
@@ -94,7 +65,7 @@ export default function PatientsPage() {
         }
       />
 
-      {/* Filters */}
+      {/* Search */}
       <div className="dashboard-card mb-4">
         <div className="card-body-custom">
           <div className="row g-3 align-items-end">
@@ -110,16 +81,7 @@ export default function PatientsPage() {
                 />
               </div>
             </div>
-            <div className="col-md-4">
-              <label className="form-label" style={{ fontSize: "0.8rem", color: "#64748b" }}>Einwilligung</label>
-              <select className="form-select" value={consentFilter} onChange={(e) => { setConsentFilter(e.target.value); setCurrentPage(1); }}>
-                <option value="ALL">Alle</option>
-                <option value="GRANTED">Einwilligt</option>
-                <option value="PENDING">Ausstehend</option>
-                <option value="DENIED">Abgelehnt</option>
-              </select>
-            </div>
-            <div className="col-md-2 text-md-end">
+            <div className="col-md-6 text-md-end">
               <span className="text-muted" style={{ fontSize: "0.85rem" }}>{filteredPatients.length} Patienten</span>
             </div>
           </div>
@@ -135,7 +97,7 @@ export default function PatientsPage() {
             <div className="empty-state">
               <div className="empty-state-icon"><User size={24} /></div>
               <div className="empty-state-title">Keine Patienten gefunden</div>
-              <div className="empty-state-desc">Passen Sie Ihre Filter an oder fügen Sie einen Patienten hinzu.</div>
+              <div className="empty-state-desc">Passen Sie Ihre Suche an oder fügen Sie einen Patienten hinzu.</div>
             </div>
           ) : (
             <>
@@ -144,7 +106,6 @@ export default function PatientsPage() {
                   <tr>
                     <th>Patient</th>
                     <th>Kontakt</th>
-                    <th>Einwilligung</th>
                     <th className="actions">Aktionen</th>
                   </tr>
                 </thead>
@@ -184,9 +145,6 @@ export default function PatientsPage() {
                               {patient.phone || "—"}
                             </div>
                           </div>
-                        </td>
-                        <td>
-                          <span className={`badge-custom ${getConsentBadgeClass(patient.consentStatus)}`}>{getConsentLabel(patient.consentStatus)}</span>
                         </td>
                         <td className="actions">
                           <Link href={`/dashboard/patients/${patient.id}`} className="btn-custom btn-outline-custom btn-sm-custom">
