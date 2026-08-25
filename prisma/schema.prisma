@@ -214,6 +214,22 @@ model TransplantProgram {
   @@map("transplant_programs")
 }
 
+model TemplateSet {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  version     Int       @default(1)
+  status      TemplateStatus @default(PUBLISHED)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+
+  templates RequirementTemplate[] @relation("TemplateSetToTemplates")
+
+  @@map("template_sets")
+}
+
 model RequirementTemplate {
   id                         String          @id @default(uuid())
   programId                  String          @map("program_id")
@@ -241,6 +257,8 @@ model RequirementTemplate {
   // Relations
   program             TransplantProgram            @relation(fields: [programId], references: [id], onDelete: Cascade)
   organization        Organization                 @relation(fields: [organizationId], references: [id])
+  templateSet         TemplateSet?                 @relation("TemplateSetToTemplates", fields: [templateSetId], references: [id])
+  templateSetId       String?                      @map("template_set_id")
   versions            RequirementTemplateVersion[]
   patientRequirements PatientRequirement[]
   dependencies        RequirementDependency[]      @relation("TemplateDependencies")
@@ -248,6 +266,7 @@ model RequirementTemplate {
 
   @@index([programId])
   @@index([organizationId])
+  @@index([templateSetId])
   @@index([status])
   @@map("requirement_templates")
 }

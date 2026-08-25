@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/page-header";
 import {
-  Plus, Pencil, Trash2, UserPlus, History, Tag, Clock, FileText, X,
+  Plus, Pencil, Trash2, UserPlus,
+  FolderOpen, CheckSquare, Square, FileText,
 } from "lucide-react";
 
 interface Template {
@@ -15,11 +16,19 @@ interface Template {
   listingBlocker: boolean;
   validityDuration: number | null;
   renewalLeadTime: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TemplateSet {
+  id: string;
+  name: string;
+  description: string | null;
   version: number;
   status: string;
   createdAt: string;
   updatedAt: string;
-  createdBy: string | null;
+  templates: { id: string; name: string; category: string; required: boolean; listingBlocker: boolean }[];
 }
 
 interface Patient {
@@ -29,426 +38,323 @@ interface Patient {
   email: string | null;
 }
 
-type ModalType = "assign" | "create" | "edit" | "delete" | "version" | null;
-
 export default function RequirementsPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [templateSets, setTemplateSets] = useState<TemplateSet[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Single modal state
-  const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  // Modal States
+  const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [selTemplate, setSelTemplate] = useState<Template | null>(null);
+  const [selSet, setSelSet] = useState<TemplateSet | null>(null);
 
   // Assign Form
-  const [selectedPatientId, setSelectedPatientId] = useState("");
-  const [selectedPatientCaseId, setSelectedPatientCaseId] = useState("");
-  const [patientCases, setPatientCases] = useState<{id: string; name: string}[]>([]);
-  const [assignDueDate, setAssignDueDate] = useState("");
+  const [selPatientId, setSelPatientId] = useState("");
+  const [selCaseId, setSelCaseId] = useState("");
+  const [cases, setCases] = useState<{id: string; name: string}[]>([]);
+  const [dueDate, setDueDate] = useState("");
   const [assignLoading, setAssignLoading] = useState(false);
 
   // Create / Edit Template Form
-  const [formName, setFormName] = useState("");
-  const [formCategory, setFormCategory] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formRequired, setFormRequired] = useState(true);
-  const [formBlocker, setFormBlocker] = useState(false);
-  const [formValidity, setFormValidity] = useState<number | undefined>(undefined);
-  const [formRenewalLead, setFormRenewalLead] = useState<number | undefined>(undefined);
-  const [templateSaving, setTemplateSaving] = useState(false);
+  const [tName, setTName] = useState("");
+  const [tCategory, setTCategory] = useState("");
+  const [tDesc, setTDesc] = useState("");
+  const [tRequired, setTRequired] = useState(true);
+  const [tBlocker, setTBlocker] = useState(false);
+  const [tValidity, setTValidity] = useState<number | undefined>(undefined);
+  const [tRenewal, setTRenewal] = useState<number | undefined>(undefined);
+  const [tSaving, setTSaving] = useState(false);
+
+  // TemplateSet Form
+  const [sName, setSName] = useState("");
+  const [sDesc, setSDesc] = useState("");
+  const [sTemplateIds, setSTemplateIds] = useState<Set<string>>(new Set());
+  const [sSaving, setSSaving] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [templatesRes, patientsRes] = await Promise.all([
+      const [tr, sr, pr] = await Promise.all([
         fetch("/api/examinations/templates", { credentials: "include" }),
+        fetch("/api/template-sets", { credentials: "include" }),
         fetch("/api/patients/overview", { credentials: "include" }),
       ]);
-      const templatesData = await templatesRes.json();
-      const patientsData = await patientsRes.json();
-      setTemplates(templatesData.templates || []);
-      const user = patientsData.user || patientsData;
-      setPatients(user || []);
+      const td = await tr.json();
+      const sd = await sr.json();
+      const pd = await pr.json();
+      setTemplates(td.templates || []);
+      setTemplateSets(sd.templateSets || []);
+      setPatients(pd.patients || pd || []);
     } catch {
-      setMessage({ type: "error", text: "Fehler beim Laden" });
+      setMsg({ type: "error", text: "Fehler beim Laden" });
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // Patient-Cases laden wenn Patient ausgewählt
   useEffect(() => {
-    if (!selectedPatientId) {
-      setPatientCases([]);
-      return;
-    }
-    fetch(`/api/patients/${selectedPatientId}/cases`, { credentials: "include" })
+    if (!selPatientId) { setCases([]); return; }
+    fetch(`/api/patients/${selPatientId}/cases`, { credentials: "include" })
       .then((r) => r.json())
-      .then((data) => {
-        const user = data.user || data;
-        setPatientCases(user || []);
-        if ((user || []).length === 1) {
-          setSelectedPatientCaseId(user[0].id);
-        }
+      .then((d) => {
+        const list = d.cases || d || [];
+        setCases(list);
+        if (list.length === 1) setSelCaseId(list[0].id);
       })
-      .catch(() => setPatientCases([]));
-  }, [selectedPatientId]);
+      .catch(() => setCases([]));
+  }, [selPatientId]);
 
-  const closeAllModals = () => {
+  const closeAll = () => {
     setActiveModal(null);
-    setSelectedTemplate(null);
+    setSelTemplate(null);
+    setSelSet(null);
+    setSTemplateIds(new Set());
   };
 
-  // ---- Assign ----
+  // Assign
   const handleAssign = async () => {
-    if (!selectedTemplate || !selectedPatientCaseId || !assignDueDate) {
-      setMessage({ type: "error", text: "Template, Fall und Fälligkeitsdatum sind Pflicht" });
+    if (!selTemplate || !selCaseId || !dueDate) {
+      setMsg({ type: "error", text: "Untersuchung, Fall und Fälligkeitsdatum sind Pflicht" });
       return;
     }
     setAssignLoading(true);
     try {
       const res = await fetch("/api/examinations/assign", {
-        method: "POST",
-        credentials: "include",
+        method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateId: selectedTemplate.id,
-          caseId: selectedPatientCaseId,
-          dueDate: assignDueDate,
-        }),
+        body: JSON.stringify({ templateId: selTemplate.id, caseId: selCaseId, dueDate }),
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "Anforderung zugewiesen" });
-        closeAllModals();
-        resetAssignForm();
-      } else {
-        setMessage({ type: "error", text: data.error || "Fehler" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler" });
-    } finally {
-      setAssignLoading(false);
-    }
+        setMsg({ type: "success", text: "Anforderung zugewiesen" });
+        closeAll();
+        setSelPatientId(""); setSelCaseId(""); setDueDate(""); setCases([]);
+      } else setMsg({ type: "error", text: data.error || "Fehler" });
+    } catch { setMsg({ type: "error", text: "Netzwerkfehler" }); }
+    finally { setAssignLoading(false); }
   };
 
-  // ---- Create ----
-  const handleCreateTemplate = async () => {
-    if (!formName.trim() || !formCategory.trim()) {
-      setMessage({ type: "error", text: "Name und Kategorie sind Pflicht" });
-      return;
-    }
-    setTemplateSaving(true);
+  // Create Template
+  const handleCreateT = async () => {
+    if (!tName.trim() || !tCategory.trim()) { setMsg({ type: "error", text: "Name und Kategorie sind Pflicht" }); return; }
+    setTSaving(true);
     try {
       const res = await fetch("/api/examinations/templates", {
-        method: "POST",
-        credentials: "include",
+        method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formName.trim(),
-          category: formCategory.trim(),
-          description: formDescription.trim() || null,
-          required: formRequired,
-          listingBlocker: formBlocker,
-          validityDuration: formValidity,
-          renewalLeadTime: formRenewalLead,
+          name: tName.trim(), category: tCategory.trim(), description: tDesc.trim() || null,
+          required: tRequired, listingBlocker: tBlocker,
+          validityDuration: tValidity, renewalLeadTime: tRenewal,
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "Template erstellt" });
-        closeAllModals();
-        resetCreateForm();
+        setMsg({ type: "success", text: "Untersuchung erstellt" });
+        closeAll();
+        setTName(""); setTCategory(""); setTDesc(""); setTRequired(true); setTBlocker(false); setTValidity(undefined); setTRenewal(undefined);
         loadData();
-      } else {
-        setMessage({ type: "error", text: data.error || "Fehler" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler" });
-    } finally {
-      setTemplateSaving(false);
-    }
+      } else setMsg({ type: "error", text: data.error || "Fehler" });
+    } catch { setMsg({ type: "error", text: "Netzwerkfehler" }); }
+    finally { setTSaving(false); }
   };
 
-  // ---- Edit ----
-  const openEdit = (template: Template) => {
-    setSelectedTemplate(template);
-    setFormName(template.name);
-    setFormCategory(template.category);
-    setFormDescription(template.description || "");
-    setFormRequired(template.required);
-    setFormBlocker(template.listingBlocker);
-    setFormValidity(template.validityDuration ?? undefined);
-    setFormRenewalLead(template.renewalLeadTime ?? undefined);
-    setActiveModal("edit");
+  // Edit Template
+  const openEditT = (template: Template) => {
+    setSelTemplate(template);
+    setTName(template.name); setTCategory(template.category); setTDesc(template.description || "");
+    setTRequired(template.required); setTBlocker(template.listingBlocker);
+    setTValidity(template.validityDuration ?? undefined); setTRenewal(template.renewalLeadTime ?? undefined);
+    setActiveModal("editT");
   };
 
-  const handleEditTemplate = async () => {
-    if (!selectedTemplate || !formName.trim() || !formCategory.trim()) {
-      setMessage({ type: "error", text: "Name und Kategorie sind Pflicht" });
-      return;
-    }
-    setTemplateSaving(true);
+  const handleEditT = async () => {
+    if (!selTemplate || !tName.trim() || !tCategory.trim()) { setMsg({ type: "error", text: "Name und Kategorie sind Pflicht" }); return; }
+    setTSaving(true);
     try {
-      const res = await fetch(`/api/examinations/templates/${selectedTemplate.id}`, {
-        method: "PUT",
-        credentials: "include",
+      const res = await fetch(`/api/examinations/templates/${selTemplate.id}`, {
+        method: "PUT", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formName.trim(),
-          category: formCategory.trim(),
-          description: formDescription.trim() || null,
-          required: formRequired,
-          listingBlocker: formBlocker,
-          validityDuration: formValidity,
-          renewalLeadTime: formRenewalLead,
+          name: tName.trim(), category: tCategory.trim(), description: tDesc.trim() || null,
+          required: tRequired, listingBlocker: tBlocker,
+          validityDuration: tValidity, renewalLeadTime: tRenewal,
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: data.message || "Template aktualisiert" });
-        closeAllModals();
-        resetCreateForm();
+        setMsg({ type: "success", text: data.message || "Untersuchung aktualisiert" });
+        closeAll();
+        setTName(""); setTCategory(""); setTDesc(""); setTRequired(true); setTBlocker(false); setTValidity(undefined); setTRenewal(undefined);
         loadData();
-      } else {
-        setMessage({ type: "error", text: data.error || "Fehler" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler" });
-    } finally {
-      setTemplateSaving(false);
-    }
+      } else setMsg({ type: "error", text: data.error || "Fehler" });
+    } catch { setMsg({ type: "error", text: "Netzwerkfehler" }); }
+    finally { setTSaving(false); }
   };
 
-  // ---- Delete ----
-  const openDelete = (template: Template) => {
-    setSelectedTemplate(template);
-    setActiveModal("delete");
-  };
-
-  const handleDelete = async () => {
-    if (!selectedTemplate) return;
+  // Delete Template
+  const openDelT = (template: Template) => { setSelTemplate(template); setActiveModal("delT"); };
+  const handleDelT = async () => {
+    if (!selTemplate) return;
     try {
-      const res = await fetch(`/api/examinations/templates/${selectedTemplate.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (res.ok) {
-        setMessage({ type: "success", text: "Template gelöscht" });
-        closeAllModals();
-        loadData();
-      } else {
-        const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Fehler beim Löschen" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler" });
-    }
+      const res = await fetch(`/api/examinations/templates/${selTemplate.id}`, { method: "DELETE", credentials: "include" });
+      if (res.ok) { setMsg({ type: "success", text: "Untersuchung gelöscht" }); closeAll(); loadData(); }
+      else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Fehler" }); }
+    } catch { setMsg({ type: "error", text: "Netzwerkfehler" }); }
   };
 
-  // ---- Version ----
-  const openVersion = (template: Template) => {
-    setSelectedTemplate(template);
-    setActiveModal("version");
+  // TemplateSet
+  const openCreateS = () => {
+    setSName(""); setSDesc(""); setSTemplateIds(new Set()); setActiveModal("createS");
   };
-
-  const handlePublishVersion = async () => {
-    if (!selectedTemplate) return;
+  const openEditS = (set: TemplateSet) => {
+    setSelSet(set); setSName(set.name); setSDesc(set.description || "");
+    setSTemplateIds(new Set(set.templates.map((t) => t.id)));
+    setActiveModal("editS");
+  };
+  const toggleTInS = (id: string) => {
+    setSTemplateIds((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  };
+  const handleSaveS = async () => {
+    if (!sName.trim() || sTemplateIds.size === 0) { setMsg({ type: "error", text: "Name und mindestens eine Untersuchung sind Pflicht" }); return; }
+    setSSaving(true);
     try {
-      const res = await fetch(`/api/examinations/templates/${selectedTemplate.id}`, {
-        method: "POST",
-        credentials: "include",
+      const isEdit = activeModal === "editS" && selSet;
+      const url = isEdit ? `/api/template-sets/${selSet.id}` : "/api/template-sets";
+      const method = isEdit ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method, credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ applyTo: "NEW_ONLY" }),
+        body: JSON.stringify({ name: sName.trim(), description: sDesc.trim() || null, templateIds: Array.from(sTemplateIds) }),
       });
+      const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "Neue Version veröffentlicht" });
-        closeAllModals();
+        setMsg({ type: "success", text: isEdit ? "TemplateSet aktualisiert (v" + (selSet.version + 1) + ")" : "TemplateSet erstellt" });
+        closeAll();
         loadData();
-      } else {
-        const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Fehler" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler" });
-    }
+      } else setMsg({ type: "error", text: data.error || "Fehler" });
+    } catch { setMsg({ type: "error", text: "Netzwerkfehler" }); }
+    finally { setSSaving(false); }
+  };
+  const openDelS = (set: TemplateSet) => { setSelSet(set); setActiveModal("delS"); };
+  const handleDelS = async () => {
+    if (!selSet) return;
+    try {
+      const res = await fetch(`/api/template-sets/${selSet.id}`, { method: "DELETE", credentials: "include" });
+      if (res.ok) { setMsg({ type: "success", text: "TemplateSet gelöscht" }); closeAll(); loadData(); }
+      else { const d = await res.json(); setMsg({ type: "error", text: d.error || "Fehler" }); }
+    } catch { setMsg({ type: "error", text: "Netzwerkfehler" }); }
   };
 
-  const resetAssignForm = () => {
-    setSelectedPatientId("");
-    setSelectedPatientCaseId("");
-    setAssignDueDate("");
-    setPatientCases([]);
-  };
+  const fmtDate = (s: string) => s ? new Date(s).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
+  const fmtDateTime = (s: string) => s ? new Date(s).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
-  const resetCreateForm = () => {
-    setFormName("");
-    setFormCategory("");
-    setFormDescription("");
-    setFormRequired(true);
-    setFormBlocker(false);
-    setFormValidity(undefined);
-    setFormRenewalLead(undefined);
-  };
-
-  const openAssign = () => {
-    setSelectedTemplate(null);
-    resetAssignForm();
-    setActiveModal("assign");
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // Templates nach Kategorie gruppieren
-  const groupedTemplates = templates.reduce((acc, template) => {
-    if (!acc[template.category]) acc[template.category] = [];
-    acc[template.category].push(template);
-    return acc;
-  }, {} as Record<string, Template[]>);
-
-  const isModalOpen = activeModal !== null;
+  const isOpen = activeModal !== null;
 
   return (
     <div>
       <PageHeader title="Anforderungen (Untersuchungen)" />
 
-      {message && (
-        <div className={`alert ${message.type === "success" ? "alert-success" : "alert-danger"} alert-dismissible fade show mb-3`}>
-          {message.text}
-          <button className="btn-close" onClick={() => setMessage(null)} />
+      {msg && (
+        <div className={`alert ${msg.type === "success" ? "alert-success" : "alert-danger"} alert-dismissible fade show mb-3`}>
+          {msg.text} <button className="btn-close" onClick={() => setMsg(null)} />
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="d-flex gap-2 mb-4">
-        <button className="btn btn-primary d-inline-flex align-items-center gap-2" onClick={openAssign}>
+      {/* Actions */}
+      <div className="d-flex gap-2 mb-4 flex-wrap">
+        <button className="btn btn-primary d-inline-flex align-items-center gap-2" onClick={() => { setSelTemplate(null); setSelPatientId(""); setSelCaseId(""); setDueDate(""); setCases([]); setActiveModal("assign"); }}>
           <UserPlus size={16} /> Untersuchung anlegen
         </button>
-        <button className="btn btn-outline-primary d-inline-flex align-items-center gap-2" onClick={() => { resetCreateForm(); setActiveModal("create"); }}>
-          <Plus size={16} /> Neues Template
+        <button className="btn btn-outline-primary d-inline-flex align-items-center gap-2" onClick={() => { setTName(""); setTCategory(""); setTDesc(""); setTRequired(true); setTBlocker(false); setTValidity(undefined); setTRenewal(undefined); setActiveModal("createT"); }}>
+          <Plus size={16} /> Neue Untersuchung
+        </button>
+        <button className="btn btn-outline-success d-inline-flex align-items-center gap-2" onClick={openCreateS}>
+          <FolderOpen size={16} /> TemplateSet
         </button>
       </div>
 
-      {/* Templates nach Kategorie als Cards */}
-      {loading ? (
-        <div className="text-center py-5 text-muted">Laden...</div>
-      ) : templates.length === 0 ? (
-        <div className="text-center py-5 text-muted">Keine Templates vorhanden</div>
-      ) : (
-        <div className="row g-4">
-          {Object.entries(groupedTemplates).map(([category, categoryTemplates]) => (
-            <div key={category} className="col-12">
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <Tag size={18} className="text-primary" />
-                <h5 className="fw-bold mb-0">{category}</h5>
-                <span className="badge bg-secondary">{categoryTemplates.length}</span>
-              </div>
-              <div className="row g-3">
-                {categoryTemplates.map((template) => (
-                  <div key={template.id} className="col-md-6 col-lg-4">
-                    <div className="dashboard-card h-100">
-                      <div className="card-body-custom">
-                        {/* Header */}
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <div className="d-flex align-items-center gap-2">
-                            <div
-                              className="d-flex align-items-center justify-content-center rounded-circle"
-                              style={{ width: 32, height: 32, background: "#e0e7ff", color: "#4338ca" }}
-                            >
-                              <FileText size={16} />
-                            </div>
-                            <div>
-                              <div className="fw-semibold">{template.name}</div>
-                            </div>
-                          </div>
-                          <span className={`badge ${template.status === "PUBLISHED" ? "bg-success" : "bg-warning text-dark"}`}>
-                            v{template.version} {template.status === "PUBLISHED" ? "●" : "Entwurf"}
-                          </span>
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-muted small mb-3" style={{ minHeight: 40 }}>
-                          {template.description || "Keine Beschreibung"}
-                        </p>
-
-                        {/* Meta Info */}
-                        <div className="d-flex flex-column gap-1 mb-3">
-                          <div className="d-flex align-items-center gap-2 text-muted" style={{ fontSize: "0.8rem" }}>
-                            <Clock size={12} />
-                            <span>Erstellt: {formatDate(template.createdAt)}</span>
-                          </div>
-                          <div className="d-flex align-items-center gap-2 text-muted" style={{ fontSize: "0.8rem" }}>
-                            <History size={12} />
-                            <span>Aktualisiert: {formatDate(template.updatedAt)}</span>
-                          </div>
-                          {template.validityDuration && (
-                            <div className="d-flex align-items-center gap-2 text-muted" style={{ fontSize: "0.8rem" }}>
-                              <Tag size={12} />
-                              <span>Gültigkeit: {template.validityDuration} Monate</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Badges */}
-                        <div className="d-flex gap-1 mb-3">
-                          {template.required && <span className="badge bg-danger">Pflicht</span>}
-                          {template.listingBlocker && <span className="badge bg-warning text-dark">Blocker</span>}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="d-flex gap-2">
-                          <button className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" onClick={() => openEdit(template)}>
-                            <Pencil size={12} /> Bearbeiten
-                          </button>
-                          <button
-                            className="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
-                            onClick={() => openVersion(template)}
-                          >
-                            <History size={12} /> v{template.version + 1}
-                          </button>
-                          <button className="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" onClick={() => openDelete(template)}>
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+      {/* ==== TEMPLATESETS TABELLE ==== */}
+      <div className="dashboard-card mb-4">
+        <div className="card-header-custom d-flex justify-content-between align-items-center">
+          <span className="fw-semibold d-flex align-items-center gap-2"><FolderOpen size={18} /> TemplateSets</span>
+          <span className="badge bg-secondary">{templateSets.length}</span>
         </div>
-      )}
+        <div className="card-body-custom p-0">
+          {templateSets.length === 0 ? (
+            <div className="p-4 text-center text-muted"><div className="mb-2"><FolderOpen size={24} className="text-muted" /></div><div className="fw-medium">Keine TemplateSets</div><div className="small">Gruppen Sie Untersuchungen zu Sets mit automatischer Versionierung.</div></div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
+                <thead className="table-light"><tr><th>Name</th><th>Beschreibung</th><th>Untersuchungen</th><th>Version</th><th>Erstellt</th><th>Aktualisiert</th><th className="text-end">Aktionen</th></tr></thead>
+                <tbody>
+                  {templateSets.map((set) => (
+                    <tr key={set.id}>
+                      <td className="fw-medium">{set.name}</td>
+                      <td>{set.description || "—"}</td>
+                      <td><div className="d-flex flex-wrap gap-1">{set.templates.map((t) => (
+                        <span key={t.id} className={`badge ${t.required ? "bg-danger" : "bg-secondary"}`}>{t.name}</span>
+                      ))}</div></td>
+                      <td><span className="badge bg-primary">v{set.version}</span></td>
+                      <td><span className="text-muted small">{fmtDate(set.createdAt)}</span></td>
+                      <td><span className="text-muted small">{fmtDateTime(set.updatedAt)}</span></td>
+                      <td className="text-end">
+                        <button className="btn btn-sm btn-outline-primary me-1" onClick={() => openEditS(set)}><Pencil size={12} /></button>
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => openDelS(set)}><Trash2 size={12} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* Shared Backdrop */}
-      {isModalOpen && (
-        <div
-          className="modal-backdrop show"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            zIndex: 1040,
-          }}
-          onClick={closeAllModals}
-        />
+      {/* ==== UNTERSUCHUNGEN TABELLE ==== */}
+      <div className="dashboard-card">
+        <div className="card-header-custom d-flex justify-content-between align-items-center">
+          <span className="fw-semibold d-flex align-items-center gap-2"><FileText size={18} /> Untersuchungen</span>
+          <span className="badge bg-secondary">{templates.length}</span>
+        </div>
+        <div className="card-body-custom p-0">
+          {loading ? (
+            <div className="p-4 text-center text-muted">Laden...</div>
+          ) : templates.length === 0 ? (
+            <div className="p-4 text-center text-muted"><div className="mb-2"><FileText size={24} className="text-muted" /></div><div className="fw-medium">Keine Untersuchungen</div></div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
+                <thead className="table-light"><tr><th>Name</th><th>Kategorie</th><th>Beschreibung</th><th>Pflicht</th><th>Gültigkeit</th><th>Erstellt</th><th className="text-end">Aktionen</th></tr></thead>
+                <tbody>
+                  {templates.map((t) => (
+                    <tr key={t.id}>
+                      <td className="fw-medium">{t.name}</td>
+                      <td>{t.category}</td>
+                      <td>{t.description || "—"}</td>
+                      <td>{t.required ? <span className="badge bg-danger">Ja</span> : <span className="badge bg-secondary">Nein</span>}</td>
+                      <td>{t.validityDuration ? `${t.validityDuration} Monate` : "—"}</td>
+                      <td><span className="text-muted small">{fmtDate(t.createdAt)}</span></td>
+                      <td className="text-end">
+                        <button className="btn btn-sm btn-outline-primary me-1" onClick={() => openEditT(t)}><Pencil size={12} /></button>
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => openDelT(t)}><Trash2 size={12} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Backdrop */}
+      {isOpen && (
+        <div className="modal-backdrop show" style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1040 }} onClick={closeAll} />
       )}
 
       {/* Assign Modal */}
@@ -456,64 +362,28 @@ export default function RequirementsPage() {
         <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Untersuchung anlegen</h5>
-                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
-              </div>
+              <div className="modal-header"><h5 className="modal-title">Untersuchung anlegen</h5><button className="btn-close" onClick={closeAll} /></div>
               <div className="modal-body">
-                {!selectedTemplate ? (
+                {!selTemplate ? (
                   <div className="mb-3">
-                    <label className="form-label fw-medium">Template auswählen</label>
-                    <select className="form-select" onChange={(e) => {
-                      const tmpl = templates.find((t) => t.id === e.target.value);
-                      if (tmpl) setSelectedTemplate(tmpl);
-                    }}>
+                    <label className="form-label fw-medium">Untersuchung auswählen</label>
+                    <select className="form-select" onChange={(e) => { const tmpl = templates.find((t) => t.id === e.target.value); if (tmpl) setSelTemplate(tmpl); }}>
                       <option value="">Bitte wählen...</option>
-                      {templates.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name} ({t.category}){t.required ? " — Pflicht" : ""}</option>
-                      ))}
+                      {templates.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.category}){t.required ? " — Pflicht" : ""}</option>)}
                     </select>
                   </div>
                 ) : (
                   <div>
-                    <div className="alert alert-info mb-3">
-                      <strong>Gewähltes Template:</strong> {selectedTemplate.name} ({selectedTemplate.category})
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="form-label fw-medium">Patient</label>
-                      <select className="form-select" value={selectedPatientId} onChange={(e) => setSelectedPatientId(e.target.value)}>
-                        <option value="">Bitte wählen...</option>
-                        {patients.map((p) => (
-                          <option key={p.id} value={p.id}>{p.firstName} {p.lastName} {p.email ? `(${p.email})` : ""}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="form-label fw-medium">Fall (PatientCase)</label>
-                      <select className="form-select" value={selectedPatientCaseId} onChange={(e) => setSelectedPatientCaseId(e.target.value)}>
-                        <option value="">Bitte wählen...</option>
-                        {patientCases.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="form-label fw-medium">Fälligkeitsdatum</label>
-                      <input type="date" className="form-control" value={assignDueDate} onChange={(e) => setAssignDueDate(e.target.value)} />
-                    </div>
+                    <div className="alert alert-info mb-3"><strong>Gewählte Untersuchung:</strong> {selTemplate.name} ({selTemplate.category})</div>
+                    <div className="mb-3"><label className="form-label fw-medium">Patient</label><select className="form-select" value={selPatientId} onChange={(e) => setSelPatientId(e.target.value)}><option value="">Bitte wählen...</option>{patients.map((p) => <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>)}</select></div>
+                    <div className="mb-3"><label className="form-label fw-medium">Fall</label><select className="form-select" value={selCaseId} onChange={(e) => setSelCaseId(e.target.value)}><option value="">Bitte wählen...</option>{cases.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                    <div className="mb-3"><label className="form-label fw-medium">Fälligkeitsdatum</label><input type="date" className="form-control" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
                   </div>
                 )}
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
-                {selectedTemplate && (
-                  <button className="btn btn-primary" onClick={handleAssign} disabled={assignLoading}>
-                    {assignLoading ? "Wird angelegt..." : "Anlegen"}
-                  </button>
-                )}
+                <button className="btn btn-secondary" onClick={closeAll}>Abbrechen</button>
+                {selTemplate && <button className="btn btn-primary" onClick={handleAssign} disabled={assignLoading}>{assignLoading ? "Wird angelegt..." : "Anlegen"}</button>}
               </div>
             </div>
           </div>
@@ -521,65 +391,27 @@ export default function RequirementsPage() {
       )}
 
       {/* Create Template Modal */}
-      {activeModal === "create" && (
+      {activeModal === "createT" && (
         <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Neues Template erstellen</h5>
-                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
-              </div>
+              <div className="modal-header"><h5 className="modal-title">Neue Untersuchung erstellen</h5><button className="btn-close" onClick={closeAll} /></div>
               <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label fw-medium">Name *</label>
-                  <input type="text" className="form-control" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="z.B. Echokardiographie" />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-medium">Kategorie *</label>
-                  <select className="form-select" value={formCategory} onChange={(e) => setFormCategory(e.target.value)}>
-                    <option value="">Bitte wählen...</option>
-                    <option value="Labor">Labor</option>
-                    <option value="Bildgebung">Bildgebung</option>
-                    <option value="Konsil">Konsil</option>
-                    <option value="Psychosozial">Psychosozial</option>
-                    <option value="Zahnärztlich">Zahnärztlich</option>
-                    <option value="Sonstige">Sonstige</option>
-                  </select>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-medium">Beschreibung</label>
-                  <textarea className="form-control" rows={3} value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Beschreibung der Untersuchung" />
-                </div>
+                <div className="mb-3"><label className="form-label fw-medium">Name *</label><input type="text" className="form-control" value={tName} onChange={(e) => setTName(e.target.value)} placeholder="z.B. Echokardiographie" /></div>
+                <div className="mb-3"><label className="form-label fw-medium">Kategorie *</label><select className="form-select" value={tCategory} onChange={(e) => setTCategory(e.target.value)}><option value="">Bitte wählen...</option><option value="Labor">Labor</option><option value="Bildgebung">Bildgebung</option><option value="Konsil">Konsil</option><option value="Psychosozial">Psychosozial</option><option value="Zahnärztlich">Zahnärztlich</option><option value="Sonstige">Sonstige</option></select></div>
+                <div className="mb-3"><label className="form-label fw-medium">Beschreibung</label><textarea className="form-control" rows={3} value={tDesc} onChange={(e) => setTDesc(e.target.value)} placeholder="Beschreibung" /></div>
                 <div className="row mb-3">
-                  <div className="col-md-6">
-                    <div className="form-check">
-                      <input className="form-check-input" type="checkbox" checked={formRequired} onChange={(e) => setFormRequired(e.target.checked)} id="reqCheck" />
-                      <label className="form-check-label" htmlFor="reqCheck">Pflicht-Untersuchung</label>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="form-check">
-                      <input className="form-check-input" type="checkbox" checked={formBlocker} onChange={(e) => setFormBlocker(e.target.checked)} id="blockCheck" />
-                      <label className="form-check-label" htmlFor="blockCheck">Blockiert bei Fehlen</label>
-                    </div>
-                  </div>
+                  <div className="col-md-6"><div className="form-check"><input className="form-check-input" type="checkbox" checked={tRequired} onChange={(e) => setTRequired(e.target.checked)} id="reqCheck" /><label className="form-check-label" htmlFor="reqCheck">Pflicht</label></div></div>
+                  <div className="col-md-6"><div className="form-check"><input className="form-check-input" type="checkbox" checked={tBlocker} onChange={(e) => setTBlocker(e.target.checked)} id="blockCheck" /><label className="form-check-label" htmlFor="blockCheck">Blockiert bei Fehlen</label></div></div>
                 </div>
                 <div className="row">
-                  <div className="col-md-3">
-                    <label className="form-label fw-medium">Gültigkeitsdauer (Monate)</label>
-                    <input type="number" className="form-control" value={formValidity || ""} onChange={(e) => setFormValidity(e.target.value ? parseInt(e.target.value) : undefined)} placeholder="z.B. 12" />
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label fw-medium">Erinnerung vor Ablauf (Monate)</label>
-                    <input type="number" className="form-control" value={formRenewalLead || ""} onChange={(e) => setFormRenewalLead(e.target.value ? parseInt(e.target.value) : undefined)} placeholder="z.B. 1" />
-                  </div>
+                  <div className="col-md-3"><label className="form-label fw-medium">Gültigkeit (Monate)</label><input type="number" className="form-control" value={tValidity || ""} onChange={(e) => setTValidity(e.target.value ? parseInt(e.target.value) : undefined)} placeholder="12" /></div>
+                  <div className="col-md-3"><label className="form-label fw-medium">Erinnerung (Monate)</label><input type="number" className="form-control" value={tRenewal || ""} onChange={(e) => setTRenewal(e.target.value ? parseInt(e.target.value) : undefined)} placeholder="1" /></div>
                 </div>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
-                <button className="btn btn-primary" onClick={handleCreateTemplate} disabled={templateSaving}>
-                  {templateSaving ? "Wird erstellt..." : "Template erstellen"}
-                </button>
+                <button className="btn btn-secondary" onClick={closeAll}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={handleCreateT} disabled={tSaving}>{tSaving ? "Wird erstellt..." : "Erstellen"}</button>
               </div>
             </div>
           </div>
@@ -587,64 +419,87 @@ export default function RequirementsPage() {
       )}
 
       {/* Edit Template Modal */}
-      {activeModal === "edit" && selectedTemplate && (
+      {activeModal === "editT" && selTemplate && (
+        <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header"><h5 className="modal-title">Untersuchung bearbeiten: {selTemplate.name}</h5><button className="btn-close" onClick={closeAll} /></div>
+              <div className="modal-body">
+                <div className="mb-3"><label className="form-label fw-medium">Name *</label><input type="text" className="form-control" value={tName} onChange={(e) => setTName(e.target.value)} /></div>
+                <div className="mb-3"><label className="form-label fw-medium">Kategorie *</label><select className="form-select" value={tCategory} onChange={(e) => setTCategory(e.target.value)}><option value="">Bitte wählen...</option><option value="Labor">Labor</option><option value="Bildgebung">Bildgebung</option><option value="Konsil">Konsil</option><option value="Psychosozial">Psychosozial</option><option value="Zahnärztlich">Zahnärztlich</option><option value="Sonstige">Sonstige</option></select></div>
+                <div className="mb-3"><label className="form-label fw-medium">Beschreibung</label><textarea className="form-control" rows={3} value={tDesc} onChange={(e) => setTDesc(e.target.value)} /></div>
+                <div className="row mb-3">
+                  <div className="col-md-6"><div className="form-check"><input className="form-check-input" type="checkbox" checked={tRequired} onChange={(e) => setTRequired(e.target.checked)} id="editReq" /><label className="form-check-label" htmlFor="editReq">Pflicht</label></div></div>
+                  <div className="col-md-6"><div className="form-check"><input className="form-check-input" type="checkbox" checked={tBlocker} onChange={(e) => setTBlocker(e.target.checked)} id="editBlock" /><label className="form-check-label" htmlFor="editBlock">Blockiert bei Fehlen</label></div></div>
+                </div>
+                <div className="row">
+                  <div className="col-md-3"><label className="form-label fw-medium">Gültigkeit (Monate)</label><input type="number" className="form-control" value={tValidity || ""} onChange={(e) => setTValidity(e.target.value ? parseInt(e.target.value) : undefined)} /></div>
+                  <div className="col-md-3"><label className="form-label fw-medium">Erinnerung (Monate)</label><input type="number" className="form-control" value={tRenewal || ""} onChange={(e) => setTRenewal(e.target.value ? parseInt(e.target.value) : undefined)} /></div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeAll}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={handleEditT} disabled={tSaving}>{tSaving ? "Wird gespeichert..." : "Speichern"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Template Modal */}
+      {activeModal === "delT" && selTemplate && (
+        <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header"><h5 className="modal-title">Untersuchung löschen</h5><button className="btn-close" onClick={closeAll} /></div>
+              <div className="modal-body">
+                <p>Möchten Sie die Untersuchung <strong>"{selTemplate.name}"</strong> wirklich löschen?</p>
+                <p className="text-muted small">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeAll}>Abbrechen</button>
+                <button className="btn btn-danger" onClick={handleDelT}><Trash2 size={14} className="me-1" /> Löschen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create / Edit TemplateSet Modal */}
+      {(activeModal === "createS" || activeModal === "editS") && (
         <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Template bearbeiten: {selectedTemplate.name}</h5>
-                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
+                <h5 className="modal-title">{activeModal === "editS" && selSet ? `TemplateSet bearbeiten: ${selSet.name}` : "Neues TemplateSet erstellen"}</h5>
+                <button className="btn-close" onClick={closeAll} />
               </div>
               <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label fw-medium">Name *</label>
-                  <input type="text" className="form-control" value={formName} onChange={(e) => setFormName(e.target.value)} />
+                <div className="mb-3"><label className="form-label fw-medium">Name *</label><input type="text" className="form-control" value={sName} onChange={(e) => setSName(e.target.value)} placeholder="z.B. Standard-Nephrologie-Check" /></div>
+                <div className="mb-3"><label className="form-label fw-medium">Beschreibung</label><textarea className="form-control" rows={2} value={sDesc} onChange={(e) => setSDesc(e.target.value)} placeholder="Beschreibung" /></div>
+                <hr className="my-3" />
+                <h6 className="fw-semibold mb-2">Untersuchungen auswählen</h6>
+                <div className="table-responsive">
+                  <table className="table table-sm table-hover">
+                    <thead><tr><th style={{ width: 40 }}></th><th>Name</th><th>Kategorie</th><th>Pflicht</th></tr></thead>
+                    <tbody>
+                      {templates.map((t) => (
+                        <tr key={t.id} style={{ cursor: "pointer" }} onClick={() => toggleTInS(t.id)}>
+                          <td>{sTemplateIds.has(t.id) ? <CheckSquare size={18} className="text-success" /> : <Square size={18} className="text-muted" />}</td>
+                          <td className="fw-medium">{t.name}</td>
+                          <td>{t.category}</td>
+                          <td>{t.required ? <span className="badge bg-danger">Ja</span> : <span className="badge bg-secondary">Nein</span>}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="mb-3">
-                  <label className="form-label fw-medium">Kategorie *</label>
-                  <select className="form-select" value={formCategory} onChange={(e) => setFormCategory(e.target.value)}>
-                    <option value="">Bitte wählen...</option>
-                    <option value="Labor">Labor</option>
-                    <option value="Bildgebung">Bildgebung</option>
-                    <option value="Konsil">Konsil</option>
-                    <option value="Psychosozial">Psychosozial</option>
-                    <option value="Zahnärztlich">Zahnärztlich</option>
-                    <option value="Sonstige">Sonstige</option>
-                  </select>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-medium">Beschreibung</label>
-                  <textarea className="form-control" rows={3} value={formDescription} onChange={(e) => setFormDescription(e.target.value)} />
-                </div>
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <div className="form-check">
-                      <input className="form-check-input" type="checkbox" checked={formRequired} onChange={(e) => setFormRequired(e.target.checked)} id="editReqCheck" />
-                      <label className="form-check-label" htmlFor="editReqCheck">Pflicht-Untersuchung</label>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="form-check">
-                      <input className="form-check-input" type="checkbox" checked={formBlocker} onChange={(e) => setFormBlocker(e.target.checked)} id="editBlockCheck" />
-                      <label className="form-check-label" htmlFor="editBlockCheck">Blockiert bei Fehlen</label>
-                    </div>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-3">
-                    <label className="form-label fw-medium">Gültigkeitsdauer (Monate)</label>
-                    <input type="number" className="form-control" value={formValidity || ""} onChange={(e) => setFormValidity(e.target.value ? parseInt(e.target.value) : undefined)} />
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label fw-medium">Erinnerung vor Ablauf (Monate)</label>
-                    <input type="number" className="form-control" value={formRenewalLead || ""} onChange={(e) => setFormRenewalLead(e.target.value ? parseInt(e.target.value) : undefined)} />
-                  </div>
-                </div>
+                {sTemplateIds.size > 0 && <div className="alert alert-info mt-3"><strong>{sTemplateIds.size}</strong> Untersuchung{sTemplateIds.size !== 1 ? "en" : ""} ausgewählt</div>}
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
-                <button className="btn btn-primary" onClick={handleEditTemplate} disabled={templateSaving}>
-                  {templateSaving ? "Wird gespeichert..." : "Speichern"}
+                <button className="btn btn-secondary" onClick={closeAll}>Abbrechen</button>
+                <button className="btn btn-success" onClick={handleSaveS} disabled={sSaving}>
+                  {sSaving ? "Wird gespeichert..." : activeModal === "editS" ? "Aktualisieren" : "TemplateSet erstellen"}
                 </button>
               </div>
             </div>
@@ -652,52 +507,19 @@ export default function RequirementsPage() {
         </div>
       )}
 
-      {/* Delete Confirm Modal */}
-      {activeModal === "delete" && selectedTemplate && (
+      {/* Delete Set Modal */}
+      {activeModal === "delS" && selSet && (
         <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Template löschen</h5>
-                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
-              </div>
+              <div className="modal-header"><h5 className="modal-title">TemplateSet löschen</h5><button className="btn-close" onClick={closeAll} /></div>
               <div className="modal-body">
-                <p>Möchten Sie das Template <strong>"{selectedTemplate.name}"</strong> wirklich löschen?</p>
-                <p className="text-muted small">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+                <p>Möchten Sie das TemplateSet <strong>"{selSet.name}"</strong> wirklich löschen?</p>
+                <p className="text-muted small">Die Untersuchungen werden NICHT gelöscht, nur das Set.</p>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
-                <button className="btn btn-danger" onClick={handleDelete}>
-                  <Trash2 size={14} className="me-1" /> Löschen
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Publish Version Modal */}
-      {activeModal === "version" && selectedTemplate && (
-        <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Neue Version veröffentlichen</h5>
-                <button className="btn-close" onClick={closeAllModals} aria-label="Close" />
-              </div>
-              <div className="modal-body">
-                <p>Template: <strong>{selectedTemplate.name}</strong></p>
-                <p>Aktuelle Version: <strong>v{selectedTemplate.version}</strong></p>
-                <p>Neue Version wird: <strong>v{selectedTemplate.version + 1}</strong></p>
-                <div className="alert alert-info small">
-                  Bei Veröffentlichung wird automatisch eine Version gespeichert.
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={closeAllModals}>Abbrechen</button>
-                <button className="btn btn-success" onClick={handlePublishVersion}>
-                  <History size={14} className="me-1" /> v{selectedTemplate.version + 1} veröffentlichen
-                </button>
+                <button className="btn btn-secondary" onClick={closeAll}>Abbrechen</button>
+                <button className="btn btn-danger" onClick={handleDelS}><Trash2 size={14} className="me-1" /> Löschen</button>
               </div>
             </div>
           </div>
