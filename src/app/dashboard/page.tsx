@@ -9,7 +9,6 @@ import {
   CheckSquare,
   Users,
   AlertTriangle,
-  Clock,
 } from "lucide-react";
 import PatientProgressCard from "@/components/patient-progress-card";
 
@@ -31,21 +30,11 @@ export default async function DashboardPage() {
   const taskFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" });
   const appointmentFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" });
 
-  const [patientCount, upcomingAppointments, pendingTasks, activeBlockers, totalRequirements, completedRequirements, expiringRequirements] = await Promise.all([
+  const [patientCount, upcomingAppointments, pendingTasks, activeBlockers] = await Promise.all([
     prisma.patient.count({ where: patientFilter }),
     prisma.appointment.count({ where: { startTime: { gte: new Date() }, status: "PLANNED", ...appointmentFilter } }),
     prisma.task.count({ where: { status: "PENDING", ...taskFilter } }),
     prisma.blocker.count({ where: { status: "ACTIVE" } }),
-    // Für Klinik: Gesamt-Requirements
-    isPatientOrCaregiver ? Promise.resolve(0) : prisma.patientRequirement.count({ where: { patientCase: { patientId: isAdmin ? undefined : { in: allowedPatientIds || [] } } } }),
-    isPatientOrCaregiver ? Promise.resolve(0) : prisma.patientRequirement.count({ where: { status: "ACCEPTED", patientCase: { patientId: isAdmin ? undefined : { in: allowedPatientIds || [] } } } }),
-    // Bald ablaufende Requirements (innerhalb 60 Tage)
-    isPatientOrCaregiver ? Promise.resolve(0) : prisma.patientRequirement.count({
-      where: {
-        expiresAt: { lte: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), gte: new Date() },
-        patientCase: { patientId: isAdmin ? undefined : { in: allowedPatientIds || [] } },
-      },
-    }),
   ]);
 
   const [recentTasks, recentAppointments, recentDocuments] = await Promise.all([
@@ -111,24 +100,11 @@ export default async function DashboardPage() {
             <div className="dashboard-card p-3">
               <div className="d-flex align-items-center gap-3">
                 <div className="stat-icon green">
-                  <CheckSquare size={22} />
+                  <Calendar size={22} />
                 </div>
                 <div>
-                  <div className="stat-value">{completedRequirements}</div>
-                  <div className="stat-label">Freigegeben</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-6 col-lg-3">
-            <div className="dashboard-card p-3">
-              <div className="d-flex align-items-center gap-3">
-                <div className="stat-icon orange">
-                  <Clock size={22} />
-                </div>
-                <div>
-                  <div className="stat-value">{expiringRequirements}</div>
-                  <div className="stat-label">Bald ablaufend</div>
+                  <div className="stat-value">{upcomingAppointments}</div>
+                  <div className="stat-label">Termine</div>
                 </div>
               </div>
             </div>
@@ -174,10 +150,10 @@ export default async function DashboardPage() {
 
         <div className={`col-6 ${!isPatientOrCaregiver ? "col-lg-3" : "col-lg-4"}`}>
           <div className="stat-card">
-            <div className="stat-icon orange"><CheckSquare size={22} /></div>
+            <div className="stat-icon orange"><FileText size={22} /></div>
             <div>
               <div className="stat-value">{pendingTasks}</div>
-              <div className="stat-label">Untersuchungen</div>
+              <div className="stat-label">Dokumente</div>
             </div>
           </div>
         </div>
