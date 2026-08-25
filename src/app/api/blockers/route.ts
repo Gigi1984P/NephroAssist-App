@@ -60,7 +60,8 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const schema = z.object({
-      caseId: z.string().uuid(),
+      caseId: z.string().uuid().optional(),
+      patientId: z.string().uuid().optional(),
       requirementId: z.string().uuid().optional(),
       type: z.enum([
         "MISSING_PRESCRIPTION",
@@ -78,9 +79,27 @@ export async function POST(request: Request) {
 
     const data = schema.parse(body);
 
+    // Falls patientId statt caseId: aktiven Case finden
+    let caseId = data.caseId;
+    if (!caseId && data.patientId) {
+      const activeCase = await prisma.patientCase.findFirst({
+        where: { patientId: data.patientId },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
+      if (!activeCase) {
+        return NextResponse.json({ error: "Patient hat keinen aktiven Fall" }, { status: 400 });
+      }
+      caseId = activeCase.id;
+    }
+
+    if (!caseId) {
+      return NextResponse.json({ error: "caseId oder patientId erforderlich" }, { status: 400 });
+    }
+
     const blocker = await prisma.blocker.create({
       data: {
-        caseId: data.caseId,
+        caseId,
         requirementId: data.requirementId || null,
         type: data.type,
         description: data.description,

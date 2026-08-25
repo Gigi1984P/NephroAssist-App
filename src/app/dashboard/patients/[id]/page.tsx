@@ -3,9 +3,9 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { getAmpelColor, getAmpelLabel } from "@/lib/ampel";
+import { getAmpelColor } from "@/lib/ampel";
 import {
-  Calendar, FileText, CheckSquare, AlertTriangle, Clock, ArrowLeft, Phone, Mail, MapPin,
+  Calendar, FileText, AlertTriangle, ArrowLeft, Phone, Mail, MapPin,
 } from "lucide-react";
 
 interface PatientPageProps {
@@ -17,27 +17,13 @@ export default async function PatientPage({ params }: PatientPageProps) {
   const session = await auth();
   if (!session) redirect("/login");
 
-  // Separate Queries für bessere Typ-Sicherheit
   const patient = await prisma.patient.findUnique({
     where: { id },
     include: { user: { select: { email: true } } },
   });
-
   if (!patient) notFound();
 
-  const [cases, documents, appointments, blockers, timelineEvents] = await Promise.all([
-    prisma.patientCase.findMany({
-      where: { patientId: id },
-      include: {
-        program: { select: { name: true } },
-        requirements: {
-          include: {
-            template: { select: { renewalLeadTime: true } },
-            tasks: { orderBy: { stepNumber: "asc" } },
-          },
-        },
-      },
-    }),
+  const [documents, appointments, blockers, timelineEvents] = await Promise.all([
     prisma.document.findMany({
       where: { patientId: id },
       orderBy: { createdAt: "desc" },
@@ -59,30 +45,41 @@ export default async function PatientPage({ params }: PatientPageProps) {
     }),
   ]);
 
-  const activeCase = cases[0];
-  const requirements = activeCase?.requirements || [];
+  // Ampel-Farbe des Patienten: schlimmste Farbe aller Requirements
+  const requirements = await prisma.patientRequirement.findMany({
+    where: { patientCase: { patientId: id } },
+    include: { template: { select: { renewalLeadTime: true } } },
+  });
+
+  let patientAmpel: string = "green";
+  for (const req of requirements) {
+    const color = getAmpelColor({
+      status: req.status,
+      expiresAt: req.expiresAt,
+      renewalLeadTime: req.template?.renewalLeadTime,
+    });
+    if (color === "red") { patientAmpel = "red"; break; }
+    if (color === "yellow" && patientAmpel !== "red") patientAmpel = "yellow";
+  }
+
   const upcomingAppointments = appointments.filter(
     (a: any) => new Date(a.startTime) > new Date()
   );
 
-  const statusColors: Record<string, { bg: string; border: string; text: string }> = {
-    PENDING: { bg: "#fef3c7", border: "#fde68a", text: "#92400e" },
-    IN_PROGRESS: { bg: "#dbeafe", border: "#93c5fd", text: "#1e40af" },
-    COMPLETED: { bg: "#dcfce7", border: "#86efac", text: "#166534" },
-    EXPIRED: { bg: "#fee2e2", border: "#fecaca", text: "#991b1b" },
-    RENEWAL_REQUIRED: { bg: "#fef3c7", border: "#fde68a", text: "#92400e" },
-    ACCEPTED: { bg: "#dcfce7", border: "#86efac", text: "#166534" },
-    BLOCKED: { bg: "#fee2e2", border: "#fecaca", text: "#991b1b" },
-    REJECTED: { bg: "#fee2e2", border: "#fecaca", text: "#991b1b" },
+  const ampelConfig = {
+    green: { bg: "#dcfce7", border: "#86efac", text: "#166534", label: "Alles ok" },
+    yellow: { bg: "#fef3c7", border: "#fde68a", text: "#92400e", label: "Achtung" },
+    red: { bg: "#fee2e2", border: "#fecaca", text: "#991b1b", label: "Handlung nötig" },
   };
 
+  const ampel = ampelConfig[patientAmpel as keyof typeof ampelConfig];
   const initials = (patient.firstName?.charAt(0) || "") + (patient.lastName?.charAt(0) || "");
 
   return (
     <div>
       <PageHeader
         title={`${patient.firstName} ${patient.lastName}`}
-        description="Patientenübersicht mit Ampel, Anforderungen und Timeline"
+        description="Patientenübersicht"
         action={
           <Link href="/dashboard/patients" className="btn-custom btn-outline-custom">
             <ArrowLeft size={16} /> Zurück
@@ -99,11 +96,7 @@ export default async function PatientPage({ params }: PatientPageProps) {
                 <div
                   className="d-flex align-items-center justify-content-center fw-bold text-white"
                   style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: "50%",
-                    background: "#3b82f6",
-                    fontSize: "1.2rem",
+                    width: 60, height: 60, borderRadius: "50%", background: "#3b82f6", fontSize: "1.2rem",
                   }}
                 >
                   {initials}
@@ -127,30 +120,18 @@ export default async function PatientPage({ params }: PatientPageProps) {
               </div>
             </div>
             <div className="col-md-6">
-              <div className="row g-2">
-                <div className="col-6 col-lg-3">
-                  <div className="text-center p-2 rounded" style={{ background: "#f8fafc" }}>
-                    <div className="fw-bold" style={{ color: "#1e293b" }}>{upcomingAppointments.length}</div>
-                    <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Termine</div>
-                  </div>
-                </div>
-                <div className="col-6 col-lg-3">
-                  <div className="text-center p-2 rounded" style={{ background: "#f8fafc" }}>
-                    <div className="fw-bold" style={{ color: "#1e293b" }}>{documents.length}</div>
-                    <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Dokumente</div>
-                  </div>
-                </div>
-                <div className="col-6 col-lg-3">
-                  <div className="text-center p-2 rounded" style={{ background: "#f8fafc" }}>
-                    <div className="fw-bold" style={{ color: "#1e293b" }}>{requirements.length}</div>
-                    <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Anforderungen</div>
-                  </div>
-                </div>
-                <div className="col-6 col-lg-3">
-                  <div className="text-center p-2 rounded" style={{ background: "#f8fafc" }}>
-                    <div className="fw-bold" style={{ color: "#ef4444" }}>{blockers.length}</div>
-                    <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Blocker</div>
-                  </div>
+              <div className="d-flex justify-content-md-end">
+                <div
+                  className="d-flex align-items-center gap-2 px-3 py-2 rounded"
+                  style={{ background: ampel.bg, border: `1px solid ${ampel.border}` }}
+                >
+                  <div
+                    style={{
+                      width: 12, height: 12, borderRadius: "50%",
+                      background: patientAmpel === "green" ? "#10b981" : patientAmpel === "yellow" ? "#f59e0b" : "#ef4444",
+                    }}
+                  />
+                  <span className="fw-semibold" style={{ fontSize: "0.85rem", color: ampel.text }}>{ampel.label}</span>
                 </div>
               </div>
             </div>
@@ -159,79 +140,52 @@ export default async function PatientPage({ params }: PatientPageProps) {
       </div>
 
       <div className="row g-4">
-        {/* Anforderungen */}
+        {/* Blocker */}
         <div className="col-lg-7">
-          <div className="dashboard-card">
-            <div className="card-header-custom d-flex justify-content-between align-items-center">
-              <span className="fw-semibold">Anforderungen</span>
-              <span className="badge-custom badge-outline">{requirements.length}</span>
+          <div className="dashboard-card mb-4">
+            <div className="card-header-custom d-flex align-items-center gap-2">
+              <AlertTriangle size={16} className="text-danger" />
+              <span className="fw-semibold">Aktive Blocker</span>
+              <span className="badge-custom badge-outline">{blockers.length}</span>
             </div>
-            <div className="card-body-custom p-0">
-              {requirements.length === 0 ? (
-                <div className="p-4 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine Anforderungen.</div>
+            <div className="card-body-custom">
+              {blockers.length === 0 ? (
+                <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine aktiven Blocker.</div>
               ) : (
-                <div className="d-flex flex-column">
-                  {requirements.map((req: any) => {
-                    const ampel = getAmpelColor({
-                      status: req.status,
-                      expiresAt: req.expiresAt,
-                      renewalLeadTime: req.template?.renewalLeadTime,
-                    });
-                    const wfTasks = req.tasks?.filter((t: any) => t.isWorkflowStep) || [];
-                    const completedSteps = wfTasks.filter((t: any) => t.status === "COMPLETED").length;
-                    const percent = wfTasks.length > 0 ? Math.round((completedSteps / wfTasks.length) * 100) : 0;
+                blockers.map((blocker: any) => (
+                  <div key={blocker.id} className="p-3 mb-2 rounded" style={{ background: "#fee2e2", border: "1px solid #fecaca" }}>
+                    <div className="d-flex justify-content-between">
+                      <div className="fw-medium" style={{ fontSize: "0.85rem", color: "#991b1b" }}>{blocker.type}</div>
+                      <div style={{ fontSize: "0.75rem", color: "#b91c1c" }}>{new Date(blocker.createdAt).toLocaleDateString("de-DE")}</div>
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "#b91c1c" }}>{blocker.description}</div>
+                    {blocker.requirement?.title && (
+                      <div style={{ fontSize: "0.75rem", color: "#b91c1c" }}>Betrifft: {blocker.requirement.title}</div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
-                    return (
-                      <div key={req.id} className="p-3" style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <div>
-                            <div className="d-flex align-items-center gap-2">
-                              <span className="fw-semibold" style={{ fontSize: "0.9rem" }}>{req.title}</span>
-                              <span
-                                className="badge-custom"
-                                style={{
-                                  fontSize: "0.65rem",
-                                  background: ampel === "green" ? "#dcfce7" : ampel === "yellow" ? "#fef3c7" : "#fee2e2",
-                                  color: ampel === "green" ? "#166534" : ampel === "yellow" ? "#92400e" : "#991b1b",
-                                  border: `1px solid ${ampel === "green" ? "#86efac" : ampel === "yellow" ? "#fde68a" : "#fecaca"}`,
-                                }}
-                              >
-                                {getAmpelLabel(ampel)}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: "0.8rem", color: "#64748b" }} className="mt-1">
-                              {req.status}
-                              {req.expiresAt && (
-                                <span> · Gültig bis {new Date(req.expiresAt).toLocaleDateString("de-DE")}</span>
-                              )}
-                            </div>
-                          </div>
-                          <Link href="/dashboard/tasks" className="btn-custom btn-outline-custom btn-sm-custom">Details</Link>
-                        </div>
-
-                        <div className="d-flex align-items-center gap-2">
-                          <div className="progress flex-grow-1" style={{ height: "6px", borderRadius: "3px", background: "#e2e8f0" }}>
-                            <div className="progress-bar" role="progressbar" style={{ width: `${percent}%`, background: percent === 100 ? "#10b981" : "#3b82f6", borderRadius: "3px" }} />
-                          </div>
-                          <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{completedSteps}/{wfTasks.length}</span>
-                        </div>
-
-                        <div className="mt-2 d-flex flex-wrap gap-1">
-                          {req.tasks.map((task: any) => (
-                            <span key={task.id} className="badge-custom" style={{
-                              fontSize: "0.65rem",
-                              background: statusColors[task.status]?.bg || "#f1f5f9",
-                              color: statusColors[task.status]?.text || "#64748b",
-                              border: `1px solid ${statusColors[task.status]?.border || "#e2e8f0"}`,
-                            }}>
-                              {task.stepNumber}. {task.stepName || task.title}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+          {/* Timeline */}
+          <div className="dashboard-card">
+            <div className="card-header-custom">
+              <span className="fw-semibold">Timeline</span>
+            </div>
+            <div className="card-body-custom">
+              {timelineEvents.length === 0 ? (
+                <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine Ereignisse.</div>
+              ) : (
+                timelineEvents.map((event: any) => (
+                  <div key={event.id} className="d-flex gap-2 mb-2">
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6", marginTop: "0.35rem", flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: "0.85rem" }}>{event.description}</div>
+                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{new Date(event.createdAt).toLocaleString("de-DE")}</div>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -246,7 +200,7 @@ export default async function PatientPage({ params }: PatientPageProps) {
             </div>
             <div className="card-body-custom">
               {upcomingAppointments.length === 0 ? (
-                <div className="text-muted text-center py-2" style={{ fontSize: "0.85rem" }}>Keine Termine.</div>
+                <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine Termine.</div>
               ) : (
                 upcomingAppointments.slice(0, 5).map((apt: any) => (
                   <div key={apt.id} className="list-item-custom">
@@ -268,36 +222,15 @@ export default async function PatientPage({ params }: PatientPageProps) {
             </div>
           </div>
 
-          {/* Blocker */}
-          {blockers.length > 0 && (
-            <div className="dashboard-card mb-4">
-              <div className="card-header-custom d-flex align-items-center gap-2">
-                <AlertTriangle size={16} className="text-danger" />
-                <span className="fw-semibold">Aktive Blocker</span>
-              </div>
-              <div className="card-body-custom">
-                {blockers.map((blocker: any) => (
-                  <div key={blocker.id} className="p-2 mb-2 rounded" style={{ background: "#fee2e2", border: "1px solid #fecaca" }}>
-                    <div className="fw-medium" style={{ fontSize: "0.85rem", color: "#991b1b" }}>{blocker.type}</div>
-                    <div style={{ fontSize: "0.8rem", color: "#b91c1c" }}>{blocker.description}</div>
-                    {blocker.requirement?.title && (
-                      <div style={{ fontSize: "0.75rem", color: "#b91c1c" }}>Betrifft: {blocker.requirement.title}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Dokumente */}
-          <div className="dashboard-card mb-4">
+          <div className="dashboard-card">
             <div className="card-header-custom d-flex justify-content-between">
               <span className="fw-semibold">Letzte Dokumente</span>
               <Link href="/dashboard/documents" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>Alle</Link>
             </div>
             <div className="card-body-custom">
               {documents.length === 0 ? (
-                <div className="text-muted text-center py-2" style={{ fontSize: "0.85rem" }}>Keine Dokumente.</div>
+                <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine Dokumente.</div>
               ) : (
                 documents.slice(0, 5).map((doc: any) => (
                   <div key={doc.id} className="list-item-custom">
@@ -315,28 +248,6 @@ export default async function PatientPage({ params }: PatientPageProps) {
                       }}>
                         {doc.processingStatus === "ACCEPTED" ? "Akzeptiert" : doc.processingStatus === "REJECTED" ? "Abgelehnt" : "Prüfung"}
                       </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Timeline */}
-          <div className="dashboard-card">
-            <div className="card-header-custom">
-              <span className="fw-semibold">Timeline</span>
-            </div>
-            <div className="card-body-custom">
-              {timelineEvents.length === 0 ? (
-                <div className="text-muted text-center py-2" style={{ fontSize: "0.85rem" }}>Keine Ereignisse.</div>
-              ) : (
-                timelineEvents.map((event: any) => (
-                  <div key={event.id} className="d-flex gap-2 mb-2">
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6", marginTop: "0.35rem", flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontSize: "0.85rem" }}>{event.description}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{new Date(event.createdAt).toLocaleString("de-DE")}</div>
                     </div>
                   </div>
                 ))
