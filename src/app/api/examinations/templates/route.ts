@@ -103,7 +103,43 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ template });
+    // Automatisch allen Patienten mit aktiven Fällen zuweisen
+    const activeCases = await prisma.patientCase.findMany({
+      where: { status: { notIn: ["CLOSED", "INACTIVE"] } },
+      select: { id: true, organizationId: true, programId: true },
+    });
+
+    if (activeCases.length > 0) {
+      const expiresAt = data.validityDuration
+        ? new Date(Date.now() + data.validityDuration * 30 * 24 * 60 * 60 * 1000)
+        : null;
+
+      for (const c of activeCases) {
+        await prisma.patientRequirement.create({
+          data: {
+            caseId: c.id,
+            templateId: template.id,
+            organizationId: c.organizationId || program.organizationId,
+            programId: c.programId || program.id,
+            title: data.name,
+            category: data.category,
+            description: data.description || null,
+            required: data.required,
+            listingBlocker: data.listingBlocker,
+            responsibleRole: "PATIENT",
+            reviewRequired: true,
+            validityDuration: data.validityDuration || null,
+            renewalLeadTime: data.renewalLeadTime || null,
+            patientFriendlyDescription: data.patientFriendlyDescription || null,
+            status: "NOT_STARTED",
+            priority: data.listingBlocker ? 10 : 5,
+            ...(expiresAt ? { expiresAt } : {}),
+          },
+        });
+      }
+    }
+
+    return NextResponse.json({ template, assignedToPatients: activeCases.length });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
