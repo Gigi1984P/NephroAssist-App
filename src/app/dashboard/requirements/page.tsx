@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import {
-  Plus, X, Save, ClipboardList, CheckCircle, AlertTriangle,
-  ChevronDown, Eye, Clock, UserPlus,
+  Plus, Pencil, Trash2, UserPlus,
 } from "lucide-react";
 
 interface Template {
@@ -34,16 +33,20 @@ export default function RequirementsPage() {
   // Modal States
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Selected Template
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
 
   // Assign Form
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [selectedPatientCaseId, setSelectedPatientCaseId] = useState("");
   const [patientCases, setPatientCases] = useState<{id: string; name: string}[]>([]);
   const [assignDueDate, setAssignDueDate] = useState("");
   const [assignLoading, setAssignLoading] = useState(false);
 
-  // Create Template Form
+  // Create / Edit Template Form
   const [formName, setFormName] = useState("");
   const [formCategory, setFormCategory] = useState("");
   const [formDescription, setFormDescription] = useState("");
@@ -94,6 +97,7 @@ export default function RequirementsPage() {
       .catch(() => setPatientCases([]));
   }, [selectedPatientId]);
 
+  // ---- Assign ----
   const handleAssign = async () => {
     if (!selectedTemplate || !selectedPatientCaseId || !assignDueDate) {
       setMessage({ type: "error", text: "Template, Fall und Fälligkeitsdatum sind Pflicht" });
@@ -126,6 +130,7 @@ export default function RequirementsPage() {
     }
   };
 
+  // ---- Create ----
   const handleCreateTemplate = async () => {
     if (!formName.trim() || !formCategory.trim()) {
       setMessage({ type: "error", text: "Name und Kategorie sind Pflicht" });
@@ -163,6 +168,83 @@ export default function RequirementsPage() {
     }
   };
 
+  // ---- Edit ----
+  const openEdit = (template: Template) => {
+    setSelectedTemplate(template);
+    setFormName(template.name);
+    setFormCategory(template.category);
+    setFormDescription(template.description || "");
+    setFormRequired(template.required);
+    setFormBlocker(template.listingBlocker);
+    setFormValidity(template.validityDuration ?? undefined);
+    setFormRenewalLead(template.renewalLeadTime ?? undefined);
+    setShowEditModal(true);
+  };
+
+  const handleEditTemplate = async () => {
+    if (!selectedTemplate || !formName.trim() || !formCategory.trim()) {
+      setMessage({ type: "error", text: "Name und Kategorie sind Pflicht" });
+      return;
+    }
+    setTemplateSaving(true);
+    try {
+      const res = await fetch(`/api/examinations/templates/${selectedTemplate.id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formName.trim(),
+          category: formCategory.trim(),
+          description: formDescription.trim() || null,
+          required: formRequired,
+          listingBlocker: formBlocker,
+          validityDuration: formValidity,
+          renewalLeadTime: formRenewalLead,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({ type: "success", text: "Template aktualisiert" });
+        setShowEditModal(false);
+        resetCreateForm();
+        loadData();
+      } else {
+        setMessage({ type: "error", text: data.error || "Fehler" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Netzwerkfehler" });
+    } finally {
+      setTemplateSaving(false);
+    }
+  };
+
+  // ---- Delete ----
+  const openDelete = (template: Template) => {
+    setSelectedTemplate(template);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedTemplate) return;
+    try {
+      const res = await fetch(`/api/examinations/templates/${selectedTemplate.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.ok) {
+        setMessage({ type: "success", text: "Template gelöscht" });
+        setShowDeleteConfirm(false);
+        setSelectedTemplate(null);
+        loadData();
+      } else {
+        const data = await res.json();
+        setMessage({ type: "error", text: data.error || "Fehler beim Löschen" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Netzwerkfehler" });
+    }
+  };
+
   const resetAssignForm = () => {
     setSelectedTemplate(null);
     setSelectedPatientId("");
@@ -181,16 +263,14 @@ export default function RequirementsPage() {
     setFormRenewalLead(undefined);
   };
 
-  const openAssign = (template: Template) => {
-    setSelectedTemplate(template);
+  const openAssign = () => {
+    setSelectedTemplate(null);
     setShowAssignModal(true);
   };
 
   return (
     <div>
-      <PageHeader
-        title="Anforderungen (Untersuchungen)"
-      />
+      <PageHeader title="Anforderungen (Untersuchungen)" />
 
       {message && (
         <div className={`alert ${message.type === "success" ? "alert-success" : "alert-danger"} alert-dismissible fade show mb-3`}>
@@ -201,7 +281,7 @@ export default function RequirementsPage() {
 
       {/* Action Buttons */}
       <div className="d-flex gap-2 mb-4">
-        <button className="btn btn-primary d-inline-flex align-items-center gap-2" onClick={() => setShowAssignModal(true)}>
+        <button className="btn btn-primary d-inline-flex align-items-center gap-2" onClick={openAssign}>
           <UserPlus size={16} /> Untersuchung anlegen
         </button>
         <button className="btn btn-outline-primary d-inline-flex align-items-center gap-2" onClick={() => setShowCreateModal(true)}>
@@ -236,8 +316,11 @@ export default function RequirementsPage() {
                   <td>{t.required ? <span className="badge bg-danger">Ja</span> : <span className="badge bg-secondary">Nein</span>}</td>
                   <td>{t.validityDuration ? `${t.validityDuration} Monate` : "—"}</td>
                   <td>
-                    <button className="btn btn-sm btn-primary me-1" onClick={() => openAssign(t)}>
-                      <UserPlus size={14} /> Anlegen
+                    <button className="btn btn-sm btn-outline-primary me-1" onClick={() => openEdit(t)}>
+                      <Pencil size={14} /> Bearbeiten
+                    </button>
+                    <button className="btn btn-sm btn-outline-danger" onClick={() => openDelete(t)}>
+                      <Trash2 size={14} /> Löschen
                     </button>
                   </td>
                 </tr>
@@ -375,6 +458,96 @@ export default function RequirementsPage() {
                 <button className="btn btn-secondary" onClick={() => { setShowCreateModal(false); resetCreateForm(); }}>Abbrechen</button>
                 <button className="btn btn-primary" onClick={handleCreateTemplate} disabled={templateSaving}>
                   {templateSaving ? "Wird erstellt..." : "Template erstellen"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Template Modal */}
+      {showEditModal && selectedTemplate && (
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Template bearbeiten: {selectedTemplate.name}</h5>
+                <button className="btn-close" onClick={() => { setShowEditModal(false); resetCreateForm(); }} />
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label fw-medium">Name *</label>
+                  <input type="text" className="form-control" value={formName} onChange={(e) => setFormName(e.target.value)} />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-medium">Kategorie *</label>
+                  <select className="form-select" value={formCategory} onChange={(e) => setFormCategory(e.target.value)}>
+                    <option value="">Bitte wählen...</option>
+                    <option value="Labor">Labor</option>
+                    <option value="Bildgebung">Bildgebung</option>
+                    <option value="Konsil">Konsil</option>
+                    <option value="Psychosozial">Psychosozial</option>
+                    <option value="Zahnärztlich">Zahnärztlich</option>
+                    <option value="Sonstige">Sonstige</option>
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-medium">Beschreibung</label>
+                  <textarea className="form-control" rows={3} value={formDescription} onChange={(e) => setFormDescription(e.target.value)} />
+                </div>
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <div className="form-check">
+                      <input className="form-check-input" type="checkbox" checked={formRequired} onChange={(e) => setFormRequired(e.target.checked)} id="editReqCheck" />
+                      <label className="form-check-label" htmlFor="editReqCheck">Pflicht-Untersuchung</label>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="form-check">
+                      <input className="form-check-input" type="checkbox" checked={formBlocker} onChange={(e) => setFormBlocker(e.target.checked)} id="editBlockCheck" />
+                      <label className="form-check-label" htmlFor="editBlockCheck">Blockiert bei Fehlen</label>
+                    </div>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-3">
+                    <label className="form-label fw-medium">Gültigkeitsdauer (Monate)</label>
+                    <input type="number" className="form-control" value={formValidity || ""} onChange={(e) => setFormValidity(e.target.value ? parseInt(e.target.value) : undefined)} />
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label fw-medium">Erinnerung vor Ablauf (Monate)</label>
+                    <input type="number" className="form-control" value={formRenewalLead || ""} onChange={(e) => setFormRenewalLead(e.target.value ? parseInt(e.target.value) : undefined)} />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => { setShowEditModal(false); resetCreateForm(); }}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={handleEditTemplate} disabled={templateSaving}>
+                  {templateSaving ? "Wird gespeichert..." : "Speichern"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {showDeleteConfirm && selectedTemplate && (
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Template löschen</h5>
+                <button className="btn-close" onClick={() => { setShowDeleteConfirm(false); setSelectedTemplate(null); }} />
+              </div>
+              <div className="modal-body">
+                <p>Möchten Sie das Template <strong>"{selectedTemplate.name}"</strong> wirklich löschen?</p>
+                <p className="text-muted small">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => { setShowDeleteConfirm(false); setSelectedTemplate(null); }}>Abbrechen</button>
+                <button className="btn btn-danger" onClick={handleDelete}>
+                  <Trash2 size={14} className="me-1" /> Löschen
                 </button>
               </div>
             </div>
