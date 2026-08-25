@@ -36,7 +36,7 @@ const sidebarItems: SidebarItem[] = [
     { title: "Meine Untersuchungen", href: "/dashboard/tasks" },
   ] },
   { title: "Dokumente", href: "/dashboard/documents", icon: FileText, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER"] },
-  { title: "Statistiken", href: "/dashboard/admin/reports", icon: BarChart3, roles: ["ADMIN", "COORDINATOR"] },
+  { title: "Anforderungen", href: "/dashboard/requirements", icon: ClipboardList, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { title: "Audit Log", href: "/dashboard/admin/audit", icon: ClipboardList, roles: ["ADMIN"] },
   { title: "Admin", href: "/dashboard/admin", icon: ShieldCheck, roles: ["ADMIN"] },
 ];
