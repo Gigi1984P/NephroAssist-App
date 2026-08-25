@@ -2,9 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAllowedPatientIds } from "@/lib/permissions";
-import Link from "next/link";
 import {
-  FileText,
   Users,
 } from "lucide-react";
 import PatientProgressCard from "@/components/patient-progress-card";
@@ -26,33 +24,22 @@ export default async function DashboardPage() {
   const patientFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { id: { in: allowedPatientIds } } : { id: "" });
   const taskFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" });
 
-  const [patientCount, pendingTasks] = await Promise.all([
-    prisma.patient.count({ where: patientFilter }),
-    prisma.task.count({ where: { status: "PENDING", ...taskFilter } }),
-  ]);
+  const patientCount = await prisma.patient.count({ where: patientFilter });
 
-  const [recentTasks, recentDocuments] = await Promise.all([
-    prisma.task.findMany({
-      where: { status: "PENDING", ...taskFilter },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      include: {
-        requirement: {
-          include: {
-            patientCase: {
-              include: { patient: true },
-            },
+  const recentTasks = await prisma.task.findMany({
+    where: { status: "PENDING", ...taskFilter },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    include: {
+      requirement: {
+        include: {
+          patientCase: {
+            include: { patient: true },
           },
         },
       },
-    }),
-    prisma.document.findMany({
-      where: isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" }),
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      include: { patient: true },
-    }),
-  ]);
+    },
+  });
 
   return (
     <div>
@@ -100,15 +87,6 @@ export default async function DashboardPage() {
             </div>
           </div>
         )}
-        <div className={`col-6 ${!isPatientOrCaregiver ? "col-lg-3" : "col-lg-4"}`}>
-          <div className="stat-card">
-            <div className="stat-icon orange"><FileText size={22} /></div>
-            <div>
-              <div className="stat-value">{pendingTasks}</div>
-              <div className="stat-label">Dokumente</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Content Grid */}
@@ -118,9 +96,6 @@ export default async function DashboardPage() {
             <div className="dashboard-card">
               <div className="card-header-custom">
                 <span className="fw-semibold">Letzte Untersuchungen</span>
-                <Link href="/dashboard/tasks" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
-                  Alle anzeigen
-                </Link>
               </div>
               <div className="card-body-custom">
                 {recentTasks.length === 0 ? (
@@ -140,42 +115,6 @@ export default async function DashboardPage() {
                             Fällig: {new Date(task.dueDate).toLocaleDateString("de-DE")}
                           </div>
                         )}
-                      </div>
-                      <Link href={`/dashboard/tasks/${task.id}`} className="btn btn-outline-secondary btn-sm-custom" style={{ fontSize: "0.75rem" }}>
-                        Details
-                      </Link>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        {!isPatientOrCaregiver && (
-          <div className="col-lg-6">
-            <div className="dashboard-card">
-              <div className="card-header-custom">
-                <span className="fw-semibold">Letzte Dokumente</span>
-                <Link href="/dashboard/documents" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
-                  Alle anzeigen
-                </Link>
-              </div>
-              <div className="card-body-custom">
-                {recentDocuments.length === 0 ? (
-                  <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
-                    Keine Dokumente vorhanden
-                  </div>
-                ) : (
-                  recentDocuments.map((doc) => (
-                    <div key={doc.id} className="list-item-custom">
-                      <div>
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{doc.filename}</div>
-                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                          {doc.patient?.firstName} {doc.patient?.lastName}
-                        </div>
-                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                          {new Date(doc.createdAt).toLocaleDateString("de-DE")}
-                        </div>
                       </div>
                     </div>
                   ))

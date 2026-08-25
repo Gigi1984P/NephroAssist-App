@@ -50,8 +50,6 @@ export default function DashboardLayout({
       "/dashboard": "Dashboard",
       "/dashboard/patients": "Patienten",
       "/dashboard/appointments": "Termine",
-      "/dashboard/documents": "Dokumente",
-      "/dashboard/calendar": "Kalender",
       "/dashboard/settings": "Einstellungen",
       "/dashboard/admin": "Admin",
       "/dashboard/admin/reports": "Statistiken",
