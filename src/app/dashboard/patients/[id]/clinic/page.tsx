@@ -3,15 +3,57 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { getAmpelColor } from "@/lib/ampel";
-import {
-  Calendar, FileText, AlertTriangle, ArrowLeft, Phone, Mail, MapPin,
-  User, Stethoscope, ClipboardList,
-} from "lucide-react";
+import { ArrowLeft, Calendar, User, Stethoscope, Building2, ClipboardList, Clock, Phone, Mail } from "lucide-react";
 
 interface ClinicPatientPageProps {
   params: Promise<{ id: string }>;
 }
+
+function calcAge(dateOfBirth: Date | string | null): number {
+  if (!dateOfBirth) return 0;
+  const birth = new Date(dateOfBirth);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+const CASE_STATUS_LABELS: Record<string, string> = {
+  REFERRAL: "Überweisung",
+  INTAKE: "Aufnahme",
+  EVALUATION: "Evaluation",
+  READY_FOR_REVIEW: "Bereit zur Prüfung",
+  UNDER_REVIEW: "In Prüfung",
+  DEFERRED: "Zurückgestellt",
+  APPROVED: "Freigegeben",
+  WAITLISTED: "Auf Warteliste",
+  INACTIVE: "Inaktiv",
+  TRANSPLANTED: "Transplantiert",
+  CLOSED: "Abgeschlossen",
+};
+
+const CASE_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  REFERRAL: { bg: "#e2e8f0", text: "#475569" },
+  INTAKE: { bg: "#dbeafe", text: "#1e40af" },
+  EVALUATION: { bg: "#fef3c7", text: "#92400e" },
+  READY_FOR_REVIEW: { bg: "#dcfce7", text: "#166534" },
+  UNDER_REVIEW: { bg: "#dbeafe", text: "#1e40af" },
+  DEFERRED: { bg: "#fee2e2", text: "#991b1b" },
+  APPROVED: { bg: "#dcfce7", text: "#166534" },
+  WAITLISTED: { bg: "#dcfce7", text: "#166534" },
+  INACTIVE: { bg: "#e2e8f0", text: "#475569" },
+  TRANSPLANTED: { bg: "#dcfce7", text: "#166534" },
+  CLOSED: { bg: "#e2e8f0", text: "#475569" },
+};
+
+const PROGRAM_TYPE_LABELS: Record<string, string> = {
+  KIDNEY: "Niere",
+  LIVER: "Leber",
+  HEART: "Herz",
+  LUNG: "Lunge",
+  OTHER: "Sonstige",
+};
 
 export default async function ClinicPatientPage({ params }: ClinicPatientPageProps) {
   const { id } = await params;
@@ -24,79 +66,54 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
 
   const patient = await prisma.patient.findUnique({
     where: { id },
-    include: { user: { select: { email: true } } },
+    include: {
+      user: { select: { email: true } },
+      Organization: { select: { name: true } },
+      cases: {
+        include: {
+          program: { select: { name: true, type: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    },
   });
   if (!patient) notFound();
 
   // Track: Patient wurde aufgerufen
-  await prisma.patient.update({
-    where: { id },
-    data: { updatedAt: new Date() },
-  });
+  await prisma.patient.update({ where: { id }, data: { updatedAt: new Date() } });
 
-  const [documents, appointments, blockers, timelineEvents, requirements] = await Promise.all([
-    prisma.document.findMany({
-      where: { patientId: id },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
-    prisma.appointment.findMany({
-      where: { patientId: id },
-      orderBy: { startTime: "asc" },
-      take: 20,
-    }),
-    prisma.blocker.findMany({
-      where: { patientCase: { patientId: id }, status: "ACTIVE" },
-      include: { requirement: { select: { title: true } } },
-    }),
-    prisma.timelineEvent.findMany({
-      where: { patientCase: { patientId: id } },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
-    prisma.patientRequirement.findMany({
-      where: { patientCase: { patientId: id } },
-      include: { template: { select: { name: true, category: true, renewalLeadTime: true } } },
-    }),
-  ]);
+  const latestCase = patient.cases[0] || null;
 
-  // Ampel-Farbe
-  let patientAmpel: string = "green";
-  for (const req of requirements) {
-    const color = getAmpelColor({
-      status: req.status,
-      expiresAt: req.expiresAt,
-      renewalLeadTime: req.template?.renewalLeadTime,
-    });
-    if (color === "red") { patientAmpel = "red"; break; }
-    if (color === "yellow" && patientAmpel !== "red") patientAmpel = "yellow";
+  // Coordinator laden (falls vorhanden)
+  let coordinatorName = "—";
+  if (latestCase?.coordinatorId) {
+    try {
+      const coord = await prisma.user.findUnique({
+        where: { id: latestCase.coordinatorId },
+        select: { name: true },
+      });
+      if (coord?.name) coordinatorName = coord.name;
+    } catch {
+      coordinatorName = "—";
+    }
   }
 
-  const upcomingAppointments = appointments.filter(
-    (a: any) => new Date(a.startTime) > new Date()
-  );
+  const age = calcAge(patient.dateOfBirth);
+  const statusColor = latestCase ? CASE_STATUS_COLORS[latestCase.status] || { bg: "#e2e8f0", text: "#475569" } : { bg: "#e2e8f0", text: "#475569" };
+  const waitlistStatus = latestCase?.status === "WAITLISTED"
+    ? "Auf Warteliste"
+    : latestCase?.waitlistedDate
+      ? `Eingetragen am ${new Date(latestCase.waitlistedDate).toLocaleDateString("de-DE")}`
+      : "Nicht eingetragen";
 
-  const completedReqs = requirements.filter(
-    (r) => r.status === "ACCEPTED" || r.status === "WAIVED" || r.status === "NOT_APPLICABLE"
-  );
-  const openReqs = requirements.filter(
-    (r) => r.status !== "ACCEPTED" && r.status !== "WAIVED" && r.status !== "NOT_APPLICABLE"
-  );
-
-  const ampelConfig = {
-    green: { bg: "#dcfce7", border: "#86efac", text: "#166534", label: "Alles ok" },
-    yellow: { bg: "#fef3c7", border: "#fde68a", text: "#92400e", label: "Achtung" },
-    red: { bg: "#fee2e2", border: "#fecaca", text: "#991b1b", label: "Handlung nötig" },
-  };
-
-  const ampel = ampelConfig[patientAmpel as keyof typeof ampelConfig];
   const initials = (patient.firstName?.charAt(0) || "") + (patient.lastName?.charAt(0) || "");
 
   return (
     <div>
       <PageHeader
-        title={`${patient.firstName} ${patient.lastName}`}
-        description="Klinik-Patientenübersicht"
+        title="Patient & Fallstatus"
+        description={`${patient.firstName} ${patient.lastName}`}
         action={
           <Link href="/dashboard/patients" className="btn-custom btn-outline-custom">
             <ArrowLeft size={16} /> Zurück
@@ -104,212 +121,224 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
         }
       />
 
-      {/* Top Info Card */}
+      {/* Haupt-Info-Karte */}
       <div className="dashboard-card mb-4">
         <div className="card-body-custom">
-          <div className="row g-4 align-items-center">
-            <div className="col-md-6">
-              <div className="d-flex align-items-center gap-3">
-                <div
-                  className="d-flex align-items-center justify-content-center fw-bold text-white"
-                  style={{ width: 60, height: 60, borderRadius: "50%", background: "#3b82f6", fontSize: "1.2rem" }}
-                >
-                  {initials}
-                </div>
+          {/* Header mit Avatar */}
+          <div className="d-flex align-items-center gap-3 mb-4">
+            <div
+              className="d-flex align-items-center justify-content-center fw-bold text-white"
+              style={{ width: 64, height: 64, borderRadius: "50%", background: "#3b82f6", fontSize: "1.4rem" }}
+            >
+              {initials}
+            </div>
+            <div>
+              <h2 className="h4 fw-bold mb-1">{patient.firstName} {patient.lastName}</h2>
+              <div className="text-muted" style={{ fontSize: "0.9rem" }}>
+                <span className="d-inline-flex align-items-center gap-1"><Mail size={14} /> {patient.email || patient.user?.email || "—"}</span>
+                <span className="mx-2">·</span>
+                <span className="d-inline-flex align-items-center gap-1"><Phone size={14} /> {patient.phone || "—"}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Daten-Gitter */}
+          <div className="row g-3">
+            {/* Geburtsdatum / Alter */}
+            <div className="col-md-6 col-lg-4">
+              <div className="d-flex align-items-start gap-2">
+                <Calendar size={18} style={{ color: "#64748b", marginTop: 2 }} />
                 <div>
-                  <h3 className="h5 fw-bold mb-1">{patient.firstName} {patient.lastName}</h3>
-                  <div className="d-flex flex-column gap-1" style={{ fontSize: "0.85rem" }}>
-                    <div className="d-flex align-items-center gap-2 text-muted"><Mail size={14} /> {patient.email || patient.user?.email || "—"}</div>
-                    <div className="d-flex align-items-center gap-2 text-muted"><Phone size={14} /> {patient.phone || "—"}</div>
-                    {patient.generalPractitionerName && (
-                      <div className="d-flex align-items-center gap-2 text-muted"><Stethoscope size={14} /> HA: {patient.generalPractitionerName}</div>
-                    )}
+                  <div className="text-muted small">Geburtsdatum / Alter</div>
+                  <div className="fw-medium">
+                    {patient.dateOfBirth
+                      ? `${new Date(patient.dateOfBirth).toLocaleDateString("de-DE")} (${age} Jahre)`
+                      : "—"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Patienten-ID */}
+            <div className="col-md-6 col-lg-4">
+              <div className="d-flex align-items-start gap-2">
+                <User size={18} style={{ color: "#64748b", marginTop: 2 }} />
+                <div>
+                  <div className="text-muted small">Patienten-ID</div>
+                  <div className="fw-medium" style={{ fontFamily: "monospace", fontSize: "0.9rem" }}>{patient.id.slice(0, 8)}…</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fall-ID */}
+            <div className="col-md-6 col-lg-4">
+              <div className="d-flex align-items-start gap-2">
+                <ClipboardList size={18} style={{ color: "#64748b", marginTop: 2 }} />
+                <div>
+                  <div className="text-muted small">Fall-ID</div>
+                  <div className="fw-medium" style={{ fontFamily: "monospace", fontSize: "0.9rem" }}>
+                    {latestCase ? `${latestCase.id.slice(0, 8)}…` : "Kein Fall"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Dialysezentrum */}
+            <div className="col-md-6 col-lg-4">
+              <div className="d-flex align-items-start gap-2">
+                <Building2 size={18} style={{ color: "#64748b", marginTop: 2 }} />
+                <div>
+                  <div className="text-muted small">Dialysezentrum</div>
+                  <div className="fw-medium">{patient.Organization?.name || "—"}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* zuständiger Coordinator */}
+            <div className="col-md-6 col-lg-4">
+              <div className="d-flex align-items-start gap-2">
+                <Stethoscope size={18} style={{ color: "#64748b", marginTop: 2 }} />
+                <div>
+                  <div className="text-muted small">zuständiger Coordinator</div>
+                  <div className="fw-medium">{coordinatorName}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Transplantationsart */}
+            <div className="col-md-6 col-lg-4">
+              <div className="d-flex align-items-start gap-2">
+                <Stethoscope size={18} style={{ color: "#64748b", marginTop: 2 }} />
+                <div>
+                  <div className="text-muted small">Transplantationsart</div>
+                  <div className="fw-medium">
+                    {latestCase?.program?.type ? PROGRAM_TYPE_LABELS[latestCase.program.type] || latestCase.program.type : "—"}
+                    {latestCase?.program?.name ? ` (${latestCase.program.name})` : ""}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* aktueller Case-Status */}
+            <div className="col-md-6 col-lg-4">
+              <div className="d-flex align-items-start gap-2">
+                <ClipboardList size={18} style={{ color: "#64748b", marginTop: 2 }} />
+                <div>
+                  <div className="text-muted small">aktueller Case-Status</div>
+                  {latestCase ? (
+                    <span
+                      className="badge"
+                      style={{
+                        background: statusColor.bg,
+                        color: statusColor.text,
+                        border: `1px solid ${statusColor.bg}`,
+                        fontSize: "0.85rem",
+                        padding: "0.35rem 0.6rem",
+                      }}
+                    >
+                      {CASE_STATUS_LABELS[latestCase.status] || latestCase.status}
+                    </span>
+                  ) : (
+                    <div className="fw-medium">—</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Wartelistenstatus */}
+            <div className="col-md-6 col-lg-4">
+              <div className="d-flex align-items-start gap-2">
+                <Clock size={18} style={{ color: "#64748b", marginTop: 2 }} />
+                <div>
+                  <div className="text-muted small">Wartelistenstatus</div>
+                  <div className="fw-medium">{waitlistStatus}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fall-Erstelldatum */}
+            <div className="col-md-6 col-lg-4">
+              <div className="d-flex align-items-start gap-2">
+                <Calendar size={18} style={{ color: "#64748b", marginTop: 2 }} />
+                <div>
+                  <div className="text-muted small">Fall erstellt</div>
+                  <div className="fw-medium">
+                    {latestCase ? new Date(latestCase.createdAt).toLocaleDateString("de-DE") : "—"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Hausarzt */}
+            {patient.generalPractitionerName && (
+              <div className="col-md-6 col-lg-4">
+                <div className="d-flex align-items-start gap-2">
+                  <Stethoscope size={18} style={{ color: "#64748b", marginTop: 2 }} />
+                  <div>
+                    <div className="text-muted small">Hausarzt</div>
+                    <div className="fw-medium">{patient.generalPractitionerName}</div>
                     {patient.generalPractitionerCity && (
-                      <div className="d-flex align-items-center gap-2 text-muted"><MapPin size={14} /> {patient.generalPractitionerCity}</div>
+                      <div className="small text-muted">{patient.generalPractitionerCity}</div>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="col-md-6">
-              <div className="d-flex justify-content-md-end">
-                <div
-                  className="d-flex align-items-center gap-2 px-3 py-2 rounded"
-                  style={{ background: ampel.bg, border: `1px solid ${ampel.border}` }}
-                >
-                  <div
-                    style={{
-                      width: 12, height: 12, borderRadius: "50%",
-                      background: patientAmpel === "green" ? "#10b981" : patientAmpel === "yellow" ? "#f59e0b" : "#ef4444",
-                    }}
-                  />
-                  <span className="fw-semibold" style={{ fontSize: "0.85rem", color: ampel.text }}>{ampel.label}</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="row g-4">
-        {/* Linke Spalte */}
-        <div className="col-lg-7">
-          {/* Untersuchungen Übersicht */}
-          <div className="dashboard-card mb-4">
-            <div className="card-header-custom d-flex align-items-center gap-2">
-              <ClipboardList size={16} style={{ color: "#3b82f6" }} />
-              <span className="fw-semibold">Untersuchungen</span>
-              <span className="badge bg-success ms-1">{completedReqs.length}</span>
-              <span className="badge bg-warning text-dark ms-1">{openReqs.length}</span>
-            </div>
-            <div className="card-body-custom p-0">
-              {requirements.length === 0 ? (
-                <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine Untersuchungen zugewiesen.</div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover mb-0">
-                    <thead className="table-light"><tr><th>Name</th><th>Kategorie</th><th>Status</th></tr></thead>
-                    <tbody>
-                      {requirements.map((req) => (
-                        <tr key={req.id}>
-                          <td className="fw-medium">{req.title || req.template?.name || "—"}</td>
-                          <td>{req.template?.category || "—"}</td>
-                          <td>
-                            {req.status === "NOT_STARTED" && <span className="badge bg-secondary">Nicht gestartet</span>}
-                            {req.status === "ACTION_REQUIRED" && <span className="badge bg-warning text-dark">Aktion nötig</span>}
-                            {req.status === "IN_PROGRESS" && <span className="badge bg-info text-dark">In Bearbeitung</span>}
-                            {req.status === "WAITING_FOR_APPOINTMENT" && <span className="badge bg-warning text-dark">Warte auf Termin</span>}
-                            {req.status === "WAITING_FOR_DOCUMENT" && <span className="badge bg-warning text-dark">Warte auf Dokument</span>}
-                            {req.status === "DOCUMENT_UPLOADED" && <span className="badge bg-primary">Dokument hochgeladen</span>}
-                            {req.status === "UNDER_REVIEW" && <span className="badge bg-primary">In Prüfung</span>}
-                            {req.status === "ACCEPTED" && <span className="badge bg-success">Akzeptiert</span>}
-                            {req.status === "REJECTED" && <span className="badge bg-danger">Abgelehnt</span>}
-                            {req.status === "BLOCKED" && <span className="badge bg-danger">Blockiert</span>}
-                            {req.status === "EXPIRED" && <span className="badge bg-danger">Abgelaufen</span>}
-                            {req.status === "RENEWAL_REQUIRED" && <span className="badge bg-warning text-dark">Erneuerung nötig</span>}
-                            {req.status === "WAIVED" && <span className="badge bg-secondary">Entfallen</span>}
-                            {req.status === "NOT_APPLICABLE" && <span className="badge bg-secondary">N/A</span>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+      {/* Fall-Historie (Timeline) */}
+      {latestCase && (
+        <div className="dashboard-card">
+          <div className="card-header-custom">
+            <span className="fw-semibold">Fall-Historie</span>
+          </div>
+          <div className="card-body-custom">
+            <div className="row g-3">
+              {latestCase.referralDate && (
+                <div className="col-md-4">
+                  <div className="text-muted small">Überweisungsdatum</div>
+                  <div className="fw-medium">{new Date(latestCase.referralDate).toLocaleDateString("de-DE")}</div>
+                </div>
+              )}
+              {latestCase.intakeDate && (
+                <div className="col-md-4">
+                  <div className="text-muted small">Aufnahmedatum</div>
+                  <div className="fw-medium">{new Date(latestCase.intakeDate).toLocaleDateString("de-DE")}</div>
+                </div>
+              )}
+              {latestCase.readyForReviewDate && (
+                <div className="col-md-4">
+                  <div className="text-muted small">Bereit zur Prüfung</div>
+                  <div className="fw-medium">{new Date(latestCase.readyForReviewDate).toLocaleDateString("de-DE")}</div>
+                </div>
+              )}
+              {latestCase.boardDecisionDate && (
+                <div className="col-md-4">
+                  <div className="text-muted small">Board-Entscheidung</div>
+                  <div className="fw-medium">{new Date(latestCase.boardDecisionDate).toLocaleDateString("de-DE")}</div>
+                </div>
+              )}
+              {latestCase.waitlistedDate && (
+                <div className="col-md-4">
+                  <div className="text-muted small">Wartelisteneintrag</div>
+                  <div className="fw-medium">{new Date(latestCase.waitlistedDate).toLocaleDateString("de-DE")}</div>
+                </div>
+              )}
+              {latestCase.closedDate && (
+                <div className="col-md-4">
+                  <div className="text-muted small">Abschlussdatum</div>
+                  <div className="fw-medium">{new Date(latestCase.closedDate).toLocaleDateString("de-DE")}</div>
+                  {latestCase.closureReason && (
+                    <div className="small text-muted">Grund: {latestCase.closureReason}</div>
+                  )}
                 </div>
               )}
             </div>
           </div>
-
-          {/* Blocker */}
-          <div className="dashboard-card mb-4">
-            <div className="card-header-custom d-flex align-items-center gap-2">
-              <AlertTriangle size={16} className="text-danger" />
-              <span className="fw-semibold">Aktive Blocker</span>
-              <span className="badge-custom badge-outline">{blockers.length}</span>
-            </div>
-            <div className="card-body-custom">
-              {blockers.length === 0 ? (
-                <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine aktiven Blocker.</div>
-              ) : (
-                blockers.map((blocker: any) => (
-                  <div key={blocker.id} className="p-3 mb-2 rounded" style={{ background: "#fee2e2", border: "1px solid #fecaca" }}>
-                    <div className="d-flex justify-content-between">
-                      <div className="fw-medium" style={{ fontSize: "0.85rem", color: "#991b1b" }}>{blocker.type}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#b91c1c" }}>{new Date(blocker.createdAt).toLocaleDateString("de-DE")}</div>
-                    </div>
-                    <div style={{ fontSize: "0.8rem", color: "#b91c1c" }}>{blocker.description}</div>
-                    {blocker.requirement?.title && (
-                      <div style={{ fontSize: "0.75rem", color: "#b91c1c" }}>Betrifft: {blocker.requirement.title}</div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Timeline */}
-          <div className="dashboard-card">
-            <div className="card-header-custom"><span className="fw-semibold">Timeline</span></div>
-            <div className="card-body-custom">
-              {timelineEvents.length === 0 ? (
-                <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine Ereignisse.</div>
-              ) : (
-                timelineEvents.map((event: any) => (
-                  <div key={event.id} className="d-flex gap-2 mb-2">
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6", marginTop: "0.35rem", flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontSize: "0.85rem" }}>{event.description}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{new Date(event.createdAt).toLocaleString("de-DE")}</div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         </div>
-
-        {/* Rechte Spalte */}
-        <div className="col-lg-5">
-          {/* Termine */}
-          <div className="dashboard-card mb-4">
-            <div className="card-header-custom"><span className="fw-semibold">Nächste Termine</span></div>
-            <div className="card-body-custom">
-              {upcomingAppointments.length === 0 ? (
-                <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine Termine.</div>
-              ) : (
-                upcomingAppointments.slice(0, 5).map((apt: any) => (
-                  <div key={apt.id} className="list-item-custom">
-                    <div className="d-flex align-items-center gap-2">
-                      <Calendar size={16} style={{ color: "#3b82f6" }} />
-                      <div>
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{apt.type}</div>
-                        <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                          {new Date(apt.startTime).toLocaleString("de-DE", {
-                            weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-                          })}
-                          {apt.location && ` · ${apt.location}`}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Dokumente */}
-          <div className="dashboard-card">
-            <div className="card-header-custom d-flex justify-content-between">
-              <span className="fw-semibold">Letzte Dokumente</span>
-              <Link href="/dashboard/documents" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>Alle</Link>
-            </div>
-            <div className="card-body-custom">
-              {documents.length === 0 ? (
-                <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine Dokumente.</div>
-              ) : (
-                documents.slice(0, 5).map((doc: any) => (
-                  <div key={doc.id} className="list-item-custom">
-                    <div className="d-flex align-items-center gap-2">
-                      <FileText size={16} style={{ color: "#8b5cf6" }} />
-                      <div className="flex-grow-1">
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{doc.filename}</div>
-                        <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{new Date(doc.createdAt).toLocaleDateString("de-DE")}</div>
-                      </div>
-                      <span className="badge-custom" style={{
-                        fontSize: "0.65rem",
-                        background: doc.processingStatus === "ACCEPTED" ? "#dcfce7" : doc.processingStatus === "REJECTED" ? "#fee2e2" : "#fef3c7",
-                        color: doc.processingStatus === "ACCEPTED" ? "#166534" : doc.processingStatus === "REJECTED" ? "#991b1b" : "#92400e",
-                        border: `1px solid ${doc.processingStatus === "ACCEPTED" ? "#86efac" : doc.processingStatus === "REJECTED" ? "#fecaca" : "#fde68a"}`,
-                      }}>
-                        {doc.processingStatus === "ACCEPTED" ? "Akzeptiert" : doc.processingStatus === "REJECTED" ? "Abgelehnt" : "Prüfung"}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
