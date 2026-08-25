@@ -223,7 +223,10 @@ export default function DocumentsPage() {
                         </td>
                         <td className="actions">
                           <div className="d-flex gap-2">
-                            <button className="btn-custom btn-outline-custom btn-sm-custom">
+                            <button
+                              className="btn-custom btn-outline-custom btn-sm-custom"
+                              onClick={() => window.open(`/api/documents/${doc.id}/download`, "_blank")}
+                            >
                               <Download size={14} />
                             </button>
                             {isClinic && doc.processingStatus !== "ACCEPTED" && (

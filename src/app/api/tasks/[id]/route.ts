@@ -151,7 +151,7 @@ export async function PATCH(
         });
       }
 
-      // Timeline-Event erstellen
+      // Timeline-Event erstellen + Notification
       try {
         await prisma.timelineEvent.create({
           data: {
@@ -166,9 +166,29 @@ export async function PATCH(
             },
           },
         });
+
+        // Notification für Patient
+        if (task.patientId) {
+          const patient = await prisma.patient.findUnique({
+            where: { id: task.patientId },
+            select: { userId: true, organizationId: true },
+          });
+          if (patient?.userId) {
+            await prisma.notification.create({
+              data: {
+                userId: patient.userId,
+                organizationId: patient.organizationId || "default",
+                type: "TASK",
+                title: "Schritt erledigt",
+                message: `"${task.stepName || updatedTask.title}" wurde als erledigt markiert.`,
+                entityType: "TASK",
+                entityId: id,
+              },
+            });
+          }
+        }
       } catch (e) {
-        // Silent fail für Timeline
-        console.log("Timeline event creation failed:", e);
+        console.log("Timeline/Notification creation failed:", e);
       }
     }
 

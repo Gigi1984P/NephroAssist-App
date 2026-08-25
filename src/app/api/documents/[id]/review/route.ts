@@ -74,7 +74,33 @@ export async function POST(
       data: { processingStatus: newProcessingStatus as any },
     });
 
-    // Bei REJECTED: Blocker erstellen
+    // Bei REJECTED: Blocker erstellen + Notification für Patient
+    if (document.patientId) {
+      const patient = await prisma.patient.findUnique({
+        where: { id: document.patientId },
+        select: { userId: true, organizationId: true },
+      });
+      if (patient?.userId) {
+        const statusText =
+          data.status === "ACCEPTED"
+            ? "akzeptiert"
+            : data.status === "REJECTED"
+            ? "abgelehnt"
+            : "Rückfrage gestellt";
+        await prisma.notification.create({
+          data: {
+            userId: patient.userId,
+            organizationId: patient.organizationId || "default",
+            type: "DOCUMENT",
+            title: `Dokument ${statusText}`,
+            message: `Ihr Dokument wurde ${statusText}.${data.comment ? ` Kommentar: ${data.comment}` : ""}`,
+            entityType: "DOCUMENT",
+            entityId: id,
+          },
+        });
+      }
+    }
+
     if (data.status === "REJECTED") {
       const patientReq = await prisma.patientRequirement.findFirst({
         where: {
