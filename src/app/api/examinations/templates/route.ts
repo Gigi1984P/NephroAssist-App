@@ -23,11 +23,20 @@ export async function GET() {
     }
 
     const templates = await prisma.requirementTemplate.findMany({
-      include: {
-        versions: {
-          orderBy: { publishedAt: "desc" },
-          take: 5,
-        },
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        description: true,
+        required: true,
+        listingBlocker: true,
+        validityDuration: true,
+        renewalLeadTime: true,
+        version: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        createdBy: true,
       },
       orderBy: [{ category: "asc" }, { name: "asc" }],
     });

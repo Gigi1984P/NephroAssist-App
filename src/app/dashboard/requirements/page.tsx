@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import {
-  Plus, Pencil, Trash2, UserPlus,
+  Plus, Pencil, Trash2, UserPlus, History, Tag, Clock, FileText,
 } from "lucide-react";
 
 interface Template {
@@ -15,6 +15,11 @@ interface Template {
   listingBlocker: boolean;
   validityDuration: number | null;
   renewalLeadTime: number | null;
+  version: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
 }
 
 interface Patient {
@@ -35,6 +40,7 @@ export default function RequirementsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
 
   // Selected Template
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -245,6 +251,27 @@ export default function RequirementsPage() {
     }
   };
 
+  // ---- Version ----
+  const handlePublishVersion = async (templateId: string, changes?: string) => {
+    try {
+      const res = await fetch(`/api/examinations/templates/${templateId}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applyTo: "NEW_ONLY", changes }),
+      });
+      if (res.ok) {
+        setMessage({ type: "success", text: "Neue Version veröffentlicht" });
+        loadData();
+      } else {
+        const data = await res.json();
+        setMessage({ type: "error", text: data.error || "Fehler" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Netzwerkfehler" });
+    }
+  };
+
   const resetAssignForm = () => {
     setSelectedTemplate(null);
     setSelectedPatientId("");
@@ -268,6 +295,24 @@ export default function RequirementsPage() {
     setShowAssignModal(true);
   };
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "—";
+    return new Date(dateStr).toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Templates nach Kategorie gruppieren
+  const groupedTemplates = templates.reduce((acc, template) => {
+    if (!acc[template.category]) acc[template.category] = [];
+    acc[template.category].push(template);
+    return acc;
+  }, {} as Record<string, Template[]>);
+
   return (
     <div>
       <PageHeader title="Anforderungen (Untersuchungen)" />
@@ -289,44 +334,97 @@ export default function RequirementsPage() {
         </button>
       </div>
 
-      {/* Templates Table */}
+      {/* Templates nach Kategorie als Cards */}
       {loading ? (
         <div className="text-center py-5 text-muted">Laden...</div>
       ) : templates.length === 0 ? (
         <div className="text-center py-5 text-muted">Keine Templates vorhanden</div>
       ) : (
-        <div className="table-responsive">
-          <table className="table table-hover">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Kategorie</th>
-                <th>Beschreibung</th>
-                <th>Pflicht</th>
-                <th>Gültigkeit (Monate)</th>
-                <th>Aktionen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {templates.map((t) => (
-                <tr key={t.id}>
-                  <td className="fw-medium">{t.name}</td>
-                  <td>{t.category}</td>
-                  <td>{t.description || "—"}</td>
-                  <td>{t.required ? <span className="badge bg-danger">Ja</span> : <span className="badge bg-secondary">Nein</span>}</td>
-                  <td>{t.validityDuration ? `${t.validityDuration} Monate` : "—"}</td>
-                  <td>
-                    <button className="btn btn-sm btn-outline-primary me-1" onClick={() => openEdit(t)}>
-                      <Pencil size={14} /> Bearbeiten
-                    </button>
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => openDelete(t)}>
-                      <Trash2 size={14} /> Löschen
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="row g-4">
+          {Object.entries(groupedTemplates).map(([category, categoryTemplates]) => (
+            <div key={category} className="col-12">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <Tag size={18} className="text-primary" />
+                <h5 className="fw-bold mb-0">{category}</h5>
+                <span className="badge bg-secondary">{categoryTemplates.length}</span>
+              </div>
+              <div className="row g-3">
+                {categoryTemplates.map((template) => (
+                  <div key={template.id} className="col-md-6 col-lg-4">
+                    <div className="dashboard-card h-100">
+                      <div className="card-body-custom">
+                        {/* Header */}
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <div className="d-flex align-items-center gap-2">
+                            <div
+                              className="d-flex align-items-center justify-content-center rounded-circle"
+                              style={{ width: 32, height: 32, background: "#e0e7ff", color: "#4338ca" }}
+                            >
+                              <FileText size={16} />
+                            </div>
+                            <div>
+                              <div className="fw-semibold">{template.name}</div>
+                            </div>
+                          </div>
+                          <span className={`badge ${template.status === "PUBLISHED" ? "bg-success" : "bg-warning text-dark"}`}>
+                            v{template.version} {template.status === "PUBLISHED" ? "●" : "Entwurf"}
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-muted small mb-3" style={{ minHeight: 40 }}>
+                          {template.description || "Keine Beschreibung"}
+                        </p>
+
+                        {/* Meta Info */}
+                        <div className="d-flex flex-column gap-1 mb-3">
+                          <div className="d-flex align-items-center gap-2 text-muted" style={{ fontSize: "0.8rem" }}>
+                            <Clock size={12} />
+                            <span>Erstellt: {formatDate(template.createdAt)}</span>
+                          </div>
+                          <div className="d-flex align-items-center gap-2 text-muted" style={{ fontSize: "0.8rem" }}>
+                            <History size={12} />
+                            <span>Aktualisiert: {formatDate(template.updatedAt)}</span>
+                          </div>
+                          {template.validityDuration && (
+                            <div className="d-flex align-items-center gap-2 text-muted" style={{ fontSize: "0.8rem" }}>
+                              <Tag size={12} />
+                              <span>Gültigkeit: {template.validityDuration} Monate</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Badges */}
+                        <div className="d-flex gap-1 mb-3">
+                          {template.required && <span className="badge bg-danger">Pflicht</span>}
+                          {template.listingBlocker && <span className="badge bg-warning text-dark">Blocker</span>}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="d-flex gap-2">
+                          <button className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" onClick={() => openEdit(template)}>
+                            <Pencil size={12} /> Bearbeiten
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
+                            onClick={() => {
+                              setSelectedTemplate(template);
+                              setShowVersionModal(true);
+                            }}
+                          >
+                            <History size={12} /> v{template.version + 1}
+                          </button>
+                          <button className="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" onClick={() => openDelete(template)}>
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -548,6 +646,41 @@ export default function RequirementsPage() {
                 <button className="btn btn-secondary" onClick={() => { setShowDeleteConfirm(false); setSelectedTemplate(null); }}>Abbrechen</button>
                 <button className="btn btn-danger" onClick={handleDelete}>
                   <Trash2 size={14} className="me-1" /> Löschen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Publish Version Modal */}
+      {showVersionModal && selectedTemplate && (
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Neue Version veröffentlichen</h5>
+                <button className="btn-close" onClick={() => { setShowVersionModal(false); setSelectedTemplate(null); }} />
+              </div>
+              <div className="modal-body">
+                <p>Template: <strong>{selectedTemplate.name}</strong></p>
+                <p>Aktuelle Version: <strong>v{selectedTemplate.version}</strong></p>
+                <p>Neue Version wird: <strong>v{selectedTemplate.version + 1}</strong></p>
+                <div className="alert alert-info small">
+                  Bei Veröffentlichung wird automatisch eine Version gespeichert.
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => { setShowVersionModal(false); setSelectedTemplate(null); }}>Abbrechen</button>
+                <button
+                  className="btn btn-success"
+                  onClick={() => {
+                    handlePublishVersion(selectedTemplate.id);
+                    setShowVersionModal(false);
+                    setSelectedTemplate(null);
+                  }}
+                >
+                  <History size={14} className="me-1" /> v{selectedTemplate.version + 1} veröffentlichen
                 </button>
               </div>
             </div>

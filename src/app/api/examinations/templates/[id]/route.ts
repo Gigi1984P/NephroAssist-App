@@ -41,15 +41,35 @@ export async function PUT(
 
     const data = schema.parse(body);
 
+    // Aktuelle Version holen
+    const current = await prisma.requirementTemplate.findUnique({
+      where: { id },
+      select: { version: true },
+    });
+
+    const newVersion = (current?.version || 1) + 1;
+
+    // Alte Version speichern
+    await prisma.requirementTemplateVersion.create({
+      data: {
+        templateId: id,
+        version: current?.version || 1,
+        changes: "Automatische Versionierung durch Bearbeitung",
+        publishedAt: new Date(),
+        publishedBy: user.id,
+      },
+    });
+
     const template = await prisma.requirementTemplate.update({
       where: { id },
       data: {
         ...data,
+        version: newVersion,
         updatedAt: new Date(),
       },
     });
 
-    return NextResponse.json({ template });
+    return NextResponse.json({ template, message: `Aktualisiert (v${newVersion})` });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
