@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { getAllowedPatientIds } from "@/lib/permissions";
 import Link from "next/link";
 import {
-  Calendar,
   FileText,
   CheckSquare,
   Users,
@@ -28,16 +27,14 @@ export default async function DashboardPage() {
 
   const patientFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { id: { in: allowedPatientIds } } : { id: "" });
   const taskFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" });
-  const appointmentFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" });
 
-  const [patientCount, upcomingAppointments, pendingTasks, activeBlockers] = await Promise.all([
+  const [patientCount, pendingTasks, activeBlockers] = await Promise.all([
     prisma.patient.count({ where: patientFilter }),
-    prisma.appointment.count({ where: { startTime: { gte: new Date() }, status: "PLANNED", ...appointmentFilter } }),
     prisma.task.count({ where: { status: "PENDING", ...taskFilter } }),
     prisma.blocker.count({ where: { status: "ACTIVE" } }),
   ]);
 
-  const [recentTasks, recentAppointments, recentDocuments] = await Promise.all([
+  const [recentTasks, recentDocuments] = await Promise.all([
     prisma.task.findMany({
       where: { status: "PENDING", ...taskFilter },
       orderBy: { createdAt: "desc" },
@@ -51,12 +48,6 @@ export default async function DashboardPage() {
           },
         },
       },
-    }),
-    prisma.appointment.findMany({
-      where: { startTime: { gte: new Date() }, status: "PLANNED", ...appointmentFilter },
-      orderBy: { startTime: "asc" },
-      take: 5,
-      include: { patient: true },
     }),
     prisma.document.findMany({
       where: isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" }),
@@ -99,19 +90,6 @@ export default async function DashboardPage() {
           <div className="col-md-6 col-lg-3">
             <div className="dashboard-card p-3">
               <div className="d-flex align-items-center gap-3">
-                <div className="stat-icon green">
-                  <Calendar size={22} />
-                </div>
-                <div>
-                  <div className="stat-value">{upcomingAppointments}</div>
-                  <div className="stat-label">Termine</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-6 col-lg-3">
-            <div className="dashboard-card p-3">
-              <div className="d-flex align-items-center gap-3">
                 <div className="stat-icon red">
                   <AlertTriangle size={22} />
                 </div>
@@ -138,16 +116,6 @@ export default async function DashboardPage() {
             </div>
           </div>
         )}
-        <div className={`col-6 ${!isPatientOrCaregiver ? "col-lg-3" : "col-lg-4"}`}>
-          <div className="stat-card">
-            <div className="stat-icon green"><Calendar size={22} /></div>
-            <div>
-              <div className="stat-value">{upcomingAppointments}</div>
-              <div className="stat-label">Termine</div>
-            </div>
-          </div>
-        </div>
-
         <div className={`col-6 ${!isPatientOrCaregiver ? "col-lg-3" : "col-lg-4"}`}>
           <div className="stat-card">
             <div className="stat-icon orange"><FileText size={22} /></div>
@@ -234,40 +202,39 @@ export default async function DashboardPage() {
             </div>
           </div>
         )}
-        <div className="col-lg-6">
-          <div className="dashboard-card">
-            <div className="card-header-custom">
-              <span className="fw-semibold">Letzte Termine</span>
-              <Link href="/dashboard/appointments" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
-                Alle anzeigen
-              </Link>
-            </div>
-            <div className="card-body-custom">
-              {recentAppointments.length === 0 ? (
-                <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
-                  Keine Termine vorhanden
-                </div>
-              ) : (
-                recentAppointments.map((apt) => (
-                  <div key={apt.id} className="list-item-custom">
-                    <div>
-                      <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{apt.type}</div>
-                      <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                        {apt.patient?.firstName} {apt.patient?.lastName}
-                      </div>
-                      <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                        {new Date(apt.startTime).toLocaleDateString("de-DE", {
-                          weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-                        })}
+        {!isPatientOrCaregiver && (
+          <div className="col-lg-6">
+            <div className="dashboard-card">
+              <div className="card-header-custom">
+                <span className="fw-semibold">Letzte Dokumente</span>
+                <Link href="/dashboard/documents" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
+                  Alle anzeigen
+                </Link>
+              </div>
+              <div className="card-body-custom">
+                {recentDocuments.length === 0 ? (
+                  <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
+                    Keine Dokumente vorhanden
+                  </div>
+                ) : (
+                  recentDocuments.map((doc) => (
+                    <div key={doc.id} className="list-item-custom">
+                      <div>
+                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{doc.filename}</div>
+                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                          {doc.patient?.firstName} {doc.patient?.lastName}
+                        </div>
+                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                          {new Date(doc.createdAt).toLocaleDateString("de-DE")}
+                        </div>
                       </div>
                     </div>
-                    <span className="badge-custom badge-outline" style={{ fontSize: "0.7rem" }}>{apt.status}</span>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
