@@ -227,6 +227,10 @@ body {
 .stat-icon.orange { background-color: #f59e0b; }
 .stat-icon.red { background-color: #ef4444; }
 .stat-icon.purple { background-color: #8b5cf6; }
+.stat-icon.teal { background-color: #14b8a6; }
+.stat-icon.cyan { background-color: #06b6d4; }
+.stat-icon.indigo { background-color: #6366f1; }
+.stat-icon.pink { background-color: #ec4899; }
 
 .stat-value {
   font-size: 1.75rem;

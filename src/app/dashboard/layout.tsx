@@ -54,6 +54,7 @@ export default function DashboardLayout({
       "/dashboard/admin": "Admin",
       "/dashboard/admin/reports": "Statistiken",
       "/dashboard/admin/audit": "Audit Log",
+      "/dashboard/reports": "Auswertungen",
     };
     if (typeof window !== "undefined") {
       setPageTitle(titleMap[window.location.pathname] || "Dashboard");
