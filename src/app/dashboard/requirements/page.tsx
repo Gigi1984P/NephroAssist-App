@@ -330,14 +330,14 @@ export default function RequirementsPage() {
                         {set.items?.length > 0 ? (
                           <div>
                             <span className="badge bg-info text-dark mb-1">{set.items.length} Untersuchung{set.items.length !== 1 ? "en" : ""}</span>
-                            <div className="small text-muted" style={{ maxWidth: 300 }}>
+                            <ul className="list-unstyled small mb-0" style={{ fontSize: "0.8rem" }}>
                               {set.items.map((it: any, i: number) => (
-                                <span key={i}>
+                                <li key={i} className="text-muted">
                                   {it.required ? <strong>{it.name}</strong> : it.name}
-                                  {i < set.items.length - 1 ? ", " : ""}
-                                </span>
+                                  {it.category && <span className="text-secondary"> ({it.category})</span>}
+                                </li>
                               ))}
-                            </div>
+                            </ul>
                           </div>
                         ) : "—"}
                       </td>
