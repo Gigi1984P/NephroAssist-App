@@ -2,10 +2,9 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAllowedPatientIds } from "@/lib/permissions";
-import {
-  Users,
-} from "lucide-react";
-import PatientProgressCard from "@/components/patient-progress-card";
+import Link from "next/link";
+import { PageHeader } from "@/components/page-header";
+import { Users, CheckCircle, ExternalLink } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -18,112 +17,208 @@ export default async function DashboardPage() {
   const userRole = user.role as "ADMIN" | "COORDINATOR" | "PHYSICIAN" | "NURSE" | "PATIENT" | "CAREGIVER" | "DIALYSIS_STAFF";
   const allowedPatientIds = await getAllowedPatientIds({ ...user, role: userRole });
 
-  const isAdmin = userRole === "ADMIN";
   const isPatientOrCaregiver = userRole === "PATIENT" || userRole === "CAREGIVER";
 
-  const patientFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { id: { in: allowedPatientIds } } : { id: "" });
-  const taskFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" });
+  // Patienten-Dashboard: zeigt ProgressCard (kommt vom Client-Component)
+  if (isPatientOrCaregiver) {
+    return (
+      <div>
+        <div className="mb-4">
+          <h2 className="h3 fw-bold mb-1" style={{ color: "#1e293b" }}>
+            Willkommen zurück{user.name ? `, ${user.name}` : ""}!
+          </h2>
+          <p className="text-muted mb-0">Hier ist ein Überblick über Ihre aktuellen Aktivitäten.</p>
+        </div>
+        <PatientProgressCard />
+      </div>
+    );
+  }
 
-  const patientCount = await prisma.patient.count({ where: patientFilter });
+  // KLINIK-DASHBOARD: Patienten mit ALLEn abgeschlossenen Untersuchungen
+  const patientFilter = userRole === "ADMIN" || allowedPatientIds === null
+    ? {}
+    : allowedPatientIds.length > 0
+      ? { id: { in: allowedPatientIds } }
+      : { id: "" };
 
-  const recentTasks = await prisma.task.findMany({
-    where: { status: "PENDING", ...taskFilter },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-    include: {
-      requirement: {
-        include: {
-          patientCase: {
-            include: { patient: true },
+  const patients = await prisma.patient.findMany({
+    where: patientFilter,
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true,
+      consentStatus: true,
+      cases: {
+        select: {
+          id: true,
+          requirements: {
+            select: {
+              id: true,
+              status: true,
+              title: true,
+              template: {
+                select: { name: true, category: true },
+              },
+            },
           },
         },
       },
     },
+    orderBy: { lastName: "asc" },
+    take: 100,
   });
+
+  // Nur Patienten, bei denen ALLE Requirements abgeschlossen sind (ACCEPTED oder COMPLETED)
+  const completedPatients = patients
+    .map((patient) => {
+      const allRequirements = patient.cases.flatMap((c) => c.requirements);
+      const totalCount = allRequirements.length;
+      const completedCount = allRequirements.filter(
+        (r) => r.status === "ACCEPTED" || r.status === "WAIVED" || r.status === "NOT_APPLICABLE"
+      ).length;
+
+      return {
+        id: patient.id,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        email: patient.email,
+        phone: patient.phone,
+        consentStatus: patient.consentStatus,
+        totalRequirements: totalCount,
+        completedRequirements: completedCount,
+        allDone: totalCount > 0 && totalCount === completedCount,
+      };
+    })
+    .filter((p) => p.allDone);
+
+  const getConsentBadgeClass = (status: string) => {
+    switch (status) {
+      case "GRANTED": return "bg-success";
+      case "PENDING": return "bg-warning text-dark";
+      case "DENIED": return "bg-danger";
+      default: return "bg-secondary";
+    }
+  };
+
+  const getConsentLabel = (status: string) => {
+    switch (status) {
+      case "GRANTED": return "Einwilligt";
+      case "PENDING": return "Ausstehend";
+      case "DENIED": return "Abgelehnt";
+      default: return status;
+    }
+  };
 
   return (
     <div>
-      <div className="mb-4">
-        <h2 className="h3 fw-bold mb-1" style={{ color: "#1e293b" }}>
-          Willkommen zurück{user.name ? `, ${user.name}` : ""}!
-        </h2>
-        <p className="text-muted mb-0">Hier ist ein Überblick über Ihre aktuellen Aktivitäten.</p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description={`Patienten mit allen abgeschlossenen Untersuchungen (${completedPatients.length})`}
+      />
 
-      {/* Patient Progress Card */}
-      {isPatientOrCaregiver && (
-        <PatientProgressCard />
-      )}
-
-      {/* Phase Cards für Klinik */}
-      {!isPatientOrCaregiver && (
-        <div className="row g-3 mb-4">
-          <div className="col-md-6 col-lg-3">
-            <div className="dashboard-card p-3">
-              <div className="d-flex align-items-center gap-3">
-                <div className="stat-icon blue">
-                  <Users size={22} />
-                </div>
-                <div>
-                  <div className="stat-value">{patientCount}</div>
-                  <div className="stat-label">Aktive Patienten</div>
-                </div>
-              </div>
+      {/* Statistik-Karte */}
+      <div className="row g-3 mb-4">
+        <div className="col-md-6 col-lg-3">
+          <div className="dashboard-card p-3 d-flex align-items-center gap-3">
+            <div className="stat-icon green"><CheckCircle size={22} /></div>
+            <div>
+              <div className="stat-value">{completedPatients.length}</div>
+              <div className="stat-label">Alle Untersuchungen abgeschlossen</div>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Stats Cards */}
-      <div className="row g-3 mb-4">
-        {!isPatientOrCaregiver && (
-          <div className="col-6 col-lg-3">
-            <div className="stat-card">
-              <div className="stat-icon blue"><Users size={22} /></div>
-              <div>
-                <div className="stat-value">{patientCount}</div>
-                <div className="stat-label">Patienten</div>
-              </div>
+        <div className="col-md-6 col-lg-3">
+          <div className="dashboard-card p-3 d-flex align-items-center gap-3">
+            <div className="stat-icon blue"><Users size={22} /></div>
+            <div>
+              <div className="stat-value">{patients.length}</div>
+              <div className="stat-label">Gesamt Patienten</div>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Content Grid */}
-      <div className="row g-3">
-        {isPatientOrCaregiver && (
-          <div className="col-lg-6">
-            <div className="dashboard-card">
-              <div className="card-header-custom">
-                <span className="fw-semibold">Letzte Untersuchungen</span>
-              </div>
-              <div className="card-body-custom">
-                {recentTasks.length === 0 ? (
-                  <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
-                    Keine Untersuchungen vorhanden
-                  </div>
-                ) : (
-                  recentTasks.map((task) => (
-                    <div key={task.id} className="list-item-custom">
-                      <div>
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{task.title}</div>
-                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                          {task.requirement?.patientCase?.patient?.firstName} {task.requirement?.patientCase?.patient?.lastName}
-                        </div>
-                        {task.dueDate && (
-                          <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                            Fällig: {new Date(task.dueDate).toLocaleDateString("de-DE")}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+      {/* Tabelle: Patienten mit allen abgeschlossenen Untersuchungen */}
+      <div className="dashboard-card">
+        <div className="card-header-custom d-flex justify-content-between align-items-center">
+          <span className="fw-semibold">Patienten — Alle Untersuchungen abgeschlossen</span>
+        </div>
+        <div className="card-body-custom p-0">
+          {completedPatients.length === 0 ? (
+            <div className="p-5 text-center text-muted">
+              <div className="mb-2"><CheckCircle size={32} className="text-muted" /></div>
+              <div className="fw-medium">Keine Patienten mit allen abgeschlossenen Untersuchungen</div>
+              <div className="small">Sobald ein Patient alle Anforderungen erfüllt hat, erscheint er hier.</div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Patient</th>
+                    <th>Kontakt</th>
+                    <th>Einwilligung</th>
+                    <th>Untersuchungen</th>
+                    <th className="text-end">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completedPatients.map((patient) => {
+                    const initials = (patient.firstName?.charAt(0) || "") + (patient.lastName?.charAt(0) || "");
+                    return (
+                      <tr key={patient.id}>
+                        <td>
+                          <div className="d-flex align-items-center gap-2">
+                            <div
+                              className="d-flex align-items-center justify-content-center fw-bold text-white"
+                              style={{
+                                width: 36, height: 36, borderRadius: "50%", background: "#3b82f6", fontSize: "0.8rem", flexShrink: 0,
+                              }}
+                            >
+                              {initials}
+                            </div>
+                            <div>
+                              <div className="fw-medium">{patient.firstName} {patient.lastName}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: "0.85rem" }}>
+                            <div>{patient.email || "—"}</div>
+                            <div className="text-muted">{patient.phone || "—"}</div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge ${getConsentBadgeClass(patient.consentStatus)}`}>{getConsentLabel(patient.consentStatus)}</span>
+                        </td>
+                        <td>
+                          <span className="badge bg-success">
+                            <CheckCircle size={12} className="me-1" />
+                            {patient.completedRequirements} / {patient.totalRequirements}
+                          </span>
+                        </td>
+                        <td className="text-end">
+                          <Link
+                            href={`/dashboard/patients/${patient.id}`}
+                            className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                          >
+                            <ExternalLink size={14} /> Details
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
+/* Client-Component Import für Patienten-Dashboard */
+import PatientProgressCard from "@/components/patient-progress-card";
