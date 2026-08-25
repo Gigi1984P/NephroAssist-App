@@ -181,3 +181,4 @@ export async function DELETE(
     return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
   }
 }
+// DB cleanup: template_set_id removed
