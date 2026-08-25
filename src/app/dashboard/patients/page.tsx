@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Plus, Search, ChevronLeft, ChevronRight, User, Phone, Mail } from "lucide-react";
@@ -13,17 +12,13 @@ interface Patient {
   email: string;
   phone: string;
   consentStatus: string;
-  ampelColor: "green" | "yellow" | "red";
-  caseCount: number;
 }
 
 export default function PatientsPage() {
-  const router = useRouter();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [consentFilter, setConsentFilter] = useState("ALL");
-  const [ampelFilter, setAmpelFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -52,8 +47,7 @@ export default function PatientsPage() {
       `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (patient.email || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesConsent = consentFilter === "ALL" || patient.consentStatus === consentFilter;
-    const matchesAmpel = ampelFilter === "ALL" || patient.ampelColor === ampelFilter;
-    return matchesSearch && matchesConsent && matchesAmpel;
+    return matchesSearch && matchesConsent;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredPatients.length / itemsPerPage));
@@ -61,19 +55,6 @@ export default function PatientsPage() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const getAmpelStyle = (color: string) => {
-    switch (color) {
-      case "green":
-        return { background: "#dcfce7", border: "#86efac", dot: "#10b981" };
-      case "yellow":
-        return { background: "#fef3c7", border: "#fde68a", dot: "#f59e0b" };
-      case "red":
-        return { background: "#fee2e2", border: "#fecaca", dot: "#ef4444" };
-      default:
-        return { background: "#f1f5f9", border: "#e2e8f0", dot: "#94a3b8" };
-    }
-  };
 
   const getConsentBadgeClass = (status: string) => {
     switch (status) {
@@ -105,7 +86,7 @@ export default function PatientsPage() {
     <div>
       <PageHeader
         title="Patienten"
-        description="Übersicht aller Patienten mit Ampel-Status"
+        description="Übersicht aller Patienten"
         action={
           <button className="btn-custom btn-primary-custom">
             <Plus size={16} /> Neuer Patient
@@ -117,7 +98,7 @@ export default function PatientsPage() {
       <div className="dashboard-card mb-4">
         <div className="card-body-custom">
           <div className="row g-3 align-items-end">
-            <div className="col-md-4">
+            <div className="col-md-6">
               <div className="search-bar">
                 <Search size={16} className="search-bar-icon" />
                 <input
@@ -129,22 +110,13 @@ export default function PatientsPage() {
                 />
               </div>
             </div>
-            <div className="col-md-3">
+            <div className="col-md-4">
               <label className="form-label" style={{ fontSize: "0.8rem", color: "#64748b" }}>Einwilligung</label>
               <select className="form-select" value={consentFilter} onChange={(e) => { setConsentFilter(e.target.value); setCurrentPage(1); }}>
                 <option value="ALL">Alle</option>
                 <option value="GRANTED">Einwilligt</option>
                 <option value="PENDING">Ausstehend</option>
                 <option value="DENIED">Abgelehnt</option>
-              </select>
-            </div>
-            <div className="col-md-3">
-              <label className="form-label" style={{ fontSize: "0.8rem", color: "#64748b" }}>Ampel-Status</label>
-              <select className="form-select" value={ampelFilter} onChange={(e) => { setAmpelFilter(e.target.value); setCurrentPage(1); }}>
-                <option value="ALL">Alle</option>
-                <option value="green">🟢 Grün</option>
-                <option value="yellow">🟡 Gelb</option>
-                <option value="red">🔴 Rot</option>
               </select>
             </div>
             <div className="col-md-2 text-md-end">
@@ -173,14 +145,11 @@ export default function PatientsPage() {
                     <th>Patient</th>
                     <th>Kontakt</th>
                     <th>Einwilligung</th>
-                    <th>Fälle</th>
-                    <th>Ampel</th>
                     <th className="actions">Aktionen</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedPatients.map((patient) => {
-                    const ampelStyle = getAmpelStyle(patient.ampelColor);
                     const initials = (patient.firstName?.charAt(0) || "") + (patient.lastName?.charAt(0) || "");
                     return (
                       <tr key={patient.id}>
@@ -218,32 +187,6 @@ export default function PatientsPage() {
                         </td>
                         <td>
                           <span className={`badge-custom ${getConsentBadgeClass(patient.consentStatus)}`}>{getConsentLabel(patient.consentStatus)}</span>
-                        </td>
-                        <td>{patient.caseCount}</td>
-                        <td>
-                          <div
-                            className="d-flex align-items-center gap-2 px-2 py-1 rounded"
-                            style={{
-                              background: ampelStyle.background,
-                              border: `1px solid ${ampelStyle.border}`,
-                              width: "fit-content",
-                            }}
-                          >
-                            <span
-                              style={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: "50%",
-                                backgroundColor: ampelStyle.dot,
-                                display: "inline-block",
-                              }}
-                            />
-                            <span style={{ fontSize: "0.8rem", fontWeight: 500 }}>
-                              {patient.ampelColor === "green" && "Gültig"}
-                              {patient.ampelColor === "yellow" && "Bald fällig"}
-                              {patient.ampelColor === "red" && "Abgelaufen"}
-                            </span>
-                          </div>
                         </td>
                         <td className="actions">
                           <Link href={`/dashboard/patients/${patient.id}`} className="btn-custom btn-outline-custom btn-sm-custom">

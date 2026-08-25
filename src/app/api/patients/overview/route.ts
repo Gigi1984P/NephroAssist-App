@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getAmpelColor } from "@/lib/ampel";
 
 export const dynamic = "force-dynamic";
 
@@ -30,31 +29,6 @@ export async function GET() {
         generalPractitionerEmail: true,
         generalPractitionerPhone: true,
         consentStatus: true,
-        cases: {
-          select: {
-            id: true,
-            requirements: {
-              select: {
-                id: true,
-                status: true,
-                expiresAt: true,
-                title: true,
-                template: {
-                  select: { renewalLeadTime: true },
-                },
-                tasks: {
-                  select: {
-                    id: true,
-                    stepNumber: true,
-                    status: true,
-                    isWorkflowStep: true,
-                  },
-                  where: { isWorkflowStep: true },
-                },
-              },
-            },
-          },
-        },
       },
       orderBy: { lastName: "asc" },
       take: 50,
@@ -69,51 +43,16 @@ export async function GET() {
     });
 
     const enriched = patients.map((patient) => {
-      const patientDocs = documents.filter((doc) => doc.patientId === patient.id);
-      const hasReport = patientDocs.length > 0;
-
-      const allSteps = patient.cases.flatMap((c) =>
-        c.requirements.flatMap((r) =>
-          r.tasks.filter((t) => t.stepNumber === 5)
-        )
-      );
-      const step5Completed = allSteps.some((s) => s.status === "COMPLETED");
-
-      // Ampel: schlimmste Farbe aller Requirements
-      const requirements = patient.cases.flatMap((c) => c.requirements);
-      let ampelColor: "green" | "yellow" | "red" = "green";
-      for (const req of requirements) {
-        const color = getAmpelColor({
-          status: req.status,
-          expiresAt: req.expiresAt,
-          renewalLeadTime: req.template?.renewalLeadTime,
-        });
-        if (color === "red") {
-          ampelColor = "red";
-          break;
-        }
-        if (color === "yellow" && ampelColor === "green") {
-          ampelColor = "yellow";
-        }
-      }
-
-      // Case-Count
-      const caseCount = patient.cases.length;
-
       return {
         id: patient.id,
         firstName: patient.firstName,
         lastName: patient.lastName,
         email: patient.email,
         phone: patient.phone,
-        hasReport: hasReport || step5Completed,
-        documentCount: patientDocs.length,
         gpName: patient.generalPractitionerName,
         gpEmail: patient.generalPractitionerEmail,
         gpPhone: patient.generalPractitionerPhone,
         consentStatus: patient.consentStatus,
-        ampelColor,
-        caseCount,
       };
     });
 
