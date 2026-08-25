@@ -161,12 +161,6 @@ export async function DELETE(
         where: { OR: [{ templateId: id }, { prerequisiteId: id }] },
       });
 
-      // TemplateSet-Referenz entfernen
-      await prisma.requirementTemplate.updateMany({
-        where: { id },
-        data: { templateSetId: null },
-      });
-
       // Zugehörige PatientRequirements entfernen
       await prisma.patientRequirement.deleteMany({
         where: { templateId: id },

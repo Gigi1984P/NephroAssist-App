@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/page-header";
 import {
-  Plus, Pencil, Trash2, UserPlus,
-  FolderOpen, CheckSquare, Square, FileText,
+  Plus, Pencil, Trash2, UserPlus, X,
 } from "lucide-react";
 
 interface Template {
@@ -20,15 +19,22 @@ interface Template {
   updatedAt: string;
 }
 
+interface SetItem {
+  name: string;
+  category: string;
+  required: boolean;
+  description: string;
+}
+
 interface TemplateSet {
   id: string;
   name: string;
   description: string | null;
+  items: SetItem[];
   version: number;
   status: string;
   createdAt: string;
   updatedAt: string;
-  templates: { id: string; name: string; category: string; required: boolean; listingBlocker: boolean }[];
 }
 
 interface Patient {
@@ -67,10 +73,10 @@ export default function RequirementsPage() {
   const [tRenewal, setTRenewal] = useState<number | undefined>(undefined);
   const [tSaving, setTSaving] = useState(false);
 
-  // TemplateSet Form
+  // TemplateSet Form (neu mit Textfeldern statt Checkboxen)
   const [sName, setSName] = useState("");
   const [sDesc, setSDesc] = useState("");
-  const [sTemplateIds, setSTemplateIds] = useState<Set<string>>(new Set());
+  const [sItems, setSItems] = useState<SetItem[]>([{ name: "", category: "Labor", required: false, description: "" }]);
   const [sSaving, setSSaving] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -112,10 +118,10 @@ export default function RequirementsPage() {
     setActiveModal(null);
     setSelTemplate(null);
     setSelSet(null);
-    setSTemplateIds(new Set());
+    setSItems([{ name: "", category: "Labor", required: false, description: "" }]);
   };
 
-  // Assign
+  // ===================== ASSIGN =====================
   const handleAssign = async () => {
     if (!selTemplate || !selCaseId || !dueDate) {
       setMsg({ type: "error", text: "Untersuchung, Fall und Fälligkeitsdatum sind Pflicht" });
@@ -138,7 +144,7 @@ export default function RequirementsPage() {
     finally { setAssignLoading(false); }
   };
 
-  // Create Template
+  // ===================== CREATE TEMPLATE =====================
   const handleCreateT = async () => {
     if (!tName.trim() || !tCategory.trim()) { setMsg({ type: "error", text: "Name und Kategorie sind Pflicht" }); return; }
     setTSaving(true);
@@ -163,7 +169,7 @@ export default function RequirementsPage() {
     finally { setTSaving(false); }
   };
 
-  // Edit Template
+  // ===================== EDIT TEMPLATE =====================
   const openEditT = (template: Template) => {
     setSelTemplate(template);
     setTName(template.name); setTCategory(template.category); setTDesc(template.description || "");
@@ -196,7 +202,7 @@ export default function RequirementsPage() {
     finally { setTSaving(false); }
   };
 
-  // Delete Template
+  // ===================== DELETE TEMPLATE =====================
   const openDelT = (template: Template) => { setSelTemplate(template); setActiveModal("delT"); };
   const handleDelT = async () => {
     if (!selTemplate) return;
@@ -207,20 +213,35 @@ export default function RequirementsPage() {
     } catch { setMsg({ type: "error", text: "Netzwerkfehler" }); }
   };
 
-  // TemplateSet
+  // ===================== TEMPLATESET (TEXTFELDER) =====================
   const openCreateS = () => {
-    setSName(""); setSDesc(""); setSTemplateIds(new Set()); setActiveModal("createS");
+    setSName(""); setSDesc(""); setSItems([{ name: "", category: "Labor", required: false, description: "" }]);
+    setActiveModal("createS");
   };
+
   const openEditS = (set: TemplateSet) => {
     setSelSet(set); setSName(set.name); setSDesc(set.description || "");
-    setSTemplateIds(new Set(set.templates.map((t) => t.id)));
+    setSItems(set.items.length > 0 ? set.items : [{ name: "", category: "Labor", required: false, description: "" }]);
     setActiveModal("editS");
   };
-  const toggleTInS = (id: string) => {
-    setSTemplateIds((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+
+  const addSItem = () => {
+    setSItems((prev) => [...prev, { name: "", category: "Labor", required: false, description: "" }]);
   };
+
+  const removeSItem = (idx: number) => {
+    setSItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateSItem = (idx: number, field: keyof SetItem, value: string | boolean) => {
+    setSItems((prev) => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+  };
+
   const handleSaveS = async () => {
-    if (!sName.trim() || sTemplateIds.size === 0) { setMsg({ type: "error", text: "Name und mindestens eine Untersuchung sind Pflicht" }); return; }
+    if (!sName.trim() || sItems.length === 0 || sItems.some((it) => !it.name.trim())) {
+      setMsg({ type: "error", text: "Name und mindestens eine Untersuchung mit Namen sind Pflicht" });
+      return;
+    }
     setSSaving(true);
     try {
       const isEdit = activeModal === "editS" && selSet;
@@ -229,17 +250,22 @@ export default function RequirementsPage() {
       const res = await fetch(url, {
         method, credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: sName.trim(), description: sDesc.trim() || null, templateIds: Array.from(sTemplateIds) }),
+        body: JSON.stringify({
+          name: sName.trim(),
+          description: sDesc.trim() || null,
+          items: sItems.map((it) => ({ ...it, name: it.name.trim(), category: it.category.trim() })),
+        }),
       });
       const data = await res.json();
       if (res.ok) {
-        setMsg({ type: "success", text: isEdit ? "TemplateSet aktualisiert (v" + (selSet.version + 1) + ")" : "TemplateSet erstellt" });
+        setMsg({ type: "success", text: isEdit ? `TemplateSet aktualisiert (v${data.templateSet.version})` : "TemplateSet erstellt" });
         closeAll();
         loadData();
       } else setMsg({ type: "error", text: data.error || "Fehler" });
     } catch { setMsg({ type: "error", text: "Netzwerkfehler" }); }
     finally { setSSaving(false); }
   };
+
   const openDelS = (set: TemplateSet) => { setSelSet(set); setActiveModal("delS"); };
   const handleDelS = async () => {
     if (!selSet) return;
@@ -274,19 +300,23 @@ export default function RequirementsPage() {
           <Plus size={16} /> Neue Untersuchung
         </button>
         <button className="btn btn-outline-success d-inline-flex align-items-center gap-2" onClick={openCreateS}>
-          <FolderOpen size={16} /> TemplateSet
+          <Plus size={16} /> TemplateSet
         </button>
       </div>
 
       {/* ==== TEMPLATESETS TABELLE ==== */}
       <div className="dashboard-card mb-4">
         <div className="card-header-custom d-flex justify-content-between align-items-center">
-          <span className="fw-semibold d-flex align-items-center gap-2"><FolderOpen size={18} /> TemplateSets</span>
+          <span className="fw-semibold d-flex align-items-center gap-2"><Plus size={18} /> TemplateSets</span>
           <span className="badge bg-secondary">{templateSets.length}</span>
         </div>
         <div className="card-body-custom p-0">
           {templateSets.length === 0 ? (
-            <div className="p-4 text-center text-muted"><div className="mb-2"><FolderOpen size={24} className="text-muted" /></div><div className="fw-medium">Keine TemplateSets</div><div className="small">Gruppen Sie Untersuchungen zu Sets mit automatischer Versionierung.</div></div>
+            <div className="p-4 text-center text-muted">
+              <div className="mb-2"><Plus size={24} className="text-muted" /></div>
+              <div className="fw-medium">Keine TemplateSets</div>
+              <div className="small">Erstellen Sie Sets mit Untersuchungen als Freitext.</div>
+            </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover mb-0">
@@ -296,8 +326,8 @@ export default function RequirementsPage() {
                     <tr key={set.id}>
                       <td className="fw-medium">{set.name}</td>
                       <td>{set.description || "—"}</td>
-                      <td><div className="d-flex flex-wrap gap-1">{set.templates.map((t) => (
-                        <span key={t.id} className={`badge ${t.required ? "bg-danger" : "bg-secondary"}`}>{t.name}</span>
+                      <td><div className="d-flex flex-wrap gap-1">{set.items?.map((it, i) => (
+                        <span key={i} className={`badge ${it.required ? "bg-danger" : "bg-secondary"}`}>{it.name}</span>
                       ))}</div></td>
                       <td><span className="badge bg-primary">v{set.version}</span></td>
                       <td><span className="text-muted small">{fmtDate(set.createdAt)}</span></td>
@@ -318,14 +348,14 @@ export default function RequirementsPage() {
       {/* ==== UNTERSUCHUNGEN TABELLE ==== */}
       <div className="dashboard-card">
         <div className="card-header-custom d-flex justify-content-between align-items-center">
-          <span className="fw-semibold d-flex align-items-center gap-2"><FileText size={18} /> Untersuchungen</span>
+          <span className="fw-semibold d-flex align-items-center gap-2"><Pencil size={18} /> Untersuchungen</span>
           <span className="badge bg-secondary">{templates.length}</span>
         </div>
         <div className="card-body-custom p-0">
           {loading ? (
             <div className="p-4 text-center text-muted">Laden...</div>
           ) : templates.length === 0 ? (
-            <div className="p-4 text-center text-muted"><div className="mb-2"><FileText size={24} className="text-muted" /></div><div className="fw-medium">Keine Untersuchungen</div></div>
+            <div className="p-4 text-center text-muted"><div className="mb-2"><Pencil size={24} className="text-muted" /></div><div className="fw-medium">Keine Untersuchungen</div></div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover mb-0">
@@ -465,49 +495,81 @@ export default function RequirementsPage() {
         </div>
       )}
 
-      {/* Create / Edit TemplateSet Modal */}
+      {/* ====== TemplateSet Modal: FREITEXT-FELDER ====== */}
       {(activeModal === "createS" || activeModal === "editS") && (
         <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
-          <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-dialog modal-xl modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">{activeModal === "editS" && selSet ? `TemplateSet bearbeiten: ${selSet.name}` : "Neues TemplateSet erstellen"}</h5>
                 <button className="btn-close" onClick={closeAll} />
               </div>
               <div className="modal-body">
-                <div className="mb-3"><label className="form-label fw-medium">Name *</label><input type="text" className="form-control" value={sName} onChange={(e) => setSName(e.target.value)} placeholder="z.B. Standard-Nephrologie-Check" /></div>
-                <div className="mb-3"><label className="form-label fw-medium">Beschreibung</label><textarea className="form-control" rows={2} value={sDesc} onChange={(e) => setSDesc(e.target.value)} placeholder="Beschreibung" /></div>
-                <hr className="my-3" />
-                <h6 className="fw-semibold mb-2">Untersuchungen auswählen</h6>
-                <div className="table-responsive">
-                  <table className="table table-sm table-hover">
-                    <thead><tr><th style={{ width: 40 }}></th><th>Name</th><th>Kategorie</th><th>Pflicht</th></tr></thead>
-                    <tbody>
-                      {templates.map((t) => (
-                        <tr key={t.id} style={{ cursor: "pointer" }} onClick={() => toggleTInS(t.id)}>
-                          <td>{sTemplateIds.has(t.id) ? <CheckSquare size={18} className="text-success" /> : <Square size={18} className="text-muted" />}</td>
-                          <td className="fw-medium">{t.name}</td>
-                          <td>{t.category}</td>
-                          <td>{t.required ? <span className="badge bg-danger">Ja</span> : <span className="badge bg-secondary">Nein</span>}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {/* Set-Name + Beschreibung */}
+                <div className="mb-3">
+                  <label className="form-label fw-medium">Name *</label>
+                  <input type="text" className="form-control" value={sName} onChange={(e) => setSName(e.target.value)} placeholder="z.B. Standard-Nephrologie-Check" />
                 </div>
-                {sTemplateIds.size > 0 && <div className="alert alert-info mt-3"><strong>{sTemplateIds.size}</strong> Untersuchung{sTemplateIds.size !== 1 ? "en" : ""} ausgewählt</div>}
+                <div className="mb-3">
+                  <label className="form-label fw-medium">Beschreibung</label>
+                  <textarea className="form-control" rows={2} value={sDesc} onChange={(e) => setSDesc(e.target.value)} placeholder="Beschreibung" />
+                </div>
+
+                <hr className="my-3" />
+                <h6 className="fw-semibold mb-2">Untersuchungen (jeweils in Textfelder reinschreiben)</h6>
+
+                {/* Header */}
+                <div className="row fw-medium text-muted mb-2" style={{ fontSize: "0.85rem" }}>
+                  <div className="col-3">Name</div>
+                  <div className="col-2">Kategorie</div>
+                  <div className="col-1">Pflicht</div>
+                  <div className="col-5">Beschreibung</div>
+                  <div className="col-1"></div>
+                </div>
+
+                {/* Item-Zeilen */}
+                {sItems.map((item, idx) => (
+                  <div key={idx} className="row g-2 align-items-center mb-2">
+                    <div className="col-3">
+                      <input type="text" className="form-control form-control-sm" value={item.name} onChange={(e) => updateSItem(idx, "name", e.target.value)} placeholder="Untersuchungsname" />
+                    </div>
+                    <div className="col-2">
+                      <select className="form-select form-select-sm" value={item.category} onChange={(e) => updateSItem(idx, "category", e.target.value)}>
+                        <option>Labor</option>
+                        <option>Bildgebung</option>
+                        <option>Konsil</option>
+                        <option>Psychosozial</option>
+                        <option>Zahnärztlich</option>
+                        <option>Sonstige</option>
+                      </select>
+                    </div>
+                    <div className="col-1">
+                      <div className="form-check">
+                        <input className="form-check-input" type="checkbox" checked={item.required} onChange={(e) => updateSItem(idx, "required", e.target.checked)} id={`req-${idx}`} />
+                        <label className="form-check-label" htmlFor={`req-${idx}`}></label>
+                      </div>
+                    </div>
+                    <div className="col-5">
+                      <input type="text" className="form-control form-control-sm" value={item.description} onChange={(e) => updateSItem(idx, "description", e.target.value)} placeholder="Beschreibung (optional)" />
+                    </div>
+                    <div className="col-1">
+                      <button className="btn btn-sm btn-outline-danger" onClick={() => removeSItem(idx)} disabled={sItems.length <= 1}><X size={14} /></button>
+                    </div>
+                  </div>
+                ))}
+
+                <button className="btn btn-sm btn-outline-primary mt-2" onClick={addSItem}><Plus size={14} className="me-1" />Weitere Untersuchung hinzufügen</button>
               </div>
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={closeAll}>Abbrechen</button>
-                <button className="btn btn-success" onClick={handleSaveS} disabled={sSaving}>
-                  {sSaving ? "Wird gespeichert..." : activeModal === "editS" ? "Aktualisieren" : "TemplateSet erstellen"}
-                </button>
+                <button className="btn btn-success" onClick={handleSaveS} disabled={sSaving}>{sSaving ? "Wird gespeichert..." : "Speichern"}</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Set Modal */}
+      {/* Delete TemplateSet Modal */}
       {activeModal === "delS" && selSet && (
         <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
           <div className="modal-dialog modal-dialog-centered">
@@ -515,7 +577,7 @@ export default function RequirementsPage() {
               <div className="modal-header"><h5 className="modal-title">TemplateSet löschen</h5><button className="btn-close" onClick={closeAll} /></div>
               <div className="modal-body">
                 <p>Möchten Sie das TemplateSet <strong>"{selSet.name}"</strong> wirklich löschen?</p>
-                <p className="text-muted small">Die Untersuchungen werden NICHT gelöscht, nur das Set.</p>
+                <p className="text-muted small">Diese Aktion kann nicht rückgängig gemacht werden.</p>
               </div>
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={closeAll}>Abbrechen</button>

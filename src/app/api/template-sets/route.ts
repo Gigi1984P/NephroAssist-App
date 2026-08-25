@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const CLINIC_ROLES = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"];
 
 /* ================================================================ */
-/*  GET: Alle TemplateSets + Templates                               */
+/*  GET: Alle TemplateSets (mit items als JSON)                      */
 /* ================================================================ */
 export async function GET() {
   try {
@@ -17,27 +17,16 @@ export async function GET() {
     if (!CLINIC_ROLES.includes(session.user.role)) return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
 
     const templateSets = await prisma.templateSet.findMany({
-      include: {
-        templates: {
-          select: { id: true, name: true, category: true, required: true, listingBlocker: true },
-          orderBy: { category: "asc" },
-        },
-      },
       orderBy: { updatedAt: "desc" },
     });
 
-    const templates = await prisma.requirementTemplate.findMany({
-      where: { templateSetId: null },
-      select: {
-        id: true, name: true, category: true, description: true,
-        required: true, listingBlocker: true,
-        validityDuration: true, renewalLeadTime: true,
-        createdAt: true, updatedAt: true,
-      },
-      orderBy: [{ category: "asc" }, { name: "asc" }],
-    });
+    // items JSON parsen
+    const parsed = templateSets.map((set: any) => ({
+      ...set,
+      items: (set.items as any[]) || [],
+    }));
 
-    return NextResponse.json({ templateSets, templates });
+    return NextResponse.json({ templateSets: parsed });
   } catch (error) {
     console.error("TemplateSets fetch error:", error);
     return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
@@ -45,7 +34,7 @@ export async function GET() {
 }
 
 /* ================================================================ */
-/*  POST: Neues TemplateSet erstellen                               */
+/*  POST: Neues TemplateSet erstellen (mit items als Textfelder)     */
 /* ================================================================ */
 export async function POST(request: Request) {
   try {
@@ -57,7 +46,12 @@ export async function POST(request: Request) {
     const schema = z.object({
       name: z.string().min(1, "Name erforderlich"),
       description: z.string().optional(),
-      templateIds: z.array(z.string()).min(1, "Mindestens eine Untersuchung auswählen"),
+      items: z.array(z.object({
+        name: z.string().min(1),
+        category: z.string().min(1),
+        required: z.boolean().default(false),
+        description: z.string().optional(),
+      })).min(1, "Mindestens eine Untersuchung erforderlich"),
     });
 
     const data = schema.parse(body);
@@ -66,14 +60,9 @@ export async function POST(request: Request) {
       data: {
         name: data.name,
         description: data.description || null,
+        items: data.items as any,
         createdBy: session.user.id,
       },
-    });
-
-    // Templates dem Set zuweisen
-    await prisma.requirementTemplate.updateMany({
-      where: { id: { in: data.templateIds } },
-      data: { templateSetId: templateSet.id },
     });
 
     return NextResponse.json({ templateSet }, { status: 201 });
