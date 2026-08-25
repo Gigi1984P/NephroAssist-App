@@ -31,7 +31,7 @@ interface SidebarItem {
 const sidebarItems: SidebarItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
   { title: "Patienten", href: "/dashboard/patients", icon: Users, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"] },
-  { title: "Termine", href: "/dashboard/appointments", icon: Calendar, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
+  { title: "Termine", href: "/dashboard/appointments", icon: Calendar, roles: ["PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
   { title: "Untersuchungen", icon: CheckSquare, roles: ["PATIENT", "CAREGIVER"], children: [
     { title: "Meine Untersuchungen", href: "/dashboard/tasks" },
   ] },
