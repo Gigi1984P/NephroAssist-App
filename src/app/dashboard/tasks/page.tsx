@@ -3,94 +3,125 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { Plus, Search, ChevronLeft, ChevronRight, Stethoscope, ArrowRight } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, Stethoscope, ArrowRight, CheckCircle, Clock, AlertTriangle, XCircle, Activity, Calendar, FileText } from "lucide-react";
 
-interface TaskItem {
+interface ReqItem {
   id: string;
   title: string;
+  category: string;
   description: string | null;
   status: string;
   dueDate: string | null;
-  category: string;
-  patientName: string;
-  isWorkflowStep: boolean;
-  stepNumber: number | null;
+  expiresAt: string | null;
+  completedAt: string | null;
+  required: boolean;
+  listingBlocker: boolean;
+  priority: number;
+  template?: {
+    name: string;
+    category: string;
+    required: boolean;
+    listingBlocker: boolean;
+    patientFriendlyDescription: string | null;
+  } | null;
+  tasks: Array<{
+    id: string;
+    title: string;
+    status: string;
+    dueDate: string | null;
+  }>;
 }
 
 const CAN_CREATE_INVESTIGATION = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"];
 
+function fmtDate(d: string | null): string {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("de-DE");
+}
+
+function daysUntil(dateStr: string | null): number | null {
+  if (!dateStr) return null;
+  const target = new Date(dateStr);
+  const today = new Date();
+  return Math.floor((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+const STATUS_META: Record<
+  string,
+  { label: string; color: string; bg: string; icon: React.ReactNode }
+> = {
+  NOT_STARTED: { label: "Nicht gestartet", color: "#64748b", bg: "#f1f5f9", icon: <Clock size={14} /> },
+  ACTION_REQUIRED: { label: "Aktion nötig", color: "#f97316", bg: "#fff7ed", icon: <AlertTriangle size={14} /> },
+  IN_PROGRESS: { label: "In Bearbeitung", color: "#3b82f6", bg: "#eff6ff", icon: <Activity size={14} /> },
+  WAITING_FOR_APPOINTMENT: { label: "Warte auf Termin", color: "#f59e0b", bg: "#fffbeb", icon: <Calendar size={14} /> },
+  WAITING_FOR_DOCUMENT: { label: "Warte auf Dokument", color: "#f59e0b", bg: "#fffbeb", icon: <FileText size={14} /> },
+  DOCUMENT_UPLOADED: { label: "Dokument hochgeladen", color: "#3b82f6", bg: "#eff6ff", icon: <FileText size={14} /> },
+  UNDER_REVIEW: { label: "In Prüfung", color: "#8b5cf6", bg: "#faf5ff", icon: <Activity size={14} /> },
+  ACCEPTED: { label: "Akzeptiert", color: "#10b981", bg: "#f0fdf4", icon: <CheckCircle size={14} /> },
+  REJECTED: { label: "Abgelehnt", color: "#ef4444", bg: "#fef2f2", icon: <XCircle size={14} /> },
+  BLOCKED: { label: "Blockiert", color: "#dc2626", bg: "#fef2f2", icon: <AlertTriangle size={14} /> },
+  EXPIRED: { label: "Abgelaufen", color: "#dc2626", bg: "#fef2f2", icon: <Clock size={14} /> },
+  RENEWAL_REQUIRED: { label: "Erneuerung nötig", color: "#f59e0b", bg: "#fffbeb", icon: <Clock size={14} /> },
+  WAIVED: { label: "Entfallen", color: "#94a3b8", bg: "#f8fafc", icon: <CheckCircle size={14} /> },
+  NOT_APPLICABLE: { label: "N/A", color: "#94a3b8", bg: "#f8fafc", icon: <CheckCircle size={14} /> },
+};
+
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [requirements, setRequirements] = useState<ReqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const perPage = 10;
 
-  const loadTasks = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/tasks");
-      if (res.ok) {
-        const data = await res.json();
-        const filtered = data.tasks.filter((t: TaskItem) => !t.isWorkflowStep);
-        setTasks(filtered);
+      const [reqRes, profileRes] = await Promise.all([
+        fetch("/api/patient-requirements"),
+        fetch("/api/user/profile"),
+      ]);
+
+      if (reqRes.ok) {
+        const data = await reqRes.json();
+        setRequirements(data.requirements || []);
+      }
+
+      if (profileRes.ok) {
+        const profile = await profileRes.json();
+        setUserRole(profile.user?.role || null);
       }
     } catch (error) {
-      console.error("Failed to load tasks:", error);
+      console.error("Failed to load requirements:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadProfile = async () => {
-    try {
-      const res = await fetch("/api/user/profile");
-      if (res.ok) {
-        const data = await res.json();
-        setUserRole(data.user?.role || null);
-      }
-    } catch (error) {
-      console.error("Failed to load profile:", error);
-    }
-  };
-
   useEffect(() => {
-    loadTasks();
-    loadProfile();
+    loadData();
   }, []);
 
   const canCreate = userRole ? CAN_CREATE_INVESTIGATION.includes(userRole) : false;
+  const isPatient = userRole === "PATIENT" || userRole === "CAREGIVER";
 
-  const filtered = tasks.filter((t) => {
+  const filtered = requirements.filter((r) => {
     const matchesSearch =
       !search ||
-      t.title.toLowerCase().includes(search.toLowerCase()) ||
-      (t.patientName && t.patientName.toLowerCase().includes(search.toLowerCase()));
+      (r.title || "").toLowerCase().includes(search.toLowerCase()) ||
+      (r.category || "").toLowerCase().includes(search.toLowerCase()) ||
+      (r.template?.name || "").toLowerCase().includes(search.toLowerCase());
     return matchesSearch;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const pageTasks = filtered.slice((page - 1) * perPage, page * perPage);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return <span className="badge-custom badge-blue" style={{ fontSize: "0.7rem" }}>Ausstehend</span>;
-      case "IN_PROGRESS":
-        return <span className="badge-custom badge-yellow" style={{ fontSize: "0.7rem" }}>In Bearbeitung</span>;
-      case "COMPLETED":
-        return <span className="badge-custom badge-green" style={{ fontSize: "0.7rem" }}>Erledigt</span>;
-      default:
-        return <span className="badge-custom badge-outline" style={{ fontSize: "0.7rem" }}>{status}</span>;
-    }
-  };
+  const pageItems = filtered.slice((page - 1) * perPage, page * perPage);
 
   return (
     <div>
       <PageHeader
         title="Untersuchungen"
-        description="Übersicht aller Patientenuntersuchungen"
+        description={isPatient ? "Deine zugewiesenen Untersuchungen" : "Übersicht aller Patientenuntersuchungen"}
         action={
           canCreate && (
             <Link href="/dashboard/tasks/new" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2">
@@ -108,7 +139,7 @@ export default function TasksPage() {
             <input
               type="text"
               className="form-control form-control-sm border-0 bg-transparent"
-              placeholder="Untersuchung oder Patient suchen..."
+              placeholder="Untersuchung suchen..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
@@ -130,7 +161,7 @@ export default function TasksPage() {
                 <tr>
                   <td colSpan={2} className="text-center text-muted py-4">Laden...</td>
                 </tr>
-              ) : pageTasks.length === 0 ? (
+              ) : pageItems.length === 0 ? (
                 <tr>
                   <td colSpan={2}>
                     <div className="empty-state">
@@ -145,36 +176,64 @@ export default function TasksPage() {
                   </td>
                 </tr>
               ) : (
-                pageTasks.map((task) => (
-                  <tr key={task.id} className="align-middle">
-                    <td>
-                      <div className="d-flex flex-column">
-                        <div className="d-flex align-items-center gap-2">
-                          <span className="fw-semibold" style={{ fontSize: "1.05rem", color: "#1e293b" }}>
-                            {task.title}
-                          </span>
+                pageItems.map((req) => {
+                  const meta = STATUS_META[req.status] || STATUS_META.NOT_STARTED;
+                  const expiryDays = req.expiresAt ? daysUntil(req.expiresAt) : null;
+                  const displayName = req.template?.patientFriendlyDescription || req.template?.name || req.title || "—";
+
+                  return (
+                    <tr key={req.id} className="align-middle">
+                      <td>
+                        <div className="d-flex flex-column">
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="fw-semibold" style={{ fontSize: "1.05rem", color: "#1e293b" }}>
+                              {displayName}
+                            </span>
+                            {req.listingBlocker && (
+                              <span className="badge bg-danger" style={{ fontSize: "0.6rem" }}>Blocker</span>
+                            )}
+                          </div>
+                          <div className="d-flex flex-wrap gap-2 mt-1" style={{ fontSize: "0.8rem" }}>
+                            <span className="text-muted">{req.category || req.template?.category || ""}</span>
+                            {req.required && <span className="text-muted">· Pflicht</span>}
+                            {expiryDays !== null && (
+                              <span className={expiryDays < 0 ? "text-danger fw-medium" : expiryDays <= 30 ? "text-warning fw-medium" : "text-muted"}>
+                                · {expiryDays < 0 ? `Abgelaufen seit ${Math.abs(expiryDays)} Tagen` : `Gültig bis ${fmtDate(req.expiresAt)}`}
+                              </span>
+                            )}
+                            {req.tasks.length > 0 && (
+                              <span className="text-muted">· {req.tasks.length} Task{req.tasks.length !== 1 ? "s" : ""}</span>
+                            )}
+                          </div>
                         </div>
-                        {task.description && (
-                          <span className="text-muted mt-1" style={{ fontSize: "0.85rem" }}>
-                            {task.description}
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <span
+                            className="badge d-inline-flex align-items-center gap-1"
+                            style={{
+                              background: meta.bg,
+                              color: meta.color,
+                              border: `1px solid ${meta.color}30`,
+                              fontSize: "0.75rem",
+                              padding: "0.3rem 0.5rem",
+                            }}
+                          >
+                            {meta.icon}
+                            {meta.label}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="d-flex align-items-center gap-2">
-                        {getStatusBadge(task.status)}
-                        <Link
-                          href={`/dashboard/tasks/${task.id}`}
-                          className="btn btn-sm btn-link text-decoration-none"
-                          style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}
-                        >
-                          Details <ArrowRight size={12} />
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          <Link
+                            href={`/dashboard/tasks/${req.id}`}
+                            className="btn btn-sm btn-link text-decoration-none"
+                            style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}
+                          >
+                            Details <ArrowRight size={12} />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
