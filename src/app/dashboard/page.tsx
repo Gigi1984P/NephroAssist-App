@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAllowedPatientIds } from "@/lib/permissions";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { Users, CheckCircle, ExternalLink, Clock } from "lucide-react";
+import { CheckCircle, ExternalLink, Clock } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -140,30 +140,8 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description={`Patienten mit allen abgeschlossenen Untersuchungen (${completedPatients.length})`}
+        description="Klinik-Dashboard"
       />
-
-      {/* Statistik-Karten */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-6 col-lg-3">
-          <div className="dashboard-card p-3 d-flex align-items-center gap-3">
-            <div className="stat-icon green"><CheckCircle size={22} /></div>
-            <div>
-              <div className="stat-value">{completedPatients.length}</div>
-              <div className="stat-label">Alle Untersuchungen abgeschlossen</div>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6 col-lg-3">
-          <div className="dashboard-card p-3 d-flex align-items-center gap-3">
-            <div className="stat-icon blue"><Users size={22} /></div>
-            <div>
-              <div className="stat-value">{patients.length}</div>
-              <div className="stat-label">Gesamt Patienten</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Tabelle: Zuletzt aufgerufene Patienten */}
       <div className="dashboard-card mb-4">
