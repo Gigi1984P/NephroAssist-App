@@ -5,9 +5,7 @@ import { getAllowedPatientIds } from "@/lib/permissions";
 import Link from "next/link";
 import {
   FileText,
-  CheckSquare,
   Users,
-  AlertTriangle,
 } from "lucide-react";
 import PatientProgressCard from "@/components/patient-progress-card";
 
@@ -28,10 +26,9 @@ export default async function DashboardPage() {
   const patientFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { id: { in: allowedPatientIds } } : { id: "" });
   const taskFilter = isAdmin ? {} : (allowedPatientIds && allowedPatientIds.length > 0 ? { patientId: { in: allowedPatientIds } } : { patientId: "" });
 
-  const [patientCount, pendingTasks, activeBlockers] = await Promise.all([
+  const [patientCount, pendingTasks] = await Promise.all([
     prisma.patient.count({ where: patientFilter }),
     prisma.task.count({ where: { status: "PENDING", ...taskFilter } }),
-    prisma.blocker.count({ where: { status: "ACTIVE" } }),
   ]);
 
   const [recentTasks, recentDocuments] = await Promise.all([
@@ -87,19 +84,6 @@ export default async function DashboardPage() {
               </div>
             </div>
           </div>
-          <div className="col-md-6 col-lg-3">
-            <div className="dashboard-card p-3">
-              <div className="d-flex align-items-center gap-3">
-                <div className="stat-icon red">
-                  <AlertTriangle size={22} />
-                </div>
-                <div>
-                  <div className="stat-value">{activeBlockers}</div>
-                  <div className="stat-label">Aktive Blocker</div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -125,18 +109,6 @@ export default async function DashboardPage() {
             </div>
           </div>
         </div>
-
-        {!isPatientOrCaregiver && (
-          <div className="col-6 col-lg-3">
-            <div className="stat-card">
-              <div className="stat-icon red"><AlertTriangle size={22} /></div>
-              <div>
-                <div className="stat-value">{activeBlockers}</div>
-                <div className="stat-label">Blocker</div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Content Grid */}
@@ -174,29 +146,6 @@ export default async function DashboardPage() {
                       </Link>
                     </div>
                   ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        {!isPatientOrCaregiver && (
-          <div className="col-lg-6">
-            <div className="dashboard-card">
-              <div className="card-header-custom">
-                <span className="fw-semibold">Aktive Blocker</span>
-                <Link href="/dashboard/blockers" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
-                  Alle anzeigen
-                </Link>
-              </div>
-              <div className="card-body-custom">
-                {activeBlockers === 0 ? (
-                  <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
-                    Keine aktiven Blocker
-                  </div>
-                ) : (
-                  <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
-                    <Link href="/dashboard/blockers">{activeBlockers} Blocker anzeigen</Link>
-                  </div>
                 )}
               </div>
             </div>
