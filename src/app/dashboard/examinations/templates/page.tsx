@@ -112,8 +112,8 @@ export default function TemplatesPage() {
     setFormDescription(template.description || "");
     setFormRequired(template.required);
     setFormBlocker(template.listingBlocker);
-    setFormValidity(template.validityDuration || 365);
-    setFormRenewalLead(template.renewalLeadTime || 60);
+    setFormValidity(template.validityDuration || 12);
+    setFormRenewalLead(template.renewalLeadTime || 2);
     setShowModal(true);
   };
 
@@ -408,11 +408,11 @@ export default function TemplatesPage() {
                 </div>
                 <div className="row">
                   <div className="col-md-6">
-                    <label className="form-label">Gültigkeit (Tage)</label>
+                    <label className="form-label">Gültigkeit (Monate)</label>
                     <input type="number" className="form-control" value={formValidity} onChange={(e) => setFormValidity(Number(e.target.value))} />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">Erinnerung vor (Tage)</label>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                    <label className="form-label">Erinnerung vor (Monate)</label>
                     <input type="number" className="form-control" value={formRenewalLead} onChange={(e) => setFormRenewalLead(Number(e.target.value))} />
                   </div>
                 </div>

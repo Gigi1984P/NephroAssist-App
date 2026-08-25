@@ -24,10 +24,11 @@ export function getAmpelColor(req: AmpelInput): AmpelColor {
     return "red";
   }
 
-  // Gelb: Läuft bald ab (innerhalb renewalLeadTime oder 60 Tage)
+  // Gelb: Läuft bald ab (innerhalb renewalLeadTime Monate)
   if (req.expiresAt) {
-    const leadTime = (req.renewalLeadTime || 60) * 24 * 60 * 60 * 1000;
-    const warningDate = new Date(req.expiresAt.getTime() - leadTime);
+  const leadTimeMonths = req.renewalLeadTime || 2; // Default 2 Monate statt 60 Tage
+  const leadTimeMs = leadTimeMonths * 30 * 24 * 60 * 60 * 1000;
+    const warningDate = new Date(req.expiresAt.getTime() - leadTimeMs);
     if (now >= warningDate && now < req.expiresAt) {
       return "yellow";
     }

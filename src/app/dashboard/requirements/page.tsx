@@ -223,7 +223,7 @@ export default function RequirementsPage() {
                 <th>Kategorie</th>
                 <th>Beschreibung</th>
                 <th>Pflicht</th>
-                <th>Gültigkeit (Tage)</th>
+                <th>Gültigkeit (Monate)</th>
                 <th>Aktionen</th>
               </tr>
             </thead>
@@ -234,7 +234,7 @@ export default function RequirementsPage() {
                   <td>{t.category}</td>
                   <td>{t.description || "—"}</td>
                   <td>{t.required ? <span className="badge bg-danger">Ja</span> : <span className="badge bg-secondary">Nein</span>}</td>
-                  <td>{t.validityDuration ? `${t.validityDuration} Tage` : "—"}</td>
+                  <td>{t.validityDuration ? `${t.validityDuration} Monate` : "—"}</td>
                   <td>
                     <button className="btn btn-sm btn-primary me-1" onClick={() => openAssign(t)}>
                       <UserPlus size={14} /> Anlegen
@@ -361,13 +361,13 @@ export default function RequirementsPage() {
                   </div>
                 </div>
                 <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-medium">Gültigkeitsdauer (Tage)</label>
-                    <input type="number" className="form-control" value={formValidity || ""} onChange={(e) => setFormValidity(e.target.value ? parseInt(e.target.value) : undefined)} placeholder="z.B. 365" />
+                  <div className="col-md-3">
+                    <label className="form-label fw-medium">Gültigkeitsdauer (Monate)</label>
+                    <input type="number" className="form-control" value={formValidity || ""} onChange={(e) => setFormValidity(e.target.value ? parseInt(e.target.value) : undefined)} placeholder="z.B. 12" />
                   </div>
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-medium">Erinnerung vor Ablauf (Tage)</label>
-                    <input type="number" className="form-control" value={formRenewalLead || ""} onChange={(e) => setFormRenewalLead(e.target.value ? parseInt(e.target.value) : undefined)} placeholder="z.B. 30" />
+                  <div className="col-md-3">
+                    <label className="form-label fw-medium">Erinnerung vor Ablauf (Monate)</label>
+                    <input type="number" className="form-control" value={formRenewalLead || ""} onChange={(e) => setFormRenewalLead(e.target.value ? parseInt(e.target.value) : undefined)} placeholder="z.B. 1" />
                   </div>
                 </div>
               </div>

@@ -71,8 +71,8 @@ export async function GET(request: Request) {
     });
 
     for (const req of renewalReqs) {
-      const leadTimeDays = req.template?.renewalLeadTime || 60;
-      const leadTimeMs = leadTimeDays * 24 * 60 * 60 * 1000;
+      const leadTimeMonths = req.template?.renewalLeadTime || 2;
+      const leadTimeMs = leadTimeMonths * 30 * 24 * 60 * 60 * 1000;
       const warningDate = new Date(req.expiresAt!.getTime() - leadTimeMs);
 
       if (now >= warningDate) {
@@ -89,7 +89,7 @@ export async function GET(request: Request) {
               organizationId: req.patientCase.patient.organizationId || "default",
               type: "RENEWAL",
               title: "Erneuerung fällig",
-              message: `Die Untersuchung "${req.title}" läuft in ${leadTimeDays} Tagen ab. Bitte erneuern Sie sie rechtzeitig.`,
+              message: `Die Untersuchung "${req.title}" läuft in ${leadTimeMonths} Monaten ab. Bitte erneuern Sie sie rechtzeitig.`,
               entityType: "PATIENT_REQUIREMENT",
               entityId: req.id,
             },
