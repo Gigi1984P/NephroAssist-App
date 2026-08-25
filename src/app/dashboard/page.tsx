@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAllowedPatientIds } from "@/lib/permissions";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { Users, CheckCircle, ExternalLink } from "lucide-react";
+import { Users, CheckCircle, ExternalLink, Clock } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -34,13 +34,14 @@ export default async function DashboardPage() {
     );
   }
 
-  // KLINIK-DASHBOARD: Patienten mit ALLEn abgeschlossenen Untersuchungen
+  // KLINIK-DASHBOARD
   const patientFilter = userRole === "ADMIN" || allowedPatientIds === null
     ? {}
     : allowedPatientIds.length > 0
       ? { id: { in: allowedPatientIds } }
       : { id: "" };
 
+  // ALLE Patienten mit Cases/Requirements
   const patients = await prisma.patient.findMany({
     where: patientFilter,
     select: {
@@ -50,6 +51,7 @@ export default async function DashboardPage() {
       email: true,
       phone: true,
       consentStatus: true,
+      updatedAt: true,
       cases: {
         select: {
           id: true,
@@ -70,7 +72,7 @@ export default async function DashboardPage() {
     take: 100,
   });
 
-  // Nur Patienten, bei denen ALLE Requirements abgeschlossen sind (ACCEPTED oder COMPLETED)
+  // Patienten mit allen abgeschlossenen Untersuchungen
   const completedPatients = patients
     .map((patient) => {
       const allRequirements = patient.cases.flatMap((c) => c.requirements);
@@ -93,6 +95,19 @@ export default async function DashboardPage() {
     })
     .filter((p) => p.allDone);
 
+  // ZULETZT AUFGERUFENE Patienten (nach updatedAt, von Patienten-Detail-Aufruf)
+  const recentlyViewed = [...patients]
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 10)
+    .map((p) => ({
+      id: p.id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      email: p.email,
+      phone: p.phone,
+      updatedAt: p.updatedAt,
+    }));
+
   const getConsentBadgeClass = (status: string) => {
     switch (status) {
       case "GRANTED": return "bg-success";
@@ -111,6 +126,16 @@ export default async function DashboardPage() {
     }
   };
 
+  const formatDateTime = (date: Date) => {
+    return new Date(date).toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <div>
       <PageHeader
@@ -118,7 +143,7 @@ export default async function DashboardPage() {
         description={`Patienten mit allen abgeschlossenen Untersuchungen (${completedPatients.length})`}
       />
 
-      {/* Statistik-Karte */}
+      {/* Statistik-Karten */}
       <div className="row g-3 mb-4">
         <div className="col-md-6 col-lg-3">
           <div className="dashboard-card p-3 d-flex align-items-center gap-3">
@@ -137,6 +162,82 @@ export default async function DashboardPage() {
               <div className="stat-label">Gesamt Patienten</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Tabelle: Zuletzt aufgerufene Patienten */}
+      <div className="dashboard-card mb-4">
+        <div className="card-header-custom d-flex justify-content-between align-items-center">
+          <span className="fw-semibold d-flex align-items-center gap-2">
+            <Clock size={16} />
+            Zuletzt aufgerufene Patienten
+          </span>
+        </div>
+        <div className="card-body-custom p-0">
+          {recentlyViewed.length === 0 ? (
+            <div className="p-4 text-center text-muted">
+              <div className="mb-2"><Clock size={24} className="text-muted" /></div>
+              <div className="fw-medium">Keine kürzlich aufgerufenen Patienten</div>
+              <div className="small">Patienten erscheinen hier, sobald Sie deren Detailseite besuchen.</div>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Patient</th>
+                    <th>Kontakt</th>
+                    <th>Zuletzt aufgerufen</th>
+                    <th className="text-end">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentlyViewed.map((patient) => {
+                    const initials = (patient.firstName?.charAt(0) || "") + (patient.lastName?.charAt(0) || "");
+                    return (
+                      <tr key={patient.id}>
+                        <td>
+                          <div className="d-flex align-items-center gap-2">
+                            <div
+                              className="d-flex align-items-center justify-content-center fw-bold text-white"
+                              style={{
+                                width: 36, height: 36, borderRadius: "50%", background: "#3b82f6", fontSize: "0.8rem", flexShrink: 0,
+                              }}
+                            >
+                              {initials}
+                            </div>
+                            <div>
+                              <div className="fw-medium">{patient.firstName} {patient.lastName}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: "0.85rem" }}>
+                            <div>{patient.email || "—"}</div>
+                            <div className="text-muted">{patient.phone || "—"}</div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge bg-info text-dark">
+                            <Clock size={10} className="me-1" />
+                            {formatDateTime(patient.updatedAt)}
+                          </span>
+                        </td>
+                        <td className="text-end">
+                          <Link
+                            href={`/dashboard/patients/${patient.id}`}
+                            className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                          >
+                            <ExternalLink size={14} /> Details
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

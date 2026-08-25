@@ -23,6 +23,12 @@ export default async function PatientPage({ params }: PatientPageProps) {
   });
   if (!patient) notFound();
 
+  // Track: Patient wurde aufgerufen (zuletzt aufgerufen)
+  await prisma.patient.update({
+    where: { id },
+    data: { updatedAt: new Date() },
+  });
+
   const [documents, appointments, blockers, timelineEvents] = await Promise.all([
     prisma.document.findMany({
       where: { patientId: id },
