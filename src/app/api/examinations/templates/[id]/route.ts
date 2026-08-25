@@ -155,11 +155,33 @@ export async function DELETE(
 
     const { id } = await params;
 
-    await prisma.requirementTemplate.delete({
-      where: { id },
-    });
+    try {
+      // Zugehörige RequirementDependencies entfernen (sonst FK-Constraint-Fehler)
+      await prisma.requirementDependency.deleteMany({
+        where: { OR: [{ templateId: id }, { prerequisiteId: id }] },
+      });
 
-    return NextResponse.json({ message: "Template gelöscht" });
+      // TemplateSet-Referenz entfernen
+      await prisma.requirementTemplate.updateMany({
+        where: { id },
+        data: { templateSetId: null },
+      });
+
+      // Zugehörige PatientRequirements entfernen
+      await prisma.patientRequirement.deleteMany({
+        where: { templateId: id },
+      });
+
+      // Versions werden automatisch gelöscht (onDelete: Cascade)
+      await prisma.requirementTemplate.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({ message: "Template gelöscht" });
+    } catch (dbError: any) {
+      console.error("Template delete DB error:", dbError);
+      return NextResponse.json({ error: dbError.message || "Datenbankfehler beim Löschen" }, { status: 500 });
+    }
   } catch (error) {
     console.error("Template delete error:", error);
     return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
