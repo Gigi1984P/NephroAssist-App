@@ -197,43 +197,67 @@ export default async function DashboardPage() {
 
       {/* Content Grid */}
       <div className="row g-3">
-        <div className="col-lg-6">
-          <div className="dashboard-card">
-            <div className="card-header-custom">
-              <span className="fw-semibold">Letzte Untersuchungen</span>
-              <Link href="/dashboard/tasks" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
-                Alle anzeigen
-              </Link>
-            </div>
-            <div className="card-body-custom">
-              {recentTasks.length === 0 ? (
-                <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
-                  Keine Untersuchungen vorhanden
-                </div>
-              ) : (
-                recentTasks.map((task) => (
-                  <div key={task.id} className="list-item-custom">
-                    <div>
-                      <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{task.title}</div>
-                      <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                        {task.requirement?.patientCase?.patient?.firstName} {task.requirement?.patientCase?.patient?.lastName}
-                      </div>
-                      {task.dueDate && (
-                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                          Fällig: {new Date(task.dueDate).toLocaleDateString("de-DE")}
-                        </div>
-                      )}
-                    </div>
-                    <Link href={`/dashboard/tasks/${task.id}`} className="btn btn-outline-secondary btn-sm-custom" style={{ fontSize: "0.75rem" }}>
-                      Details
-                    </Link>
+        {isPatientOrCaregiver && (
+          <div className="col-lg-6">
+            <div className="dashboard-card">
+              <div className="card-header-custom">
+                <span className="fw-semibold">Letzte Untersuchungen</span>
+                <Link href="/dashboard/tasks" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
+                  Alle anzeigen
+                </Link>
+              </div>
+              <div className="card-body-custom">
+                {recentTasks.length === 0 ? (
+                  <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
+                    Keine Untersuchungen vorhanden
                   </div>
-                ))
-              )}
+                ) : (
+                  recentTasks.map((task) => (
+                    <div key={task.id} className="list-item-custom">
+                      <div>
+                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{task.title}</div>
+                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                          {task.requirement?.patientCase?.patient?.firstName} {task.requirement?.patientCase?.patient?.lastName}
+                        </div>
+                        {task.dueDate && (
+                          <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                            Fällig: {new Date(task.dueDate).toLocaleDateString("de-DE")}
+                          </div>
+                        )}
+                      </div>
+                      <Link href={`/dashboard/tasks/${task.id}`} className="btn btn-outline-secondary btn-sm-custom" style={{ fontSize: "0.75rem" }}>
+                        Details
+                      </Link>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
-        </div>
-
+        )}
+        {!isPatientOrCaregiver && (
+          <div className="col-lg-6">
+            <div className="dashboard-card">
+              <div className="card-header-custom">
+                <span className="fw-semibold">Aktive Blocker</span>
+                <Link href="/dashboard/blockers" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
+                  Alle anzeigen
+                </Link>
+              </div>
+              <div className="card-body-custom">
+                {activeBlockers === 0 ? (
+                  <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
+                    Keine aktiven Blocker
+                  </div>
+                ) : (
+                  <div className="text-muted text-center py-3" style={{ fontSize: "0.85rem" }}>
+                    <Link href="/dashboard/blockers">{activeBlockers} Blocker anzeigen</Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         <div className="col-lg-6">
           <div className="dashboard-card">
             <div className="card-header-custom">
