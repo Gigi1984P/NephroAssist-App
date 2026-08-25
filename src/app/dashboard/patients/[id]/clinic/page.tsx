@@ -1,21 +1,94 @@
-import { auth } from "@/lib/auth";
-import { redirect, notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import {
   ArrowLeft, Calendar, User, Stethoscope, Building2, ClipboardList, Clock, Phone, Mail,
   AlertTriangle, CheckCircle, XCircle, AlertCircle, FileText, Bell, MessageCircle,
-  ChevronRight, Activity, RefreshCw, Circle,
+  ChevronRight, Activity, RefreshCw, Circle, Pencil, Trash2, Save, X,
 } from "lucide-react";
 
-interface ClinicPatientPageProps {
-  params: Promise<{ id: string }>;
+interface PatientData {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string | null;
+  email: string | null;
+  phone: string | null;
+  generalPractitionerName: string | null;
+  generalPractitionerEmail: string | null;
+  generalPractitionerPhone: string | null;
+  generalPractitionerCity: string | null;
+  user?: { email: string } | null;
+  Organization?: { name: string } | null;
+  cases: Array<{
+    id: string; status: string; createdAt: string;
+    referralDate: string | null; intakeDate: string | null;
+    readyForReviewDate: string | null; boardDecisionDate: string | null;
+    waitlistedDate: string | null; closedDate: string | null;
+    closureReason: string | null; coordinatorId: string | null;
+    program?: { name: string; type: string } | null;
+  }>;
 }
 
-function calcAge(dateOfBirth: Date | string | null): number {
-  if (!dateOfBirth) return 0;
-  const birth = new Date(dateOfBirth);
+interface ReqItem {
+  id: string; title: string; category: string; description: string | null;
+  status: string; dueDate: string | null; expiresAt: string | null;
+  completedAt: string | null; required: boolean; listingBlocker: boolean;
+  responsibleRole: string; instructions: string | null; priority: number;
+  template?: {
+    name: string; category: string; required: boolean; listingBlocker: boolean;
+  } | null;
+  tasks: Array<{ id: string; title: string; status: string; dueDate: string | null }>;
+}
+
+interface DocItem {
+  id: string; filename: string; documentType: string | null;
+  processingStatus: string; createdAt: string;
+}
+
+interface AptItem {
+  id: string; type: string; startTime: string; location: string | null; status: string;
+}
+
+interface BlkItem {
+  id: string; type: string; description: string | null; createdAt: string;
+  requirement?: { title: string } | null;
+}
+
+interface TlItem {
+  id: string; description: string; eventType: string; createdAt: string;
+}
+
+interface HelpItem {
+  id: string; type: string; status: string; description: string | null; createdAt: string;
+}
+
+interface TaskItem {
+  id: string; title: string; status: string; dueDate: string | null; description: string | null;
+}
+
+interface PageData {
+  patient: PatientData;
+  documents: DocItem[];
+  appointments: AptItem[];
+  blockers: BlkItem[];
+  timelineEvents: TlItem[];
+  requirements: ReqItem[];
+  helpRequests: HelpItem[];
+  tasks: TaskItem[];
+  coordinatorName: string;
+}
+
+interface ClinicPatientPageProps {
+  params: { id: string };
+}
+
+function calcAge(dob: string | null): number {
+  if (!dob) return 0;
+  const birth = new Date(dob);
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
   const m = today.getMonth() - birth.getMonth();
@@ -23,11 +96,18 @@ function calcAge(dateOfBirth: Date | string | null): number {
   return age;
 }
 
-function daysDiff(from: Date | string | null, to?: Date | null): number | null {
+function daysDiff(from: string | Date | null, to?: string | Date | null): number | null {
   if (!from) return null;
   const f = new Date(from);
   const t = to ? new Date(to) : new Date();
   return Math.floor((t.getTime() - f.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function daysUntil(dateStr: string | null): number | null {
+  if (!dateStr) return null;
+  const target = new Date(dateStr);
+  const today = new Date();
+  return Math.floor((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 const CASE_STATUS_LABELS: Record<string, string> = {
@@ -76,15 +156,9 @@ const REQ_STATUS_META: Record<
 };
 
 const PROC_STATUS_LABELS: Record<string, string> = {
-  UPLOADED: "Hochgeladen",
-  SCANNING: "Scanning",
-  PROCESSING: "Verarbeitung",
-  READY_FOR_REVIEW: "Bereit zur Prüfung",
-  UNDER_REVIEW: "In Prüfung",
-  ACCEPTED: "Akzeptiert",
-  REJECTED: "Abgelehnt",
-  SUPERSEDED: "Ersetzt",
-  EXPIRED: "Abgelaufen",
+  UPLOADED: "Hochgeladen", SCANNING: "Scanning", PROCESSING: "Verarbeitung",
+  READY_FOR_REVIEW: "Bereit zur Prüfung", UNDER_REVIEW: "In Prüfung",
+  ACCEPTED: "Akzeptiert", REJECTED: "Abgelehnt", SUPERSEDED: "Ersetzt", EXPIRED: "Abgelaufen",
 };
 
 const PROC_STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -99,115 +173,90 @@ const PROC_STATUS_COLORS: Record<string, { bg: string; text: string; border: str
   EXPIRED: { bg: "#fee2e2", text: "#991b1b", border: "#fecaca" },
 };
 
-function fmtDate(d: Date | string | null): string {
+function fmtDate(d: string | Date | null): string {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("de-DE");
 }
 
-export default async function ClinicPatientPage({ params }: ClinicPatientPageProps) {
-  const { id } = await params;
-  const session = await auth();
-  if (!session) redirect("/login");
+export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
+  const router = useRouter();
+  const { id } = params;
 
-  const userRole = session.user.role;
-  const isClinic = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"].includes(userRole);
-  if (!isClinic) redirect(`/dashboard/patients/${id}`);
-
-  const patient = await prisma.patient.findUnique({
-    where: { id },
-    include: {
-      user: { select: { email: true } },
-      Organization: { select: { name: true } },
-      cases: {
-        include: {
-          program: { select: { name: true, type: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-    },
+  const [data, setData] = useState<PageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: "", lastName: "", dateOfBirth: "", email: "", phone: "",
+    generalPractitionerName: "", generalPractitionerEmail: "", generalPractitionerPhone: "", generalPractitionerCity: "",
   });
-  if (!patient) notFound();
 
-  await prisma.patient.update({ where: { id }, data: { updatedAt: new Date() } });
-
-  const latestCase = patient.cases[0] || null;
-  const caseId = latestCase?.id;
-
-  // Alle Daten parallel laden
-  const [documents, appointments, blockers, timelineEvents, requirements, helpRequests, tasks] =
-    await Promise.all([
-      prisma.document.findMany({
-        where: { patientId: id },
-        orderBy: { createdAt: "desc" },
-        take: 15,
-        select: {
-          id: true, filename: true, documentType: true, processingStatus: true,
-          createdAt: true,
-        },
-      }),
-      prisma.appointment.findMany({
-        where: { patientId: id },
-        orderBy: { startTime: "asc" },
-        take: 10,
-        select: { id: true, type: true, startTime: true, location: true, status: true },
-      }),
-      prisma.blocker.findMany({
-        where: { patientCase: { patientId: id }, status: "ACTIVE" },
-        select: {
-          id: true, type: true, description: true, createdAt: true,
-          requirement: { select: { title: true } },
-        },
-      }),
-      prisma.timelineEvent.findMany({
-        where: { patientCase: { patientId: id } },
-        orderBy: { createdAt: "desc" },
-        take: 15,
-        select: { id: true, description: true, createdAt: true, eventType: true },
-      }),
-      prisma.patientRequirement.findMany({
-        where: { patientCase: { patientId: id } },
-        include: {
-          template: {
-            select: {
-              name: true, category: true, required: true, listingBlocker: true,
-              renewalLeadTime: true, validityDuration: true,
-            },
-          },
-          tasks: {
-            select: { id: true, title: true, status: true, dueDate: true },
-            orderBy: { dueDate: "asc" },
-          },
-        },
-      }),
-      prisma.helpRequest.findMany({
-        where: { patientId: id },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        select: { id: true, type: true, status: true, description: true, createdAt: true },
-      }),
-      prisma.task.findMany({
-        where: { patientId: id },
-        orderBy: { dueDate: "asc" },
-        take: 10,
-        select: {
-          id: true, title: true, status: true, dueDate: true, description: true,
-        },
-      }),
-    ]);
-
-  // Coordinator laden
-  let coordinatorName = "—";
-  if (latestCase?.coordinatorId) {
+  const loadPatient = useCallback(async () => {
+    setLoading(true);
     try {
-      const coord = await prisma.user.findUnique({
-        where: { id: latestCase.coordinatorId },
-        select: { name: true },
-      });
-      if (coord?.name) coordinatorName = coord.name;
-    } catch { /* ignore */ }
-  }
+      const res = await fetch(`/api/patients/${id}`);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+        const p = json.patient;
+        setEditForm({
+          firstName: p.firstName || "",
+          lastName: p.lastName || "",
+          dateOfBirth: p.dateOfBirth ? new Date(p.dateOfBirth).toISOString().split("T")[0] : "",
+          email: p.email || "",
+          phone: p.phone || "",
+          generalPractitionerName: p.generalPractitionerName || "",
+          generalPractitionerEmail: p.generalPractitionerEmail || "",
+          generalPractitionerPhone: p.generalPractitionerPhone || "",
+          generalPractitionerCity: p.generalPractitionerCity || "",
+        });
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [id]);
 
+  useEffect(() => { loadPatient(); }, [loadPatient]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/patients/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        setShowEditModal(false);
+        await loadPatient();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Fehler beim Speichern");
+      }
+    } catch { alert("Netzwerkfehler"); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/patients/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        router.push("/dashboard/patients");
+      } else {
+        const err = await res.json();
+        alert(err.error || "Fehler beim Löschen");
+        setShowDeleteModal(false);
+      }
+    } catch { alert("Netzwerkfehler"); setShowDeleteModal(false); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <div className="p-4 text-center text-muted">Laden...</div>;
+  if (!data) return <div className="p-4 text-center text-muted">Patient nicht gefunden.</div>;
+
+  const patient = data.patient;
+  const latestCase = patient.cases[0] || null;
   const age = calcAge(patient.dateOfBirth);
   const statusColor = latestCase ? CASE_STATUS_COLORS[latestCase.status] || { bg: "#e2e8f0", text: "#475569" } : { bg: "#e2e8f0", text: "#475569" };
   const waitlistStatus = latestCase?.status === "WAITLISTED"
@@ -217,26 +266,12 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
       : "Nicht eingetragen";
   const initials = (patient.firstName?.charAt(0) || "") + (patient.lastName?.charAt(0) || "");
 
-  /* === Readiness / Gesamtfortschritt === */
-  const completedReqs = requirements.filter((r) =>
-    r.status === "ACCEPTED" || r.status === "WAIVED" || r.status === "NOT_APPLICABLE"
-  );
-  const openReqs = requirements.filter((r) =>
-    r.status !== "ACCEPTED" && r.status !== "WAIVED" && r.status !== "NOT_APPLICABLE"
-  );
-  const listingBlockers = requirements.filter((r) => r.template?.listingBlocker && r.status !== "ACCEPTED" && r.status !== "WAIVED");
-  const readinessLabel = listingBlockers.length > 0
-    ? "Nicht bereit"
-    : openReqs.length > 0
-      ? "Prüfung erforderlich"
-      : "Bereit";
-  const readinessColor = listingBlockers.length > 0
-    ? "#dc2626"
-    : openReqs.length > 0
-      ? "#f59e0b"
-      : "#10b981";
+  const { requirements, documents, appointments, blockers, timelineEvents, helpRequests, tasks, coordinatorName } = data;
 
-  /* === Priorisierung === */
+  const completedReqs = requirements.filter((r) => r.status === "ACCEPTED" || r.status === "WAIVED" || r.status === "NOT_APPLICABLE");
+  const openReqs = requirements.filter((r) => r.status !== "ACCEPTED" && r.status !== "WAIVED" && r.status !== "NOT_APPLICABLE");
+  const listingBlockers = requirements.filter((r) => r.template?.listingBlocker && r.status !== "ACCEPTED" && r.status !== "WAIVED");
+
   const sortedReqs = [...requirements].sort((a, b) => {
     const pa = REQ_STATUS_META[a.status]?.priority ?? 5;
     const pb = REQ_STATUS_META[b.status]?.priority ?? 5;
@@ -244,12 +279,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
     return (a.expiresAt ? new Date(a.expiresAt).getTime() : Infinity) - (b.expiresAt ? new Date(b.expiresAt).getTime() : Infinity);
   });
 
-  const criticalReqs = sortedReqs.filter((r) =>
-    r.status === "BLOCKED" || r.status === "EXPIRED" || r.status === "REJECTED"
-  );
-  const overdueReqs = sortedReqs.filter((r) =>
-    r.expiresAt && new Date(r.expiresAt) < new Date() && r.status !== "ACCEPTED" && r.status !== "WAIVED" && r.status !== "NOT_APPLICABLE"
-  );
+  const criticalReqs = sortedReqs.filter((r) => r.status === "BLOCKED" || r.status === "EXPIRED" || r.status === "REJECTED");
   const soonExpiring = sortedReqs.filter((r) => {
     if (!r.expiresAt || r.status === "ACCEPTED" || r.status === "WAIVED" || r.status === "NOT_APPLICABLE") return false;
     const days = daysDiff(new Date(), r.expiresAt);
@@ -261,19 +291,128 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
   const openHelp = helpRequests.filter((h) => h.status === "OPEN");
   const overdueTasks = tasks.filter((t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "COMPLETED");
 
+  const readinessLabel = listingBlockers.length > 0
+    ? "Nicht bereit"
+    : openReqs.length > 0
+      ? "Prüfung erforderlich"
+      : "Bereit";
+  const readinessColor = listingBlockers.length > 0 ? "#dc2626" : openReqs.length > 0 ? "#f59e0b" : "#10b981";
+
   return (
     <div>
       <PageHeader
         title="Patient & Fallstatus"
         description={`${patient.firstName} ${patient.lastName}`}
         action={
-          <Link href="/dashboard/patients" className="btn-custom btn-outline-custom">
-            <ArrowLeft size={16} /> Zurück
-          </Link>
+          <div className="d-flex gap-2">
+            <button className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" onClick={() => setShowEditModal(true)}>
+              <Pencil size={14} /> Bearbeiten
+            </button>
+            <button className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" onClick={() => setShowDeleteModal(true)}>
+              <Trash2 size={14} /> Löschen
+            </button>
+            <Link href="/dashboard/patients" className="btn-custom btn-outline-custom">
+              <ArrowLeft size={16} /> Zurück
+            </Link>
+          </div>
         }
       />
 
-      {/* === 1. PATIENT & FALLSTATUS === */}
+      {/* === BEARBEITEN MODAL === */}
+      {showEditModal && (
+        <>
+          <div className="modal show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <div className="modal-dialog modal-dialog-centered modal-lg">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title fw-bold">Patient bearbeiten</h5>
+                  <button className="btn-close" onClick={() => setShowEditModal(false)} />
+                </div>
+                <div className="modal-body">
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label small fw-medium">Vorname *</label>
+                      <input type="text" className="form-control form-control-sm" value={editForm.firstName} onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-medium">Nachname *</label>
+                      <input type="text" className="form-control form-control-sm" value={editForm.lastName} onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-medium">Geburtsdatum</label>
+                      <input type="date" className="form-control form-control-sm" value={editForm.dateOfBirth} onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-medium">Telefon</label>
+                      <input type="tel" className="form-control form-control-sm" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-medium">E-Mail</label>
+                      <input type="email" className="form-control form-control-sm" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                    </div>
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <div className="fw-medium mb-2" style={{ fontSize: "0.9rem", color: "#3b82f6" }}>Hausarzt</div>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-medium">Name</label>
+                      <input type="text" className="form-control form-control-sm" value={editForm.generalPractitionerName} onChange={(e) => setEditForm({ ...editForm, generalPractitionerName: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-medium">Stadt</label>
+                      <input type="text" className="form-control form-control-sm" value={editForm.generalPractitionerCity} onChange={(e) => setEditForm({ ...editForm, generalPractitionerCity: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-medium">E-Mail</label>
+                      <input type="email" className="form-control form-control-sm" value={editForm.generalPractitionerEmail} onChange={(e) => setEditForm({ ...editForm, generalPractitionerEmail: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-medium">Telefon</label>
+                      <input type="tel" className="form-control form-control-sm" value={editForm.generalPractitionerPhone} onChange={(e) => setEditForm({ ...editForm, generalPractitionerPhone: e.target.value })} />
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary btn-sm" onClick={() => setShowEditModal(false)} disabled={saving}>Abbrechen</button>
+                  <button className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" onClick={handleSave} disabled={saving}>
+                    <Save size={14} /> {saving ? "Speichern..." : "Speichern"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* === LÖSCHEN MODAL === */}
+      {showDeleteModal && (
+        <>
+          <div className="modal show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header border-danger">
+                  <h5 className="modal-title fw-bold text-danger">Patient löschen</h5>
+                  <button className="btn-close" onClick={() => setShowDeleteModal(false)} />
+                </div>
+                <div className="modal-body">
+                  <p>Bist du sicher, dass du <strong>{patient.firstName} {patient.lastName}</strong> löschen möchtest?</p>
+                  <div className="alert alert-warning" style={{ fontSize: "0.85rem" }}>
+                    <strong>Achtung:</strong> Alle zugehörigen Daten werden ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary btn-sm" onClick={() => setShowDeleteModal(false)} disabled={saving}>Abbrechen</button>
+                  <button className="btn btn-danger btn-sm d-inline-flex align-items-center gap-1" onClick={handleDelete} disabled={saving}>
+                    <Trash2 size={14} /> {saving ? "Löschen..." : "Ja, löschen"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* === PATIENT & FALLSTATUS === */}
       <div className="dashboard-card mb-4">
         <div className="card-body-custom">
           <div className="d-flex align-items-center gap-3 mb-4">
@@ -313,9 +452,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                 <ClipboardList size={18} style={{ color: "#64748b", marginTop: 2 }} />
                 <div>
                   <div className="text-muted small">Fall-ID</div>
-                  <div className="fw-medium" style={{ fontFamily: "monospace", fontSize: "0.9rem" }}>
-                    {latestCase ? `${latestCase.id.slice(0, 8)}…` : "Kein Fall"}
-                  </div>
+                  <div className="fw-medium" style={{ fontFamily: "monospace", fontSize: "0.9rem" }}>{latestCase ? `${latestCase.id.slice(0, 8)}…` : "Kein Fall"}</div>
                 </div>
               </div>
             </div>
@@ -355,14 +492,10 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                 <div>
                   <div className="text-muted small">aktueller Case-Status</div>
                   {latestCase ? (
-                    <span className="badge" style={{
-                      background: statusColor.bg, color: statusColor.text, border: `1px solid ${statusColor.bg}`,
-                      fontSize: "0.85rem", padding: "0.35rem 0.6rem",
-                    }}>
+                    <span className="badge" style={{ background: statusColor.bg, color: statusColor.text, border: `1px solid ${statusColor.bg}`, fontSize: "0.85rem", padding: "0.35rem 0.6rem" }}>
                       {CASE_STATUS_LABELS[latestCase.status] || latestCase.status}
                     </span>
-                  ) : (<div className="fw-medium">—</div>
-                  )}
+                  ) : <div className="fw-medium">—</div>}
                 </div>
               </div>
             </div>
@@ -391,9 +524,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                   <div>
                     <div className="text-muted small">Hausarzt</div>
                     <div className="fw-medium">{patient.generalPractitionerName}</div>
-                    {patient.generalPractitionerCity && (
-                      <div className="small text-muted">{patient.generalPractitionerCity}</div>
-                    )}
+                    {patient.generalPractitionerCity && <div className="small text-muted">{patient.generalPractitionerCity}</div>}
                   </div>
                 </div>
               </div>
@@ -405,48 +536,21 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
       <div className="row g-4">
         <div className="col-lg-8">
 
-          {/* === 2. READINESS / GESAMTFORTSCHRITT === */}
+          {/* === READINESS === */}
           <div className="dashboard-card mb-4">
             <div className="card-header-custom">
-              <span className="fw-semibold d-flex align-items-center gap-2">
-                <CheckCircle size={16} /> Readiness / Gesamtfortschritt
-              </span>
-              <span
-                className="badge fw-bold"
-                style={{
-                  background: `${readinessColor}15`, color: readinessColor,
-                  border: `1px solid ${readinessColor}40`, fontSize: "0.9rem",
-                  padding: "0.35rem 0.6rem",
-                }}
-              >
-                {readinessLabel}
-              </span>
+              <span className="fw-semibold d-flex align-items-center gap-2"><CheckCircle size={16} /> Readiness / Gesamtfortschritt</span>
+              <span className="badge fw-bold" style={{ background: `${readinessColor}15`, color: readinessColor, border: `1px solid ${readinessColor}40`, fontSize: "0.9rem", padding: "0.35rem 0.6rem" }}>{readinessLabel}</span>
             </div>
             <div className="card-body-custom">
               <div className="row g-3 mb-3">
-                <div className="col-md-4">
-                  <div className="text-center p-3 rounded" style={{ background: "#f0fdf4" }}>
-                    <div className="h3 fw-bold mb-1" style={{ color: "#166534" }}>{completedReqs.length}</div>
-                    <div className="small text-muted">erfüllt</div>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="text-center p-3 rounded" style={{ background: "#fef3c7" }}>
-                    <div className="h3 fw-bold mb-1" style={{ color: "#92400e" }}>{openReqs.length}</div>
-                    <div className="small text-muted">offen</div>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="text-center p-3 rounded" style={{ background: "#fee2e2" }}>
-                    <div className="h3 fw-bold mb-1" style={{ color: "#991b1b" }}>{listingBlockers.length}</div>
-                    <div className="small text-muted">Listing-Blocker</div>
-                  </div>
-                </div>
+                <div className="col-md-4"><div className="text-center p-3 rounded" style={{ background: "#f0fdf4" }}><div className="h3 fw-bold mb-1" style={{ color: "#166534" }}>{completedReqs.length}</div><div className="small text-muted">erfüllt</div></div></div>
+                <div className="col-md-4"><div className="text-center p-3 rounded" style={{ background: "#fef3c7" }}><div className="h3 fw-bold mb-1" style={{ color: "#92400e" }}>{openReqs.length}</div><div className="small text-muted">offen</div></div></div>
+                <div className="col-md-4"><div className="text-center p-3 rounded" style={{ background: "#fee2e2" }}><div className="h3 fw-bold mb-1" style={{ color: "#991b1b" }}>{listingBlockers.length}</div><div className="small text-muted">Listing-Blocker</div></div></div>
               </div>
               {listingBlockers.length > 0 && (
                 <div className="alert alert-danger d-flex align-items-center gap-2" style={{ fontSize: "0.85rem" }}>
-                  <AlertTriangle size={16} />
-                  <strong>{listingBlockers.length} Listing-Blocker offen:</strong>{" "}
+                  <AlertTriangle size={16} /> <strong>{listingBlockers.length} Listing-Blocker offen:</strong>{" "}
                   {listingBlockers.map((b) => b.template?.name).filter(Boolean).join(", ")}
                 </div>
               )}
@@ -457,21 +561,18 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
             </div>
           </div>
 
-          {/* === 3. BLOCKER & KRITISCHE PUNKTE === */}
+          {/* === BLOCKER === */}
           <div className="dashboard-card mb-4">
             <div className="card-header-custom d-flex align-items-center gap-2">
               <AlertTriangle size={16} className="text-danger" />
               <span className="fw-semibold">Blocker & kritische Punkte</span>
-              <span className="badge bg-danger">
-                {criticalReqs.length + blockers.length}
-              </span>
+              <span className="badge bg-danger">{criticalReqs.length + blockers.length}</span>
             </div>
             <div className="card-body-custom">
               {criticalReqs.length === 0 && blockers.length === 0 ? (
                 <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine kritischen Punkte.</div>
               ) : (
                 <div className="d-flex flex-column gap-2">
-                  {/* Kritische Requirements */}
                   {criticalReqs.map((req) => {
                     const meta = REQ_STATUS_META[req.status] || REQ_STATUS_META.NOT_STARTED;
                     const daysUntil = req.expiresAt ? daysDiff(new Date(), req.expiresAt) : null;
@@ -481,16 +582,9 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                           <div className="d-flex align-items-center gap-2">
                             <span style={{ color: meta.color }}>{meta.icon}</span>
                             <span className="fw-medium" style={{ fontSize: "0.9rem", color: "#991b1b" }}>{req.template?.name || req.title || "—"}</span>
-                            {req.template?.listingBlocker && (
-                              <span className="badge bg-danger" style={{ fontSize: "0.65rem" }}>Listing-Blocker</span>
-                            )}
+                            {req.template?.listingBlocker && <span className="badge bg-danger" style={{ fontSize: "0.65rem" }}>Listing-Blocker</span>}
                           </div>
-                          <span className="badge" style={{
-                            background: `${meta.color}15`, color: meta.color, border: `1px solid ${meta.color}40`,
-                            fontSize: "0.75rem",
-                          }}>
-                            {meta.label}
-                          </span>
+                          <span className="badge" style={{ background: `${meta.color}15`, color: meta.color, border: `1px solid ${meta.color}40`, fontSize: "0.75rem" }}>{meta.label}</span>
                         </div>
                         <div className="mt-1" style={{ fontSize: "0.8rem", color: "#b91c1c" }}>
                           {req.status === "EXPIRED" && daysUntil !== null
@@ -501,15 +595,10 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                                 ? "Abgelehnt — Nachbesserung erforderlich"
                                 : req.description || req.instructions || ""}
                         </div>
-                        {req.responsibleRole && (
-                          <div className="mt-1" style={{ fontSize: "0.75rem", color: "#991b1b" }}>
-                            <strong>Verantwortlich:</strong> {req.responsibleRole}
-                          </div>
-                        )}
+                        {req.responsibleRole && <div className="mt-1" style={{ fontSize: "0.75rem", color: "#991b1b" }}><strong>Verantwortlich:</strong> {req.responsibleRole}</div>}
                       </div>
                     );
                   })}
-                  {/* Aktive Blocker */}
                   {blockers.map((blocker) => (
                     <div key={blocker.id} className="p-3 rounded" style={{ background: "#fef2f2", border: "1px solid #fecaca" }}>
                       <div className="d-flex justify-content-between align-items-start">
@@ -520,9 +609,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                         <span className="badge bg-danger" style={{ fontSize: "0.65rem" }}>Blocker</span>
                       </div>
                       <div style={{ fontSize: "0.8rem", color: "#b91c1c" }}>{blocker.description}</div>
-                      {blocker.requirement?.title && (
-                        <div style={{ fontSize: "0.75rem", color: "#991b1b" }}>Betrifft: {blocker.requirement.title}</div>
-                      )}
+                      {blocker.requirement?.title && <div style={{ fontSize: "0.75rem", color: "#991b1b" }}>Betrifft: {blocker.requirement.title}</div>}
                     </div>
                   ))}
                 </div>
@@ -530,7 +617,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
             </div>
           </div>
 
-          {/* === 4. NEXT BEST ACTIONS === */}
+          {/* === NEXT BEST ACTIONS === */}
           <div className="dashboard-card mb-4">
             <div className="card-header-custom d-flex align-items-center gap-2">
               <ChevronRight size={16} style={{ color: "#3b82f6" }} />
@@ -546,27 +633,18 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                     .slice(0, 6)
                     .map((req) => {
                       const meta = REQ_STATUS_META[req.status] || REQ_STATUS_META.NOT_STARTED;
-                      const daysUntil = req.expiresAt ? daysDiff(new Date(), req.expiresAt) : null;
+                      const days = req.expiresAt ? daysDiff(new Date(), req.expiresAt) : null;
                       return (
                         <div key={req.id} className="d-flex align-items-start gap-2 p-2 rounded" style={{ background: `${meta.color}08` }}>
                           <span style={{ color: meta.color, marginTop: 2 }}>{meta.icon}</span>
                           <div className="flex-grow-1">
                             <div className="d-flex justify-content-between">
                               <span className="fw-medium" style={{ fontSize: "0.85rem" }}>{req.template?.name || req.title || "—"}</span>
-                              <span className="badge" style={{
-                                background: `${meta.color}15`, color: meta.color, border: `1px solid ${meta.color}40`,
-                                fontSize: "0.7rem",
-                              }}>
-                                {meta.label}
-                              </span>
+                              <span className="badge" style={{ background: `${meta.color}15`, color: meta.color, border: `1px solid ${meta.color}40`, fontSize: "0.7rem" }}>{meta.label}</span>
                             </div>
                             <div className="d-flex gap-3 mt-1" style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                              {daysUntil !== null && daysUntil < 0 && (
-                                <span className="text-danger fw-medium">Überfällig seit {Math.abs(daysUntil)} Tagen</span>
-                              )}
-                              {daysUntil !== null && daysUntil >= 0 && daysUntil <= 30 && (
-                                <span className="text-warning fw-medium">Läuft in {daysUntil} Tagen ab</span>
-                              )}
+                              {days !== null && days < 0 && <span className="text-danger fw-medium">Überfällig seit {Math.abs(days)} Tagen</span>}
+                              {days !== null && days >= 0 && days <= 30 && <span className="text-warning fw-medium">Läuft in {days} Tagen ab</span>}
                               {req.responsibleRole && <span>Verantwortlich: {req.responsibleRole}</span>}
                             </div>
                             <div className="mt-1" style={{ fontSize: "0.75rem", color: "#3b82f6" }}>
@@ -594,7 +672,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
             </div>
           </div>
 
-          {/* === 5. ANFORDERUNGEN / UNTERSUCHUNGEN MATRIX === */}
+          {/* === ANFORDERUNGEN MATRIX === */}
           <div className="dashboard-card mb-4">
             <div className="card-header-custom d-flex align-items-center gap-2">
               <ClipboardList size={16} style={{ color: "#3b82f6" }} />
@@ -608,54 +686,31 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                 <div className="table-responsive">
                   <table className="table table-hover mb-0">
                     <thead className="table-light">
-                      <tr>
-                        <th>Name</th>
-                        <th>Kategorie</th>
-                        <th>Status</th>
-                        <th>Befund/Info</th>
-                        <th>Gültigkeit</th>
-                        <th>Verantwortlich</th>
-                        <th>Offene Tasks</th>
-                      </tr>
+                      <tr><th>Name</th><th>Kategorie</th><th>Status</th><th>Befund/Info</th><th>Gültigkeit</th><th>Verantwortlich</th><th>Offene Tasks</th></tr>
                     </thead>
                     <tbody>
                       {sortedReqs.map((req) => {
                         const meta = REQ_STATUS_META[req.status] || REQ_STATUS_META.NOT_STARTED;
-                        const daysUntil = req.expiresAt ? daysDiff(new Date(), req.expiresAt) : null;
+                        const days = req.expiresAt ? daysDiff(new Date(), req.expiresAt) : null;
                         return (
                           <tr key={req.id}>
                             <td className="fw-medium">
                               {req.template?.name || req.title || "—"}
-                              {req.template?.listingBlocker && (
-                                <span className="badge bg-danger ms-1" style={{ fontSize: "0.6rem" }}>Blocker</span>
-                              )}
+                              {req.template?.listingBlocker && <span className="badge bg-danger ms-1" style={{ fontSize: "0.6rem" }}>Blocker</span>}
                             </td>
                             <td>{req.template?.category || req.category || "—"}</td>
-                            <td>
-                              <span className="badge" style={{
-                                background: `${meta.color}15`, color: meta.color, border: `1px solid ${meta.color}40`,
-                                fontSize: "0.75rem",
-                              }}>
-                                {meta.label}
-                              </span>
-                            </td>
+                            <td><span className="badge" style={{ background: `${meta.color}15`, color: meta.color, border: `1px solid ${meta.color}40`, fontSize: "0.75rem" }}>{meta.label}</span></td>
                             <td>{req.description || req.instructions || "—"}</td>
                             <td>
                               {req.expiresAt ? (
-                                <span className={daysUntil !== null && daysUntil < 0 ? "text-danger fw-medium" : daysUntil !== null && daysUntil <= 30 ? "text-warning fw-medium" : ""}>
+                                <span className={days !== null && days < 0 ? "text-danger fw-medium" : days !== null && days <= 30 ? "text-warning fw-medium" : ""}>
                                   {fmtDate(req.expiresAt)}
-                                  {daysUntil !== null && ` (${daysUntil < 0 ? "abgelaufen" : `noch ${daysUntil} Tage`})`}
+                                  {days !== null && ` (${days < 0 ? "abgelaufen" : `noch ${days} Tage`})`}
                                 </span>
                               ) : "—"}
                             </td>
                             <td>{req.responsibleRole || "—"}</td>
-                            <td>
-                              {req.tasks.length > 0 ? (
-                                <span className="badge bg-warning text-dark" style={{ fontSize: "0.7rem" }}>{req.tasks.length} Task{req.tasks.length !== 1 ? "s" : ""}</span>
-                              ) : (
-                                <span className="text-muted small">—</span>
-                              )}
-                            </td>
+                            <td>{req.tasks.length > 0 ? <span className="badge bg-warning text-dark" style={{ fontSize: "0.7rem" }}>{req.tasks.length} Task{req.tasks.length !== 1 ? "s" : ""}</span> : <span className="text-muted small">—</span>}</td>
                           </tr>
                         );
                       })}
@@ -666,15 +721,11 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
             </div>
           </div>
 
-          {/* === 6. DOKUMENTE & REVIEW-QUEUE === */}
+          {/* === DOKUMENTE === */}
           <div className="dashboard-card mb-4">
             <div className="card-header-custom d-flex justify-content-between align-items-center">
-              <span className="fw-semibold d-flex align-items-center gap-2">
-                <FileText size={16} style={{ color: "#8b5cf6" }} /> Dokumente & Review-Queue
-              </span>
-              {reviewDocs.length > 0 && (
-                <span className="badge bg-warning text-dark">{reviewDocs.length} zur Prüfung</span>
-              )}
+              <span className="fw-semibold d-flex align-items-center gap-2"><FileText size={16} style={{ color: "#8b5cf6" }} /> Dokumente & Review-Queue</span>
+              {reviewDocs.length > 0 && <span className="badge bg-warning text-dark">{reviewDocs.length} zur Prüfung</span>}
             </div>
             <div className="card-body-custom">
               {documents.length === 0 ? (
@@ -693,11 +744,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                             <span>Eingang: {fmtDate(doc.createdAt)}</span>
                           </div>
                         </div>
-                        <span className="badge" style={{
-                          fontSize: "0.7rem", background: colors.bg, color: colors.text, border: `1px solid ${colors.border}`,
-                        }}>
-                          {PROC_STATUS_LABELS[doc.processingStatus] || doc.processingStatus}
-                        </span>
+                        <span className="badge" style={{ fontSize: "0.7rem", background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}>{PROC_STATUS_LABELS[doc.processingStatus] || doc.processingStatus}</span>
                       </div>
                     );
                   })}
@@ -706,63 +753,48 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
             </div>
           </div>
 
-          {/* === 7. TERMINE & FRISTEN === */}
+          {/* === TERMINE & FRISTEN === */}
           <div className="dashboard-card mb-4">
             <div className="card-header-custom d-flex align-items-center gap-2">
               <Calendar size={16} style={{ color: "#3b82f6" }} />
               <span className="fw-semibold">Termine & Fristen</span>
-              {overdueTasks.length > 0 && (
-                <span className="badge bg-danger">{overdueTasks.length} überfällig</span>
-              )}
+              {overdueTasks.length > 0 && <span className="badge bg-danger">{overdueTasks.length} überfällig</span>}
             </div>
             <div className="card-body-custom">
               {upcomingAppts.length === 0 && overdueTasks.length === 0 && soonExpiring.length === 0 ? (
                 <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine anstehenden Termine oder Fristen.</div>
               ) : (
                 <div className="d-flex flex-column gap-2">
-                  {/* Überfällige Tasks */}
                   {overdueTasks.map((task) => (
                     <div key={task.id} className="d-flex align-items-center gap-2 p-2 rounded" style={{ background: "#fee2e2" }}>
                       <AlertTriangle size={16} className="text-danger" />
                       <div className="flex-grow-1">
                         <div className="fw-medium text-danger" style={{ fontSize: "0.85rem" }}>{task.title}</div>
-                        <div style={{ fontSize: "0.75rem", color: "#991b1b" }}>
-                          Überfällig seit {fmtDate(task.dueDate)}
-                        </div>
+                        <div style={{ fontSize: "0.75rem", color: "#991b1b" }}>Überfällig seit {fmtDate(task.dueDate)}</div>
                       </div>
                     </div>
                   ))}
-                  {/* Bald ablaufende Requirements */}
                   {soonExpiring.map((req) => (
                     <div key={req.id} className="d-flex align-items-center gap-2 p-2 rounded" style={{ background: "#fef3c7" }}>
                       <Clock size={16} style={{ color: "#f59e0b" }} />
                       <div className="flex-grow-1">
                         <div className="fw-medium" style={{ fontSize: "0.85rem", color: "#92400e" }}>{req.template?.name || req.title}</div>
-                        <div style={{ fontSize: "0.75rem", color: "#92400e" }}>
-                          Läuft ab am {fmtDate(req.expiresAt)}
-                        </div>
+                        <div style={{ fontSize: "0.75rem", color: "#92400e" }}>Läuft ab am {fmtDate(req.expiresAt)}</div>
                       </div>
                       <span className="badge bg-warning text-dark" style={{ fontSize: "0.7rem" }}>Renewal</span>
                     </div>
                   ))}
-                  {/* Nächste Termine */}
                   {upcomingAppts.slice(0, 5).map((apt) => (
                     <div key={apt.id} className="d-flex align-items-center gap-2 p-2 rounded" style={{ background: "#dbeafe" }}>
                       <Calendar size={16} style={{ color: "#3b82f6" }} />
                       <div className="flex-grow-1">
                         <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{apt.type}</div>
                         <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                          {new Date(apt.startTime).toLocaleString("de-DE", {
-                            weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-                          })}
+                          {new Date(apt.startTime).toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                           {apt.location && ` · ${apt.location}`}
                         </div>
                       </div>
-                      <span className="badge" style={{
-                        background: "#dbeafe", color: "#1e40af", border: "1px solid #93c5fd", fontSize: "0.7rem",
-                      }}>
-                        {apt.status}
-                      </span>
+                      <span className="badge" style={{ background: "#dbeafe", color: "#1e40af", border: "1px solid #93c5fd", fontSize: "0.7rem" }}>{apt.status}</span>
                     </div>
                   ))}
                 </div>
@@ -770,40 +802,26 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
             </div>
           </div>
 
-          {/* === 8. KOMMUNIKATION & HILFE === */}
+          {/* === KOMMUNIKATION === */}
           <div className="dashboard-card mb-4">
             <div className="card-header-custom d-flex align-items-center gap-2">
               <MessageCircle size={16} style={{ color: "#10b981" }} />
               <span className="fw-semibold">Kommunikation & Hilfe</span>
-              {openHelp.length > 0 && (
-                <span className="badge bg-warning text-dark">{openHelp.length} offen</span>
-              )}
+              {openHelp.length > 0 && <span className="badge bg-warning text-dark">{openHelp.length} offen</span>}
             </div>
             <div className="card-body-custom">
               {openHelp.length === 0 && !patient.phone ? (
                 <div className="p-3 text-center text-muted" style={{ fontSize: "0.85rem" }}>Keine offenen Help Requests.</div>
               ) : (
                 <div className="d-flex flex-column gap-2">
-                  {/* Kontaktinfos */}
                   <div className="p-2 rounded mb-2" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
                     <div className="fw-medium mb-1" style={{ fontSize: "0.85rem", color: "#166534" }}>Kontaktinformationen</div>
                     <div className="row g-2" style={{ fontSize: "0.8rem" }}>
-                      <div className="col-md-4">
-                        <strong>Patient:</strong>{" "}
-                        {patient.phone || "—"}
-                        {patient.email && <span> · {patient.email}</span>}
-                      </div>
-                      <div className="col-md-4">
-                        <strong>Dialysezentrum:</strong>{" "}
-                        {patient.Organization?.name || "—"}
-                      </div>
-                      <div className="col-md-4">
-                        <strong>Coordinator:</strong>{" "}
-                        {coordinatorName}
-                      </div>
+                      <div className="col-md-4"><strong>Patient:</strong> {patient.phone || "—"}{patient.email && <span> · {patient.email}</span>}</div>
+                      <div className="col-md-4"><strong>Dialysezentrum:</strong> {patient.Organization?.name || "—"}</div>
+                      <div className="col-md-4"><strong>Coordinator:</strong> {coordinatorName}</div>
                     </div>
                   </div>
-                  {/* Offene Help Requests */}
                   {openHelp.map((help) => (
                     <div key={help.id} className="d-flex align-items-start gap-2 p-2 rounded" style={{ background: "#fef3c7" }}>
                       <Bell size={16} style={{ color: "#f59e0b", marginTop: 2 }} />
@@ -820,7 +838,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
             </div>
           </div>
 
-          {/* === 9. TIMELINE / AUDIT-HISTORIE === */}
+          {/* === TIMELINE === */}
           <div className="dashboard-card">
             <div className="card-header-custom d-flex align-items-center gap-2">
               <Activity size={16} style={{ color: "#64748b" }} />
@@ -835,17 +853,13 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                   {timelineEvents.map((event) => (
                     <div key={event.id} className="d-flex gap-3 align-items-start">
                       <div className="d-flex flex-column align-items-center">
-                        <div style={{
-                          width: 10, height: 10, borderRadius: "50%", background: "#3b82f6",
-                        }} />
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3b82f6" }} />
                         <div style={{ width: 2, flex: 1, background: "#e2e8f0", minHeight: 20 }} />
                       </div>
                       <div className="pb-2">
                         <div className="fw-medium" style={{ fontSize: "0.85rem" }}>{event.description}</div>
                         <div className="d-flex gap-2" style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                          <span>{event.eventType}</span>
-                          <span>·</span>
-                          <span>{new Date(event.createdAt).toLocaleString("de-DE")}</span>
+                          <span>{event.eventType}</span><span>·</span><span>{new Date(event.createdAt).toLocaleString("de-DE")}</span>
                         </div>
                       </div>
                     </div>
@@ -862,9 +876,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
           {latestCase && (
             <div className="dashboard-card">
               <div className="card-header-custom">
-                <span className="fw-semibold d-flex align-items-center gap-2">
-                  <Calendar size={16} /> Fall-Historie
-                </span>
+                <span className="fw-semibold d-flex align-items-center gap-2"><Calendar size={16} /> Fall-Historie</span>
               </div>
               <div className="card-body-custom">
                 <div className="d-flex flex-column gap-3">
@@ -874,10 +886,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                         <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3b82f6" }} />
                         <div style={{ width: 2, flex: 1, background: "#e2e8f0", minHeight: 20 }} />
                       </div>
-                      <div>
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>Überweisung eingegangen</div>
-                        <div className="small text-muted">{fmtDate(latestCase.referralDate)}</div>
-                      </div>
+                      <div><div className="fw-medium" style={{ fontSize: "0.85rem" }}>Überweisung eingegangen</div><div className="small text-muted">{fmtDate(latestCase.referralDate)}</div></div>
                     </div>
                   )}
                   {latestCase.intakeDate && (
@@ -886,10 +895,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                         <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3b82f6" }} />
                         <div style={{ width: 2, flex: 1, background: "#e2e8f0", minHeight: 20 }} />
                       </div>
-                      <div>
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>Aufnahme</div>
-                        <div className="small text-muted">{fmtDate(latestCase.intakeDate)}</div>
-                      </div>
+                      <div><div className="fw-medium" style={{ fontSize: "0.85rem" }}>Aufnahme</div><div className="small text-muted">{fmtDate(latestCase.intakeDate)}</div></div>
                     </div>
                   )}
                   <div className="d-flex gap-2">
@@ -897,10 +903,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                       <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3b82f6" }} />
                       <div style={{ width: 2, flex: 1, background: "#e2e8f0", minHeight: 20 }} />
                     </div>
-                    <div>
-                      <div className="fw-medium" style={{ fontSize: "0.85rem" }}>Case eröffnet</div>
-                      <div className="small text-muted">{fmtDate(latestCase.createdAt)}</div>
-                    </div>
+                    <div><div className="fw-medium" style={{ fontSize: "0.85rem" }}>Case eröffnet</div><div className="small text-muted">{fmtDate(latestCase.createdAt)}</div></div>
                   </div>
                   {latestCase.readyForReviewDate && (
                     <div className="d-flex gap-2">
@@ -908,10 +911,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                         <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981" }} />
                         <div style={{ width: 2, flex: 1, background: "#e2e8f0", minHeight: 20 }} />
                       </div>
-                      <div>
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>Bereit zur Prüfung</div>
-                        <div className="small text-muted">{fmtDate(latestCase.readyForReviewDate)}</div>
-                      </div>
+                      <div><div className="fw-medium" style={{ fontSize: "0.85rem" }}>Bereit zur Prüfung</div><div className="small text-muted">{fmtDate(latestCase.readyForReviewDate)}</div></div>
                     </div>
                   )}
                   {latestCase.boardDecisionDate && (
@@ -920,10 +920,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                         <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981" }} />
                         <div style={{ width: 2, flex: 1, background: "#e2e8f0", minHeight: 20 }} />
                       </div>
-                      <div>
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>Board-Entscheidung</div>
-                        <div className="small text-muted">{fmtDate(latestCase.boardDecisionDate)}</div>
-                      </div>
+                      <div><div className="fw-medium" style={{ fontSize: "0.85rem" }}>Board-Entscheidung</div><div className="small text-muted">{fmtDate(latestCase.boardDecisionDate)}</div></div>
                     </div>
                   )}
                   {latestCase.waitlistedDate && (
@@ -932,10 +929,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                         <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981" }} />
                         <div style={{ width: 2, flex: 1, background: "#e2e8f0", minHeight: 20 }} />
                       </div>
-                      <div>
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>Wartelisteneintrag</div>
-                        <div className="small text-muted">{fmtDate(latestCase.waitlistedDate)}</div>
-                      </div>
+                      <div><div className="fw-medium" style={{ fontSize: "0.85rem" }}>Wartelisteneintrag</div><div className="small text-muted">{fmtDate(latestCase.waitlistedDate)}</div></div>
                     </div>
                   )}
                   {latestCase.closedDate && (
@@ -943,13 +937,7 @@ export default async function ClinicPatientPage({ params }: ClinicPatientPagePro
                       <div className="d-flex flex-column align-items-center">
                         <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444" }} />
                       </div>
-                      <div>
-                        <div className="fw-medium" style={{ fontSize: "0.85rem" }}>Abgeschlossen</div>
-                        <div className="small text-muted">{fmtDate(latestCase.closedDate)}</div>
-                        {latestCase.closureReason && (
-                          <div className="small text-muted">Grund: {latestCase.closureReason}</div>
-                        )}
-                      </div>
+                      <div><div className="fw-medium" style={{ fontSize: "0.85rem" }}>Abgeschlossen</div><div className="small text-muted">{fmtDate(latestCase.closedDate)}</div>{latestCase.closureReason && <div className="small text-muted">Grund: {latestCase.closureReason}</div>}</div>
                     </div>
                   )}
                 </div>
