@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 const CLINIC_ROLES = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"];
 
 /* ================================================================ */
-/*  GET: Einzelnen Patient laden                                     */
+/*  GET: Einzelnen Patient laden mit allen Details                   */
 /* ================================================================ */
 export async function GET(
   request: Request,
@@ -25,84 +25,105 @@ export async function GET(
 
     const { id } = await params;
 
-    const [patient, documents, appointments, blockers, timelineEvents, requirements, helpRequests, tasks] =
-      await Promise.all([
-        prisma.patient.findUnique({
-          where: { id },
+    if (!id || typeof id !== "string") {
+      return NextResponse.json({ error: "Ungültige Patienten-ID" }, { status: 400 });
+    }
+
+    // 1. PATIENT + CASES (Kern-Daten — darf nicht fehlschlagen)
+    const patient = await prisma.patient.findUnique({
+      where: { id },
+      include: {
+        user: { select: { email: true } },
+        Organization: { select: { name: true, id: true } },
+        cases: {
           include: {
-            user: { select: { email: true } },
-            Organization: { select: { name: true, id: true } },
-            cases: {
-              include: {
-                program: { select: { name: true, type: true } },
-              },
-              orderBy: { createdAt: "desc" },
-              take: 1,
-            },
+            program: { select: { name: true, type: true } },
           },
-        }),
-        prisma.document.findMany({
-          where: { patientId: id },
           orderBy: { createdAt: "desc" },
-          take: 15,
-          select: {
-            id: true, filename: true, documentType: true, processingStatus: true,
-            createdAt: true,
-          },
-        }),
-        prisma.appointment.findMany({
-          where: { patientId: id },
-          orderBy: { startTime: "asc" },
-          take: 10,
-          select: { id: true, type: true, startTime: true, location: true, status: true },
-        }),
-        prisma.blocker.findMany({
-          where: { patientCase: { patientId: id }, status: "ACTIVE" },
-          select: {
-            id: true, type: true, description: true, createdAt: true,
-            requirement: { select: { title: true } },
-          },
-        }),
-        prisma.timelineEvent.findMany({
-          where: { patientCase: { patientId: id } },
-          orderBy: { createdAt: "desc" },
-          take: 15,
-          select: { id: true, description: true, createdAt: true, eventType: true },
-        }),
-        prisma.patientRequirement.findMany({
-          where: { patientCase: { patientId: id } },
-          include: {
-            template: {
-              select: {
-                name: true, category: true, required: true, listingBlocker: true,
-                renewalLeadTime: true, validityDuration: true,
-              },
-            },
-            tasks: {
-              select: { id: true, title: true, status: true, dueDate: true },
-              orderBy: { dueDate: "asc" },
-            },
-          },
-        }),
-        prisma.helpRequest.findMany({
-          where: { patientId: id },
-          orderBy: { createdAt: "desc" },
-          take: 5,
-          select: { id: true, type: true, status: true, description: true, createdAt: true },
-        }),
-        prisma.task.findMany({
-          where: { patientId: id },
-          orderBy: { dueDate: "asc" },
-          take: 10,
-          select: {
-            id: true, title: true, status: true, dueDate: true, description: true,
-          },
-        }),
-      ]);
+          take: 1,
+        },
+      },
+    });
 
     if (!patient) {
       return NextResponse.json({ error: "Patient nicht gefunden" }, { status: 404 });
     }
+
+    // 2. Zusatz-Daten (können fehlschlagen, werden mit Defaults abgefangen)
+    let documents: any[] = [];
+    let appointments: any[] = [];
+    let blockers: any[] = [];
+    let timelineEvents: any[] = [];
+    let requirements: any[] = [];
+    let helpRequests: any[] = [];
+    let tasks: any[] = [];
+
+    try {
+      documents = await prisma.document.findMany({
+        where: { patientId: id },
+        orderBy: { createdAt: "desc" },
+        take: 15,
+        select: { id: true, filename: true, documentType: true, processingStatus: true, createdAt: true },
+      });
+    } catch (e) { console.error("documents error:", e); }
+
+    try {
+      appointments = await prisma.appointment.findMany({
+        where: { patientId: id },
+        orderBy: { startTime: "asc" },
+        take: 10,
+        select: { id: true, type: true, startTime: true, location: true, status: true },
+      });
+    } catch (e) { console.error("appointments error:", e); }
+
+    try {
+      blockers = await prisma.blocker.findMany({
+        where: { patientCase: { patientId: id }, status: "ACTIVE" },
+        select: { id: true, type: true, description: true, createdAt: true, requirement: { select: { title: true } } },
+      });
+    } catch (e) { console.error("blockers error:", e); }
+
+    try {
+      timelineEvents = await prisma.timelineEvent.findMany({
+        where: { patientCase: { patientId: id } },
+        orderBy: { createdAt: "desc" },
+        take: 15,
+        select: { id: true, description: true, createdAt: true, eventType: true },
+      });
+    } catch (e) { console.error("timelineEvents error:", e); }
+
+    try {
+      requirements = await prisma.patientRequirement.findMany({
+        where: { patientCase: { patientId: id } },
+        include: {
+          template: {
+            select: { name: true, category: true, required: true, listingBlocker: true, renewalLeadTime: true, validityDuration: true },
+          },
+          tasks: {
+            select: { id: true, title: true, status: true, dueDate: true },
+            orderBy: { dueDate: "asc" },
+          },
+        },
+      });
+    } catch (e) { console.error("requirements error:", e); }
+
+    try {
+      helpRequests = await prisma.helpRequest.findMany({
+        where: { patientId: id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: { id: true, type: true, status: true, description: true, createdAt: true },
+      });
+    } catch (e) { console.error("helpRequests error:", e); }
+
+    try {
+      tasks = await prisma.task.findMany({
+        where: { patientId: id },
+        orderBy: { dueDate: "asc" },
+        take: 10,
+        select: { id: true, title: true, status: true, dueDate: true, description: true },
+      });
+    } catch (e) { console.error("tasks error:", e); }
 
     // Coordinator Name laden
     let coordinatorName = "—";
@@ -155,15 +176,8 @@ export async function PUT(
     const body = await request.json();
 
     const {
-      firstName,
-      lastName,
-      dateOfBirth,
-      email,
-      phone,
-      generalPractitionerName,
-      generalPractitionerEmail,
-      generalPractitionerPhone,
-      generalPractitionerCity,
+      firstName, lastName, dateOfBirth, email, phone,
+      generalPractitionerName, generalPractitionerEmail, generalPractitionerPhone, generalPractitionerCity,
     } = body;
 
     const updateData: any = {};
@@ -208,7 +222,6 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Prüfe ob Patient existiert
     const existing = await prisma.patient.findUnique({
       where: { id },
       select: { id: true },
