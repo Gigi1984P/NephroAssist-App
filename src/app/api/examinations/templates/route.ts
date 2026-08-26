@@ -144,8 +144,8 @@ export async function POST(request: Request) {
           { stepNumber: 2, title: "Termin vereinbaren", desc: "Facharzt-Termin vereinbaren", owner: "PATIENT" },
           { stepNumber: 3, title: "Untersuchung durchführen", desc: "Untersuchung beim Facharzt", owner: "PATIENT" },
           { stepNumber: 4, title: "Befund/Bericht hochladen", desc: "Dokumente hochladen", owner: "PATIENT" },
-          { stepNumber: 5, title: "Dokument prüfen", desc: "Prüfung durch Klinik", owner: "PHYSICIAN" },
-          { stepNumber: 6, title: "Freigabe durch Transplantationszentrum", desc: "Abschluss und Freigabe", owner: "ADMIN" },
+          { stepNumber: 5, title: "Dokument prüfen", desc: "Prüfung durch Klinik", owner: "TRANSPLANT_CENTER" },
+          { stepNumber: 6, title: "Freigabe durch Transplantationszentrum", desc: "Abschluss und Freigabe", owner: "TRANSPLANT_CENTER" },
         ];
 
         for (const step of workflowSteps) {

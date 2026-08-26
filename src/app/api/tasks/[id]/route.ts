@@ -70,8 +70,8 @@ export async function PATCH(
     if (task.isWorkflowStep && newStatus === "COMPLETED") {
       // Bestimme actionType aus stepName
       const stepName = task.stepName || "";
-      const isUploadStep = stepName.includes("hochladen");
-      const isClinicReview = stepName.includes("Prüfung durch");
+      const isUploadStep = stepName.toLowerCase().includes("hochladen");
+      const isClinicReview = stepName.toLowerCase().includes("prüfung") || stepName.toLowerCase().includes("freigabe");
 
       if (isClinicReview) {
         // Nur Klinik oder Dialyse
