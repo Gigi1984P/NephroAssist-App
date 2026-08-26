@@ -106,7 +106,7 @@ export async function POST(request: Request) {
     // Automatisch allen Patienten mit aktiven Fällen zuweisen
     const activeCases = await prisma.patientCase.findMany({
       where: { status: { notIn: ["CLOSED", "INACTIVE"] } },
-      select: { id: true, organizationId: true, programId: true },
+      select: { id: true, patientId: true, organizationId: true, programId: true },
     });
 
     if (activeCases.length > 0) {
@@ -115,7 +115,8 @@ export async function POST(request: Request) {
         : null;
 
       for (const c of activeCases) {
-        await prisma.patientRequirement.create({
+        // 1. PatientRequirement erstellen
+        const patientReq = await prisma.patientRequirement.create({
           data: {
             caseId: c.id,
             templateId: template.id,
@@ -136,6 +137,35 @@ export async function POST(request: Request) {
             ...(expiresAt ? { expiresAt } : {}),
           },
         });
+
+        // 2. 6-Schritte-Workflow Tasks erstellen
+        const workflowSteps = [
+          { stepNumber: 1, title: "Überweisung einholen", desc: "Hausarzt-Überweisung anfordern", owner: "PATIENT" },
+          { stepNumber: 2, title: "Termin vereinbaren", desc: "Facharzt-Termin vereinbaren", owner: "PATIENT" },
+          { stepNumber: 3, title: "Untersuchung durchführen", desc: "Untersuchung beim Facharzt", owner: "PATIENT" },
+          { stepNumber: 4, title: "Befund/Bericht hochladen", desc: "Dokumente hochladen", owner: "PATIENT" },
+          { stepNumber: 5, title: "Dokument prüfen", desc: "Prüfung durch Klinik", owner: "PHYSICIAN" },
+          { stepNumber: 6, title: "Freigabe durch Transplantationszentrum", desc: "Abschluss und Freigabe", owner: "ADMIN" },
+        ];
+
+        for (const step of workflowSteps) {
+          await prisma.task.create({
+            data: {
+              requirementId: patientReq.id,
+              caseId: c.id,
+              patientId: c.patientId,
+              title: step.title,
+              description: step.desc,
+              ownerType: step.owner as any,
+              status: step.stepNumber === 1 ? "IN_PROGRESS" : "PENDING",
+              isWorkflowStep: true,
+              stepNumber: step.stepNumber,
+              stepName: step.title,
+              stepDescription: step.desc,
+              dueDate: expiresAt,
+            },
+          });
+        }
       }
     }
 
