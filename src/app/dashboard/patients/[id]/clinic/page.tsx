@@ -187,6 +187,9 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
   const [saving, setSaving] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [availableTemplates, setAvailableTemplates] = useState<Array<{ id: string; name: string; category: string }>>([]);
+  const [assigning, setAssigning] = useState(false);
   const [editForm, setEditForm] = useState({
     firstName: "", lastName: "", dateOfBirth: "", email: "", phone: "",
     generalPractitionerName: "", generalPractitionerEmail: "", generalPractitionerPhone: "", generalPractitionerCity: "",
@@ -240,7 +243,7 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
   const handleDelete = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/patients/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/patients/${id}`, { method: "DELETE", credentials: "include" });
       if (res.ok) {
         router.push("/dashboard/patients");
       } else {
@@ -250,6 +253,37 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
       }
     } catch { alert("Netzwerkfehler"); setShowDeleteModal(false); }
     finally { setSaving(false); }
+  };
+
+  const loadAvailableTemplates = async () => {
+    try {
+      const res = await fetch(`/api/patients/${id}/assign-requirement?patientId=${id}`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableTemplates(data.templates || []);
+        setShowAssignModal(true);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const handleAssign = async (templateId: string) => {
+    setAssigning(true);
+    try {
+      const res = await fetch(`/api/patients/${id}/assign-requirement`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId: id, templateId }),
+      });
+      if (res.ok) {
+        setShowAssignModal(false);
+        await loadPatient();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Fehler bei Zuweisung");
+      }
+    } catch { alert("Netzwerkfehler"); }
+    finally { setAssigning(false); }
   };
 
   if (loading) return <div className="p-4 text-center text-muted">Laden...</div>;
@@ -310,6 +344,9 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
             </button>
             <button className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" onClick={() => setShowDeleteModal(true)}>
               <Trash2 size={14} /> Löschen
+            </button>
+            <button className="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1" onClick={loadAvailableTemplates}>
+              <ClipboardList size={14} /> Untersuchung zuweisen
             </button>
             <Link href="/dashboard/patients" className="btn-custom btn-outline-custom">
               <ArrowLeft size={16} /> Zurück
@@ -404,6 +441,58 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
                   <button className="btn btn-secondary btn-sm" onClick={() => setShowDeleteModal(false)} disabled={saving}>Abbrechen</button>
                   <button className="btn btn-danger btn-sm d-inline-flex align-items-center gap-1" onClick={handleDelete} disabled={saving}>
                     <Trash2 size={14} /> {saving ? "Löschen..." : "Ja, löschen"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* === UNTERSUCHUNG ZUWEISEN MODAL === */}
+      {showAssignModal && (
+        <>
+          <div className="modal show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title fw-bold">Untersuchung zuweisen</h5>
+                  <button className="btn-close" onClick={() => setShowAssignModal(false)} />
+                </div>
+                <div className="modal-body">
+                  {availableTemplates.length === 0 ? (
+                    <div className="text-center text-muted py-4">
+                      <div className="mb-2">🩺</div>
+                      <div>Alle verfügbaren Untersuchungen sind bereits zugewiesen.</div>
+                      <div className="small mt-1">
+                        Neue Untersuchungen können unter <Link href="/dashboard/requirements" className="text-decoration-underline">Anforderungen</Link> erstellt werden.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="d-flex flex-column gap-2">
+                      <div className="text-muted small mb-1">
+                        Wählen Sie eine Untersuchung aus, die Sie <strong>{patient.firstName} {patient.lastName}</strong> zuweisen möchten:
+                      </div>
+                      {availableTemplates.map((template) => (
+                        <button
+                          key={template.id}
+                          className="btn btn-outline-primary text-start d-flex justify-content-between align-items-center"
+                          onClick={() => handleAssign(template.id)}
+                          disabled={assigning}
+                        >
+                          <div>
+                            <div className="fw-medium">{template.name}</div>
+                            <div className="small text-muted">{template.category}</div>
+                          </div>
+                          <span className="badge bg-primary">{assigning ? "Wird zugewiesen..." : "Zuweisen"}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary btn-sm" onClick={() => setShowAssignModal(false)} disabled={assigning}>
+                    Abbrechen
                   </button>
                 </div>
               </div>
