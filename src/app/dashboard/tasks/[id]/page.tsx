@@ -61,12 +61,6 @@ function canEditStep(step: WorkflowStep): boolean {
   return owner === "PATIENT";
 }
 
-// Gesperrte Schritte: nur Schritte, die NICHT direkt auf den aktiven folgen
-function isNextOrActiveStep(step: WorkflowStep, index: number, activeIdx: number): boolean {
-  if (activeIdx === -1) return false; // Alle erledigt
-  return index <= activeIdx + 1; // Aktiv + nächster sind freigeschaltet
-}
-
 function isUploadStep(step: WorkflowStep): boolean {
   const name = (step.stepName || step.title || "").toLowerCase();
   return name.includes("hochladen") || name.includes("upload") || name.includes("befund");
@@ -164,6 +158,8 @@ export default function TaskDetailPage() {
       setUploadSuccess("Dokument erfolgreich hochgeladen!");
       // Upload-Step automatisch als erledigt markieren
       await markStepComplete(stepId);
+      // Erfolgsmeldung nach 3 Sekunden ausblenden
+      setTimeout(() => setUploadSuccess(""), 3000);
     } catch {
       setUploadError("Netzwerkfehler beim Upload");
     } finally {
