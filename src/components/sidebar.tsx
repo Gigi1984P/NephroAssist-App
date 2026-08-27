@@ -32,9 +32,7 @@ const sidebarItems: SidebarItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
   { title: "Patienten", href: "/dashboard/patients", icon: Users, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"] },
   { title: "Termine", href: "/dashboard/appointments", icon: Calendar, roles: ["PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
-  { title: "Untersuchungen", icon: CheckSquare, roles: ["PATIENT", "CAREGIVER"], children: [
-    { title: "Meine Untersuchungen", href: "/dashboard/tasks" },
-  ] },
+  { title: "Meine Untersuchungen", href: "/dashboard/tasks", icon: CheckSquare, roles: ["PATIENT", "CAREGIVER"] },
   { title: "Dokumente", href: "/dashboard/documents", icon: FileText, roles: ["PATIENT", "CAREGIVER"] },
   { title: "Auswertungen", href: "/dashboard/reports", icon: BarChart3, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { title: "Anforderungen", href: "/dashboard/requirements", icon: ClipboardList, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
