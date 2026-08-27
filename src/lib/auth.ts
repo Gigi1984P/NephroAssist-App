@@ -112,9 +112,28 @@ export const { handlers, signIn, signOut } = NextAuth({
 export async function auth(): Promise<{ user: { id: string; email: string; name?: string | null; role: string } } | null> {
   try {
     const cookieStore = await cookies();
+
+    // 1. Custom nephro-token (von unserem Custom Login)
     const token = cookieStore.get("nephro-token")?.value;
     if (token) {
       const { payload } = await jwtVerify(token, secret, { clockTolerance: 60 });
+      if (payload.sub && payload.email) {
+        return {
+          user: {
+            id: payload.sub as string,
+            email: payload.email as string,
+            name: payload.name as string | null | undefined,
+            role: payload.role as string,
+          },
+        };
+      }
+    }
+
+    // 2. NextAuth Session Token
+    const sessionToken = cookieStore.get("next-auth.session-token")?.value ||
+                          cookieStore.get("__session")?.value;
+    if (sessionToken) {
+      const { payload } = await jwtVerify(sessionToken, secret, { clockTolerance: 60 });
       if (payload.sub && payload.email) {
         return {
           user: {
