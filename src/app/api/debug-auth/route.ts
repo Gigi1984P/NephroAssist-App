@@ -3,10 +3,7 @@ import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET() {
   try {
     const session = await auth();
     console.log("[DEBUG] Session:", session ? "Vorhanden" : "NULL");
@@ -16,7 +13,6 @@ export async function GET(
       return NextResponse.json({ error: "Nicht autorisiert", debug: "Session ist null" }, { status: 401 });
     }
 
-    const { id } = await params;
     return NextResponse.json({
       status: "OK",
       session: {
@@ -24,7 +20,6 @@ export async function GET(
         email: session.user.email,
         role: session.user.role,
       },
-      patientId: id,
     });
   } catch (e) {
     console.error("[DEBUG] Auth error:", e);
