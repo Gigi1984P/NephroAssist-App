@@ -66,6 +66,11 @@ function isUploadStep(step: WorkflowStep): boolean {
   return name.includes("hochladen") || name.includes("upload") || name.includes("befund");
 }
 
+function isAppointmentStep(step: WorkflowStep): boolean {
+  const name = (step.stepName || step.title || "").toLowerCase();
+  return name.includes("termin") || name.includes("vereinbaren") || name.includes("appointment");
+}
+
 export default function TaskDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -80,6 +85,16 @@ export default function TaskDetailPage() {
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Termin-Modal State
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [appointmentStepId, setAppointmentStepId] = useState("");
+  const [appointmentDate, setAppointmentDate] = useState("");
+  const [appointmentTime, setAppointmentTime] = useState("");
+  const [appointmentLocation, setAppointmentLocation] = useState("");
+  const [appointmentProvider, setAppointmentProvider] = useState("");
+  const [appointmentNotes, setAppointmentNotes] = useState("");
+  const [savingAppointment, setSavingAppointment] = useState(false);
 
   // Hilfeanfrage Modal
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -172,6 +187,55 @@ export default function TaskDetailPage() {
       setUploadError("Netzwerkfehler beim Upload");
     } finally {
       setUploadingStepId(null);
+    }
+  }
+
+  async function saveAppointment(stepId: string) {
+    if (!requirement?.patientId) {
+      setUpdateError("Kein Patient zugeordnet");
+      return;
+    }
+    if (!appointmentDate || !appointmentTime) {
+      setUpdateError("Bitte Datum und Uhrzeit angeben");
+      return;
+    }
+    try {
+      setSavingAppointment(true);
+      setUpdateError("");
+
+      const startTime = new Date(`${appointmentDate}T${appointmentTime}`);
+
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: requirement.patientId,
+          type: requirement.title || "Untersuchung",
+          provider: appointmentProvider,
+          location: appointmentLocation,
+          startTime: startTime.toISOString(),
+          notes: appointmentNotes,
+          relatedRequirementId: requirement.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUpdateError(data.error || "Fehler beim Speichern");
+        return;
+      }
+      // Termin-Step als erledigt markieren
+      await markStepComplete(stepId);
+      setShowAppointmentModal(false);
+      // Felder zurücksetzen
+      setAppointmentDate("");
+      setAppointmentTime("");
+      setAppointmentLocation("");
+      setAppointmentProvider("");
+      setAppointmentNotes("");
+    } catch {
+      setUpdateError("Netzwerkfehler beim Speichern");
+    } finally {
+      setSavingAppointment(false);
     }
   }
 
@@ -355,6 +419,7 @@ export default function TaskDetailPage() {
                 const isLocked = index > activeStepIndex + 1 && activeStepIndex !== -1;
                 const showActions = canEditStep(step) && !isLocked;
                 const showUpload = showActions && isUploadStep(step);
+                const showAppointment = showActions && isAppointmentStep(step);
 
                 const meta = STATUS_META[step.status] || STATUS_META.PENDING;
                 const IconComp = meta.icon;
@@ -465,6 +530,17 @@ export default function TaskDetailPage() {
                               </button>
                               <small className="text-muted">Erlaubt: PDF, JPG, PNG (max. 10 MB)</small>
                             </div>
+                          ) : showAppointment ? (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => {
+                                setAppointmentStepId(step.id);
+                                setShowAppointmentModal(true);
+                              }}
+                            >
+                              <Calendar size={14} className="me-1" />
+                              Termin eintragen
+                            </button>
                           ) : (
                             <button
                               className="btn btn-success btn-sm"
@@ -519,6 +595,93 @@ export default function TaskDetailPage() {
             <p className="card-text">
               {requirement.template?.patientFriendlyDescription || requirement.template?.description || requirement.description}
             </p>
+          </div>
+        </div>
+      )}
+      {/* Termin-Modal */}
+      {showAppointmentModal && (
+        <div className="modal show" style={{ display: "block", background: "rgba(0,0,0,0.5)" }} tabIndex={-1}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Termin eintragen</h5>
+                <button type="button" className="btn-close" onClick={() => setShowAppointmentModal(false)} />
+              </div>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label">Datum *</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={appointmentDate}
+                      onChange={(e) => setAppointmentDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Uhrzeit *</label>
+                    <input
+                      type="time"
+                      className="form-control"
+                      value={appointmentTime}
+                      onChange={(e) => setAppointmentTime(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Arzt/Klinik</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={appointmentProvider}
+                      onChange={(e) => setAppointmentProvider(e.target.value)}
+                      placeholder="z.B. Dr. Müller"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Ort</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={appointmentLocation}
+                      onChange={(e) => setAppointmentLocation(e.target.value)}
+                      placeholder="z.B. Uniklinik Frankfurt"
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">Notizen</label>
+                    <textarea
+                      className="form-control"
+                      rows={2}
+                      value={appointmentNotes}
+                      onChange={(e) => setAppointmentNotes(e.target.value)}
+                      placeholder="z.B. Bitte Laborwerte mitbringen"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setShowAppointmentModal(false)}>Abbrechen</button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => saveAppointment(appointmentStepId)}
+                  disabled={savingAppointment || !appointmentDate || !appointmentTime}
+                >
+                  {savingAppointment ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-1" role="status" />
+                      Speichern...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar size={14} className="me-1" />
+                      Termin speichern
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
