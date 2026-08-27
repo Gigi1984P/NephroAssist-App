@@ -3,7 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { Plus, Search, ChevronLeft, ChevronRight, User, Phone, Mail, Trash2, Edit3, AlertTriangle, X } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, User, Phone, Mail, Trash2, Edit3, AlertTriangle, Users } from "lucide-react";
+
+interface Coordinator {
+  id: string;
+  name: string;
+  email: string;
+}
 
 interface Patient {
   id: string;
@@ -12,25 +18,30 @@ interface Patient {
   email: string;
   phone: string;
   dateOfBirth?: string | null;
+  caseStatus?: string | null;
+  coordinatorId?: string | null;
 }
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Selektion
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Modal State
-  const [modalType, setModalType] = useState<"" | "create" | "edit" | "delete" | "bulk-delete">("");
+  const [modalType, setModalType] = useState<"" | "create" | "edit" | "delete" | "bulk-delete" | "bulk-update">("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Aktiver Patient für Edit/Delete
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
+
+  // Bulk-Update Felder
+  const [bulkCaseStatus, setBulkCaseStatus] = useState("");
+  const [bulkCoordinatorId, setBulkCoordinatorId] = useState("");
+  const [bulkNote, setBulkNote] = useState("");
 
   // Form State
   const [formFirstName, setFormFirstName] = useState("");
@@ -49,6 +60,7 @@ export default function PatientsPage() {
       if (res.ok) {
         const data = await res.json();
         setPatients(data.patients || []);
+        setCoordinators(data.coordinators || []);
       }
     } catch (error) {
       console.error("Failed to load patients:", error);
@@ -61,7 +73,24 @@ export default function PatientsPage() {
     loadPatients();
   }, []);
 
-  // ─── Modal-Helfer ──────────────────────────────────────────────────────
+  // ─── Checkboxen ──────────────────────────────────────────────────────
+  const toggleSelection = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const toggleAll = () => {
+    const allSelected = paginatedPatients.length > 0 && paginatedPatients.every((p) => selectedIds.has(p.id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedPatients.map((p) => p.id)));
+    }
+  };
+
+  // ─── CRUD ────────────────────────────────────────────────────────────
   const handleCreatePatient = async () => {
     if (!formFirstName.trim() || !formLastName.trim()) {
       setMessage({ type: "error", text: "Vor- und Nachname sind Pflicht" });
@@ -163,7 +192,6 @@ export default function PatientsPage() {
     if (selectedIds.size === 0) return;
     setSaving(true);
     try {
-      // Sequentielles Löschen (kein Bulk-Endpoint vorhanden)
       let deleted = 0;
       let failed = 0;
       for (const id of Array.from(selectedIds)) {
@@ -189,6 +217,38 @@ export default function PatientsPage() {
     }
   };
 
+  const handleBulkUpdate = async () => {
+    if (selectedIds.size === 0) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/patients/bulk-update", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientIds: Array.from(selectedIds),
+          caseStatus: bulkCaseStatus || undefined,
+          coordinatorId: bulkCoordinatorId || undefined,
+          note: bulkNote.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const { results } = data;
+        setMessage({ type: "success", text: `${results.updated} Patienten aktualisiert` });
+        setSelectedIds(new Set());
+        closeModal();
+        loadPatients();
+      } else {
+        setMessage({ type: "error", text: data.error || "Fehler bei Massenbearbeitung" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Netzwerkfehler" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // ─── Modal-Helfer ──────────────────────────────────────────────────────
   const openCreate = () => {
     setActivePatient(null);
@@ -203,7 +263,6 @@ export default function PatientsPage() {
     setFormDateOfBirth(patient.dateOfBirth ? patient.dateOfBirth.split("T")[0] : "");
     setFormEmail(patient.email || "");
     setFormPhone(patient.phone || "");
-    // Hausarzt-Felder leer lassen (werden nicht in Overview geliefert)
     setFormGpName("");
     setFormGpEmail("");
     setFormGpPhone("");
@@ -218,6 +277,14 @@ export default function PatientsPage() {
   const openBulkDelete = () => {
     if (selectedIds.size === 0) return;
     setModalType("bulk-delete");
+  };
+
+  const openBulkUpdate = () => {
+    if (selectedIds.size === 0) return;
+    setBulkCaseStatus("");
+    setBulkCoordinatorId("");
+    setBulkNote("");
+    setModalType("bulk-update");
   };
 
   const closeModal = () => {
@@ -237,7 +304,33 @@ export default function PatientsPage() {
     setFormGpPhone("");
   };
 
-  // ─── Filter & Pagination ───────────────────────────────────────────────
+  // ─── Status-Badge ────────────────────────────────────────────────────
+  const getStatusBadge = (status: string | null | undefined) => {
+    if (!status) return <span className="badge bg-secondary">—</span>;
+    const colors: Record<string, string> = {
+      REFERRAL: "bg-info text-dark",
+      EVALUATION: "bg-warning text-dark",
+      APPROVED: "bg-success",
+      READY_FOR_REVIEW: "bg-primary",
+      LISTED: "bg-success",
+      TRANSPLANTED: "bg-success",
+      CLOSED: "bg-secondary",
+      INACTIVE: "bg-secondary",
+    };
+    const labels: Record<string, string> = {
+      REFERRAL: "Überweisung",
+      EVALUATION: "Evaluierung",
+      APPROVED: "Genehmigt",
+      READY_FOR_REVIEW: "Zur Prüfung",
+      LISTED: "Gelistet",
+      TRANSPLANTED: "Transplantiert",
+      CLOSED: "Geschlossen",
+      INACTIVE: "Inaktiv",
+    };
+    return <span className={`badge ${colors[status] || "bg-secondary"}`}>{labels[status] || status}</span>;
+  };
+
+  // ─── Filter & Pagination ──────────────────────────────────────────────
   const filteredPatients = patients.filter((patient) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -252,23 +345,7 @@ export default function PatientsPage() {
     currentPage * itemsPerPage
   );
 
-  // Checkboxen (nach paginatedPatients Definition)
   const allSelected = paginatedPatients.length > 0 && paginatedPatients.every((p) => selectedIds.has(p.id));
-
-  const toggleSelection = (id: string) => {
-    const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedIds(next);
-  };
-
-  const toggleAll = () => {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(paginatedPatients.map((p) => p.id)));
-    }
-  };
 
   return (
     <div>
@@ -322,10 +399,16 @@ export default function PatientsPage() {
             <AlertTriangle size={16} />
             <span className="fw-medium">{selectedIds.size} Patienten ausgewählt</span>
           </div>
-          <button className="btn btn-danger btn-sm" onClick={openBulkDelete}>
-            <Trash2 size={14} className="me-1" />
-            Ausgewählte löschen
-          </button>
+          <div className="d-flex gap-2">
+            <button className="btn btn-primary btn-sm" onClick={openBulkUpdate}>
+              <Users size={14} className="me-1" />
+              Massen bearbeiten
+            </button>
+            <button className="btn btn-danger btn-sm" onClick={openBulkDelete}>
+              <Trash2 size={14} className="me-1" />
+              Ausgewählte löschen
+            </button>
+          </div>
         </div>
       )}
 
@@ -355,6 +438,7 @@ export default function PatientsPage() {
                     </th>
                     <th>Patient</th>
                     <th>Kontakt</th>
+                    <th>Status</th>
                     <th className="actions">Aktionen</th>
                   </tr>
                 </thead>
@@ -404,6 +488,7 @@ export default function PatientsPage() {
                             </div>
                           </div>
                         </td>
+                        <td>{getStatusBadge(patient.caseStatus)}</td>
                         <td className="actions">
                           <div className="d-flex gap-2">
                             <button
@@ -460,9 +545,9 @@ export default function PatientsPage() {
       {/* ─── Modale ─────────────────────────────────────────────────────── */}
       {modalType !== "" && (
         <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1040 }} tabIndex={-1}>
-          <div className="modal-dialog modal-lg">
+          <div className={`modal-dialog ${modalType === "bulk-update" ? "" : "modal-lg"}`}>
             <div className="modal-content">
-              {/* CREATE / EDIT Modal */}
+              {/* CREATE / EDIT */}
               {(modalType === "create" || modalType === "edit") && (
                 <>
                   <div className="modal-header">
@@ -524,7 +609,7 @@ export default function PatientsPage() {
                 </>
               )}
 
-              {/* DELETE Confirm Modal */}
+              {/* DELETE Confirm */}
               {modalType === "delete" && activePatient && (
                 <>
                   <div className="modal-header">
@@ -541,7 +626,7 @@ export default function PatientsPage() {
                           Möchten Sie <strong>{activePatient.firstName} {activePatient.lastName}</strong> wirklich löschen?
                         </p>
                         <p className="text-muted small mb-0">
-                          Alle zugehörigen Daten (Untersuchungen, Dokumente, Termine) werden ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+                          Alle zugehörigen Daten werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
                         </p>
                       </div>
                     </div>
@@ -555,7 +640,7 @@ export default function PatientsPage() {
                 </>
               )}
 
-              {/* BULK DELETE Confirm Modal */}
+              {/* BULK DELETE Confirm */}
               {modalType === "bulk-delete" && (
                 <>
                   <div className="modal-header">
@@ -581,6 +666,73 @@ export default function PatientsPage() {
                     <button className="btn btn-secondary" onClick={closeModal}>Abbrechen</button>
                     <button className="btn btn-danger" onClick={handleBulkDelete} disabled={saving}>
                       {saving ? "Wird gelöscht..." : `${selectedIds.size} Patienten löschen`}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* BULK UPDATE */}
+              {modalType === "bulk-update" && (
+                <>
+                  <div className="modal-header">
+                    <h5 className="modal-title">
+                      <Users size={18} className="me-2" />
+                      {selectedIds.size} Patienten bearbeiten
+                    </h5>
+                    <button className="btn-close" onClick={closeModal} />
+                  </div>
+                  <div className="modal-body">
+                    <p className="text-muted small mb-3">
+                      Änderungen werden auf alle ausgewählten Patienten angewendet. Leere Felder werden ignoriert.
+                    </p>
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <label className="form-label fw-medium">Fall-Status</label>
+                        <select
+                          className="form-select"
+                          value={bulkCaseStatus}
+                          onChange={(e) => setBulkCaseStatus(e.target.value)}
+                        >
+                          <option value="">— Nicht ändern —</option>
+                          <option value="REFERRAL">Überweisung</option>
+                          <option value="EVALUATION">Evaluierung</option>
+                          <option value="APPROVED">Genehmigt</option>
+                          <option value="READY_FOR_REVIEW">Zur Prüfung</option>
+                          <option value="LISTED">Gelistet</option>
+                          <option value="TRANSPLANTED">Transplantiert</option>
+                          <option value="CLOSED">Geschlossen</option>
+                          <option value="INACTIVE">Inaktiv</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label fw-medium">Koordinator zuweisen</label>
+                        <select
+                          className="form-select"
+                          value={bulkCoordinatorId}
+                          onChange={(e) => setBulkCoordinatorId(e.target.value)}
+                        >
+                          <option value="">— Nicht ändern —</option>
+                          {coordinators.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name || c.email}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-12">
+                        <label className="form-label fw-medium">Notiz (wird als Timeline-Eintrag gespeichert)</label>
+                        <textarea
+                          className="form-control"
+                          rows={3}
+                          value={bulkNote}
+                          onChange={(e) => setBulkNote(e.target.value)}
+                          placeholder="z.B. Wartezeit verkürzt, Priorität erhöht..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button className="btn btn-secondary" onClick={closeModal}>Abbrechen</button>
+                    <button className="btn btn-primary" onClick={handleBulkUpdate} disabled={saving}>
+                      {saving ? "Wird gespeichert..." : `${selectedIds.size} Patienten aktualisieren`}
                     </button>
                   </div>
                 </>

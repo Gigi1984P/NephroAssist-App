@@ -29,20 +29,26 @@ export async function GET() {
         generalPractitionerName: true,
         generalPractitionerEmail: true,
         generalPractitionerPhone: true,
+        cases: {
+          select: {
+            id: true,
+            status: true,
+            coordinatorId: true,
+          },
+          take: 1,
+        },
       },
       orderBy: { lastName: "asc" },
       take: 50,
     });
 
-    const documents = await prisma.document.findMany({
-      select: {
-        patientId: true,
-        documentType: true,
-        filename: true,
-      },
+    const coordinators = await prisma.user.findMany({
+      where: { role: "COORDINATOR" },
+      select: { id: true, name: true, email: true },
     });
 
     const enriched = patients.map((patient) => {
+      const firstCase = patient.cases?.[0];
       return {
         id: patient.id,
         firstName: patient.firstName,
@@ -53,10 +59,12 @@ export async function GET() {
         gpName: patient.generalPractitionerName,
         gpEmail: patient.generalPractitionerEmail,
         gpPhone: patient.generalPractitionerPhone,
+        caseStatus: firstCase?.status || null,
+        coordinatorId: firstCase?.coordinatorId || null,
       };
     });
 
-    return NextResponse.json({ patients: enriched });
+    return NextResponse.json({ patients: enriched, coordinators });
   } catch (error) {
     console.error("Patients overview error:", error);
     return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
