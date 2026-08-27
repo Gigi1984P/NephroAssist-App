@@ -13,21 +13,31 @@ export interface EmailPayload {
   text?: string;
 }
 
-export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
+export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string; logged?: boolean }> {
+  // ── Fallback: Wenn Resend nicht konfiguriert, logge die E-Mail ──
   if (!resend) {
-    console.warn("E-Mail nicht konfiguriert: RESEND_API_KEY fehlt");
-    return { success: false, error: "E-Mail-Service nicht konfiguriert" };
+    console.warn("=".repeat(60));
+    console.warn("📧 E-MAIL VERSAND – RESEND NICHT KONFIGURIERT");
+    console.warn("   Füge RESEND_API_KEY zu den Environment-Variablen hinzu.");
+    console.warn("   Resend: https://resend.com  (kostenlos bis 3.000 E-Mails/Tag)");
+    console.warn("=".repeat(60));
+    console.warn("An:", payload.to);
+    console.warn("Betreff:", payload.subject);
+    console.warn("Text:\n" + (payload.text || payload.html.replace(/<[^\u003e]*>/g, "")));
+    console.warn("=".repeat(60));
+    return { success: false, error: "E-Mail-Service nicht konfiguriert (RESEND_API_KEY fehlt)", logged: true };
   }
 
   try {
     const from = process.env.EMAIL_FROM || "NephroAssist <noreply@nephroassist.de>";
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from,
       to: payload.to,
       subject: payload.subject,
       html: payload.html,
-      text: payload.text || payload.html.replace(/<[^>]*>/g, ""),
+      text: payload.text || payload.html.replace(/<[^\u003e]*>/g, ""),
     });
+    console.log("✅ E-Mail gesendet:", (result as any)?.id || "OK");
     return { success: true };
   } catch (error) {
     console.error("E-Mail-Versand fehlgeschlagen:", error);
