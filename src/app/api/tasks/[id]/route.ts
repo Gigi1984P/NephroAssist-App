@@ -192,11 +192,11 @@ export async function PATCH(
       }
     }
 
-    // Wenn Schritt 6 COMPLETED: Requirement auf ACCEPTED + Timeline
+    // Wenn letzter Workflow-Schritt COMPLETED: Requirement auf ACCEPTED
     if (
       newStatus === "COMPLETED" &&
       task.isWorkflowStep &&
-      task.stepNumber === 6
+      task.stepNumber === 5
     ) {
       try {
         await prisma.patientRequirement.update({

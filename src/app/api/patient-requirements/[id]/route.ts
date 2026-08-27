@@ -121,8 +121,10 @@ export async function GET(
         },
         patientCase: {
           select: {
+            patientId: true,
             patient: {
               select: {
+                id: true,
                 firstName: true,
                 lastName: true,
               },

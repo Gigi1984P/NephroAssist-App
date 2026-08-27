@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { ArrowLeft, Clock, CheckCircle, AlertTriangle, Calendar, XCircle, ChevronRight, Lock } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle, AlertTriangle, Calendar, XCircle, ChevronRight, Lock, Upload } from "lucide-react";
 
 interface WorkflowStep {
   id: string;
@@ -29,6 +29,7 @@ interface RequirementDetail {
   listingBlocker: boolean;
   expiresAt: string | null;
   completedAt: string | null;
+  patientId: string | null;
   template: {
     name: string;
     category: string;
@@ -55,11 +56,14 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; ic
 };
 
 function canEditStep(step: WorkflowStep): boolean {
-  // Nur offene Schritte, die vom Patienten erledigt werden
-  if (step.status === "COMPLETED") return false;
-  if (step.status === "CANCELLED") return false;
+  if (step.status === "COMPLETED" || step.status === "CANCELLED") return false;
   const owner = step.ownerType?.toUpperCase() || "";
-  return owner === "PATIENT" || owner === "PATIENT";
+  return owner === "PATIENT";
+}
+
+function isUploadStep(step: WorkflowStep): boolean {
+  const name = (step.stepName || step.title || "").toLowerCase();
+  return name.includes("hochladen") || name.includes("upload") || name.includes("befund");
 }
 
 export default function TaskDetailPage() {
@@ -72,6 +76,10 @@ export default function TaskDetailPage() {
   const [error, setError] = useState("");
   const [updatingStepId, setUpdatingStepId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState("");
+  const [uploadingStepId, setUploadingStepId] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -120,6 +128,40 @@ export default function TaskDetailPage() {
       setUpdateError("Netzwerkfehler beim Aktualisieren");
     } finally {
       setUpdatingStepId(null);
+    }
+  }
+
+  async function handleUpload(stepId: string, file: File) {
+    if (!requirement?.patientId) {
+      setUploadError("Kein Patient zugeordnet");
+      return;
+    }
+    try {
+      setUploadingStepId(stepId);
+      setUploadError("");
+      setUploadSuccess("");
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("patientId", requirement.patientId);
+      formData.append("documentType", "EXAMINATION_RESULT");
+
+      const res = await fetch("/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUploadError(data.error || "Upload fehlgeschlagen");
+        return;
+      }
+      setUploadSuccess("Dokument erfolgreich hochgeladen!");
+      // Upload-Step automatisch als erledigt markieren
+      await markStepComplete(stepId);
+    } catch {
+      setUploadError("Netzwerkfehler beim Upload");
+    } finally {
+      setUploadingStepId(null);
     }
   }
 
@@ -209,11 +251,23 @@ export default function TaskDetailPage() {
         </div>
       </div>
 
-      {/* Update-Fehler */}
+      {/* Fehler / Erfolg */}
       {updateError && (
         <div className="alert alert-danger alert-dismissible" role="alert">
           {updateError}
           <button type="button" className="btn-close" onClick={() => setUpdateError("")} />
+        </div>
+      )}
+      {uploadError && (
+        <div className="alert alert-danger alert-dismissible" role="alert">
+          {uploadError}
+          <button type="button" className="btn-close" onClick={() => setUploadError("")} />
+        </div>
+      )}
+      {uploadSuccess && (
+        <div className="alert alert-success alert-dismissible" role="alert">
+          {uploadSuccess}
+          <button type="button" className="btn-close" onClick={() => setUploadSuccess("")} />
         </div>
       )}
 
@@ -221,7 +275,7 @@ export default function TaskDetailPage() {
       {sortedSteps.length > 0 && (
         <div className="card mb-4">
           <div className="card-body">
-            <h5 className="card-title mb-3">6-Schritte-Workflow</h5>
+            <h5 className="card-title mb-3">5-Schritte-Workflow</h5>
             <div className="d-flex justify-content-between align-items-center mb-2">
               <span className="text-muted">Fortschritt</span>
               <span className="fw-medium">{completedSteps} von {totalSteps} erledigt</span>
@@ -243,7 +297,8 @@ export default function TaskDetailPage() {
                 const isCompleted = step.status === "COMPLETED";
                 const isActive = index === activeStepIndex;
                 const isLocked = index > activeStepIndex && activeStepIndex !== -1;
-                const patientCanEdit = canEditStep(step) && !isLocked;
+                const showActions = canEditStep(step) && !isLocked;
+                const showUpload = showActions && isUploadStep(step);
 
                 const meta = STATUS_META[step.status] || STATUS_META.PENDING;
                 const IconComp = meta.icon;
@@ -320,26 +375,59 @@ export default function TaskDetailPage() {
                         )}
                       </div>
 
-                      {/* Aktionen: Patient kann seinen Schritt erledigen */}
-                      {patientCanEdit && (
+                      {/* Aktionen */}
+                      {showActions && (
                         <div className="mt-3">
-                          <button
-                            className="btn btn-success btn-sm"
-                            onClick={() => markStepComplete(step.id)}
-                            disabled={updatingStepId === step.id}
-                          >
-                            {updatingStepId === step.id ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />
-                                Wird aktualisiert...
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle size={14} className="me-1" />
-                                Als erledigt markieren
-                              </>
-                            )}
-                          </button>
+                          {showUpload ? (
+                            <div className="d-flex flex-column gap-2">
+                              <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="d-none"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleUpload(step.id, file);
+                                }}
+                              />
+                              <button
+                                className="btn btn-primary btn-sm align-self-start"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploadingStepId === step.id}
+                              >
+                                {uploadingStepId === step.id ? (
+                                  <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />
+                                    Wird hochgeladen...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload size={14} className="me-1" />
+                                    Befund/Bericht hochladen
+                                  </>
+                                )}
+                              </button>
+                              <small className="text-muted">Erlaubt: PDF, JPG, PNG (max. 10 MB)</small>
+                            </div>
+                          ) : (
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={() => markStepComplete(step.id)}
+                              disabled={updatingStepId === step.id}
+                            >
+                              {updatingStepId === step.id ? (
+                                <>
+                                  <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />
+                                  Wird aktualisiert...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle size={14} className="me-1" />
+                                  Als erledigt markieren
+                                </>
+                              )}
+                            </button>
+                          )}
                         </div>
                       )}
 
