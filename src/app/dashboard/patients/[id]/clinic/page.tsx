@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import MedicationPlan from "@/components/medication-plan";
 import InlineAssignRequirement from "@/components/inline-assign-requirement";
 import PatientRequirementsTable from "@/components/patient-requirements-table";
+import AssignTemplateSet from "@/components/assign-template-set";
 import {
   ArrowLeft, Calendar, User, Stethoscope, Building2, ClipboardList, Clock, Phone, Mail,
   AlertTriangle, CheckCircle, XCircle, AlertCircle, FileText, Bell, MessageCircle,
@@ -324,6 +325,7 @@ export default async function PatientClinicDetailPage({
           </div>
         </div>
         <div className="card-body p-3">
+          <AssignTemplateSet patientId={id} />
           <InlineAssignRequirement patientId={id} />
           <PatientRequirementsTable patientId={id} requirements={requirements as any} />
         </div>
