@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAllowedPatientIds } from "@/lib/permissions";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { CheckCircle, ExternalLink, Clock } from "lucide-react";
+import { CheckCircle, ExternalLink, Clock, Calendar } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -19,8 +19,69 @@ export default async function DashboardPage() {
 
   const isPatientOrCaregiver = userRole === "PATIENT" || userRole === "CAREGIVER";
 
-  // Patienten-Dashboard: zeigt ProgressCard (kommt vom Client-Component)
+  // Patienten-Dashboard: zeigt ProgressCard + Termine
   if (isPatientOrCaregiver) {
+    // Termine laden
+    const patientId = Array.isArray(allowedPatientIds) && allowedPatientIds.length > 0
+      ? allowedPatientIds[0]
+      : null;
+
+    let appointments: any[] = [];
+    if (patientId) {
+      try {
+        appointments = await prisma.appointment.findMany({
+          where: {
+            patientId,
+            startTime: { gte: new Date() },
+          },
+          orderBy: { startTime: "asc" },
+          take: 10,
+          select: {
+            id: true,
+            type: true,
+            provider: true,
+            location: true,
+            startTime: true,
+            endTime: true,
+            status: true,
+            notes: true,
+          },
+        });
+      } catch (e) { console.error("appointments error:", e); }
+    }
+
+    const formatDateTime = (date: Date) => {
+      return new Date(date).toLocaleDateString("de-DE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
+
+    const getStatusBadge = (status: string) => {
+      switch (status) {
+        case "CONFIRMED": return "bg-success text-white";
+        case "PLANNED": return "bg-primary text-white";
+        case "RESCHEDULE_REQUIRED": return "bg-warning text-dark";
+        case "CANCELLED": return "bg-secondary";
+        default: return "bg-info text-dark";
+      }
+    };
+
+    const getStatusLabel = (status: string) => {
+      switch (status) {
+        case "CONFIRMED": return "Bestätigt";
+        case "PLANNED": return "Geplant";
+        case "RESCHEDULE_REQUIRED": return "Neu terminieren";
+        case "CANCELLED": return "Abgesagt";
+        case "COMPLETED": return "Abgeschlossen";
+        case "NO_SHOW": return "Nicht erschienen";
+        default: return status;
+      }
+    };
+
     return (
       <div>
         <div className="mb-4">
@@ -30,6 +91,67 @@ export default async function DashboardPage() {
           <p className="text-muted mb-0">Hier ist ein Überblick über Ihre aktuellen Aktivitäten.</p>
         </div>
         <PatientProgressCard />
+
+        {/* Termine-Tabelle */}
+        <div className="dashboard-card mb-4">
+          <div className="card-header-custom d-flex justify-content-between align-items-center">
+            <span className="fw-semibold d-flex align-items-center gap-2">
+              <Calendar size={16} />
+              Meine Termine
+            </span>
+            <Link href="/dashboard/tasks" className="btn btn-sm btn-outline-primary">
+              Alle ansehen →
+            </Link>
+          </div>
+          <div className="card-body-custom p-0">
+            {appointments.length === 0 ? (
+              <div className="p-4 text-center text-muted">
+                <div className="mb-2"><Calendar size={24} className="text-muted" /></div>
+                <div className="fw-medium">Keine anstehenden Termine</div>
+                <div className="small">Sobald Termine vereinbart sind, erscheinen sie hier.</div>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Termin</th>
+                      <th>Typ</th>
+                      <th>Ort</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {appointments.map((apt) => (
+                      <tr key={apt.id}>
+                        <td>
+                          <div className="fw-medium">{formatDateTime(apt.startTime)}</div>
+                          {apt.endTime && (
+                            <div className="small text-muted">
+                              bis {new Date(apt.endTime).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <div className="fw-medium">{apt.type || "—"}</div>
+                          {apt.provider && <div className="small text-muted">{apt.provider}</div>}
+                        </td>
+                        <td>
+                          <span className="small">{apt.location || "—"}</span>
+                        </td>
+                        <td>
+                          <span className={`badge ${getStatusBadge(apt.status)}`}>
+                            {getStatusLabel(apt.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
