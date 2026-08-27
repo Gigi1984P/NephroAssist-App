@@ -43,7 +43,11 @@ export default function PatientsPage() {
   const [bulkCoordinatorId, setBulkCoordinatorId] = useState("");
   const [bulkNote, setBulkNote] = useState("");
 
-  // Form State
+  // User-Account Form Felder
+  const [createUserAccount, setCreateUserAccount] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [userPassword, setUserPassword] = useState("");
+  const [generatedPassword, setGeneratedPassword] = useState("");
   const [formFirstName, setFormFirstName] = useState("");
   const [formLastName, setFormLastName] = useState("");
   const [formDateOfBirth, setFormDateOfBirth] = useState("");
@@ -96,6 +100,20 @@ export default function PatientsPage() {
       setMessage({ type: "error", text: "Vor- und Nachname sind Pflicht" });
       return;
     }
+    if (createUserAccount) {
+      if (!userEmail.trim()) {
+        setMessage({ type: "error", text: "E-Mail für User-Account ist Pflicht" });
+        return;
+      }
+      if (!userPassword.trim()) {
+        setMessage({ type: "error", text: "Passwort für User-Account ist Pflicht" });
+        return;
+      }
+      if (userPassword.trim().length < 6) {
+        setMessage({ type: "error", text: "Passwort muss mindestens 6 Zeichen haben" });
+        return;
+      }
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/patients", {
@@ -111,11 +129,19 @@ export default function PatientsPage() {
           gpName: formGpName.trim() || null,
           gpEmail: formGpEmail.trim() || null,
           gpPhone: formGpPhone.trim() || null,
+          createUserAccount,
+          userEmail: userEmail.trim() || null,
+          userPassword: userPassword.trim() || null,
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "Patient angelegt" });
+        let msg = "Patient angelegt";
+        if (data.userCreated) {
+          msg += ` + Login für ${data.userEmail}`;
+          setGeneratedPassword(userPassword);
+        }
+        setMessage({ type: "success", text: msg });
         closeModal();
         loadPatients();
       } else {
@@ -302,6 +328,10 @@ export default function PatientsPage() {
     setFormGpName("");
     setFormGpEmail("");
     setFormGpPhone("");
+    setCreateUserAccount(false);
+    setUserEmail("");
+    setUserPassword("");
+    setGeneratedPassword("");
   };
 
   // ─── Status-Badge ────────────────────────────────────────────────────
@@ -599,6 +629,59 @@ export default function PatientsPage() {
                         <input type="tel" className="form-control" value={formGpPhone} onChange={(e) => setFormGpPhone(e.target.value)} placeholder="+49 987 654321" />
                       </div>
                     </div>
+
+                    {/* ─── User-Account (nur bei Neuanlage) ───────────────── */}
+                    {modalType === "create" && (
+                      <>
+                        <hr className="my-3" />
+                        <h6 className="fw-semibold mb-2">Login für Patienten-Portal</h6>
+                        <div className="form-check mb-3">
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            id="createUserAccount"
+                            checked={createUserAccount}
+                            onChange={(e) => setCreateUserAccount(e.target.checked)}
+                          />
+                          <label className="form-check-label fw-medium" htmlFor="createUserAccount">
+                            User-Account erstellen
+                          </label>
+                        </div>
+                        {createUserAccount && (
+                          <div className="row g-3">
+                            <div className="col-md-6">
+                              <label className="form-label fw-medium">E-Mail *</label>
+                              <input
+                                type="email"
+                                className="form-control"
+                                value={userEmail}
+                                onChange={(e) => setUserEmail(e.target.value)}
+                                placeholder="patient@email.de"
+                              />
+                            </div>
+                            <div className="col-md-6">
+                              <label className="form-label fw-medium">Passwort * (min. 6 Zeichen)</label>
+                              <input
+                                type="text"
+                                className="form-control"
+                                value={userPassword}
+                                onChange={(e) => setUserPassword(e.target.value)}
+                                placeholder="Erstpasswort vergeben"
+                              />
+                            </div>
+                            {generatedPassword && (
+                              <div className="col-12">
+                                <div className="alert alert-success py-2">
+                                  <div className="fw-medium">✅ User-Account erstellt!</div>
+                                  <div className="small">Login: {userEmail}</div>
+                                  <div className="small">Passwort: <strong>{generatedPassword}</strong></div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                   <div className="modal-footer">
                     <button className="btn btn-secondary" onClick={closeModal}>Abbrechen</button>
