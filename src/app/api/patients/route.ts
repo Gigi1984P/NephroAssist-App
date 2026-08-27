@@ -121,11 +121,106 @@ export async function POST(request: Request) {
       },
     });
 
+    // ─── Auto-Zuweisung: PatientCase + alle Untersuchungen ────────────────
+    let assignedRequirements = 0;
+    try {
+      // 1. Erste Organisation finden
+      const org = await prisma.organization.findFirst({ select: { id: true } });
+      if (!org) {
+        console.warn("Keine Organisation gefunden, Auto-Zuweisung übersprungen");
+      } else {
+        // 2. Erstes Programm finden
+        const prog = await prisma.transplantProgram.findFirst({ select: { id: true } });
+        if (!prog) {
+          console.warn("Kein Programm gefunden, Auto-Zuweisung übersprungen");
+        } else {
+          // 3. PatientCase erstellen
+          const patientCase = await prisma.patientCase.create({
+            data: {
+              patientId: patient.id,
+              organizationId: org.id,
+              programId: prog.id,
+              status: "REFERRAL",
+              coordinatorId: user.id,
+            },
+          });
+
+          // 4. Alle aktiven RequirementTemplates finden
+          const templates = await prisma.requirementTemplate.findMany({
+            where: { status: "PUBLISHED" },
+          });
+
+          // 5. Für jedes Template: PatientRequirement + Workflow-Tasks
+          for (const template of templates) {
+            let expiresAt: Date | undefined;
+            if (template.validityDuration) {
+              expiresAt = new Date();
+              expiresAt.setMonth(expiresAt.getMonth() + template.validityDuration);
+            }
+
+            const patientReq = await prisma.patientRequirement.create({
+              data: {
+                caseId: patientCase.id,
+                templateId: template.id,
+                organizationId: org.id,
+                programId: prog.id,
+                title: template.name,
+                category: template.category,
+                description: template.description || null,
+                required: template.required,
+                listingBlocker: template.listingBlocker,
+                responsibleRole: "PATIENT",
+                reviewRequired: true,
+                validityDuration: template.validityDuration,
+                renewalLeadTime: template.renewalLeadTime,
+                patientFriendlyDescription: template.patientFriendlyDescription || null,
+                status: "NOT_STARTED",
+                priority: template.listingBlocker ? 10 : 5,
+                ...(expiresAt ? { expiresAt } : {}),
+              },
+            });
+
+            // 5-Schritte-Workflow
+            const workflowSteps = [
+              { stepNumber: 1, title: "Überweisung einholen", desc: "Hausarzt-Überweisung anfordern", owner: "PATIENT" as const },
+              { stepNumber: 2, title: "Termin vereinbaren", desc: "Facharzt-Termin vereinbaren", owner: "PATIENT" as const },
+              { stepNumber: 3, title: "Befund/Bericht hochladen", desc: "Dokumente hochladen", owner: "PATIENT" as const },
+              { stepNumber: 4, title: "Dokument prüfen", desc: "Prüfung durch Klinik", owner: "TRANSPLANT_CENTER" as const },
+              { stepNumber: 5, title: "Freigabe durch Transplantationszentrum", desc: "Abschluss und Freigabe", owner: "TRANSPLANT_CENTER" as const },
+            ];
+
+            for (const step of workflowSteps) {
+              await prisma.task.create({
+                data: {
+                  requirementId: patientReq.id,
+                  caseId: patientCase.id,
+                  patientId: patient.id,
+                  title: step.title,
+                  description: step.desc,
+                  ownerType: step.owner,
+                  status: step.stepNumber === 1 ? "IN_PROGRESS" : "PENDING",
+                  isWorkflowStep: true,
+                  stepNumber: step.stepNumber,
+                  stepName: step.title,
+                  stepDescription: step.desc,
+                  dueDate: expiresAt,
+                },
+              });
+            }
+            assignedRequirements++;
+          }
+        }
+      }
+    } catch (autoAssignError) {
+      console.error("Auto-Zuweisung fehlgeschlagen:", autoAssignError);
+    }
+
     return NextResponse.json({
       patient,
       userCreated: !!createdUserId,
       userEmail: finalUserEmail || null,
       password: generatedPassword || null,
+      assignedRequirements,
     }, { status: 201 });
   } catch (error) {
     console.error("Patient create error:", error);

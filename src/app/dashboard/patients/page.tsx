@@ -129,6 +129,9 @@ export default function PatientsPage() {
           msg += ` + Login für ${data.userEmail}`;
           setGeneratedPassword(data.password);
         }
+        if (data.assignedRequirements > 0) {
+          msg += ` + ${data.assignedRequirements} Untersuchungen zugewiesen`;
+        }
         setMessage({ type: "success", text: msg });
         closeModal();
         loadPatients();
