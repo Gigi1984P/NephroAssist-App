@@ -19,7 +19,7 @@
   - Status-Badges mit Farben (OPEN=rot, IN_PROGRESS=gelb, RESOLVED=grün)
   - Mapping `HelpType` → deutsche Labels
   - Leer-Zustand mit LifeBuoy-Icon
-  - Nur für Klinik-Rollen gedacht (Patienten haben eigene Ansicht, aber die Seite ist über Sidebar erreichbar)
+  - Für alle Rollen sichtbar (Klinik sieht alle offenen, Patienten eigene)
 - **Design**: Nutzt bestehende CSS-Klassen (`dashboard-card`, `table-custom`, `search-bar`, `empty-state`)
 - **Icons**: `lucide-react` (AlertCircle, Clock, CheckCircle, Search, LifeBuoy, User)
 
@@ -37,21 +37,21 @@
   ```
 - **Hilfe-Button**: Im Header-Bereich rechts neben dem Titel (btn-outline-danger, HelpCircle-Icon)
 - **submitHelpRequest()**: POST an `/api/help-requests` mit `{type, description, requirementId: id}`. Nach Erfolg 2s Timeout, dann Modal schließen.
-- **Hinweis**: Das Modal-JSX für den Hilfe-Button wurde noch NICHT hinzugefügt. Das ist ein offener Punkt.
+- **Hilfeanfrage-Modal**: Vollständiges Modal mit Typ-Dropdown (alle 8 HelpTypes), Beschreibung-Textarea, Erfolgs-/Fehlermeldungen, Loading-State.
 
-### 4. Sidebar-Menüpunkt (OFFEN)
-- **Datei**: `src/components/sidebar.tsx` (BESTEHEND)
-- **Noch nicht gemacht**: Eintrag in `sidebarItems` für Help Requests hinzufügen
-- **Geplante Rollen**: `["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"]`
-- **Geplanter Icon**: `LifeBuoy` aus `lucide-react`
-- **Geplanter Titel**: `"Hilfeanfragen"`
-- **Geplanter href**: `/dashboard/help-requests`
+### 4. Sidebar-Menüpunkt
+- **Datei**: `src/components/sidebar.tsx` (BESTEHEND, modifiziert)
+- **Eintrag**: Einzelner Eintrag `"Hilfeanfragen"` mit Icon `LifeBuoy`
+- **Rollen**: `["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"]`
+- **href**: `/dashboard/help-requests`
+- **Hinweis**: Ursprünglich doppelt eingefügt → korrigiert auf einen Eintrag.
 
-## Offene Punkte
-1. **Modal-JSX für Hilfeanfrage** in `tasks/[id]/page.tsx` hinzufügen
-2. **Sidebar-Menüpunkt** in `sidebar.tsx` hinzufügen
-3. **Build ausführen** und Fehler fixen
-4. **Commit + Push**
+## Build-Status
+✅ **Build erfolgreich** (Next.js 16.3.2, Turbopack) — keine Fehler, keine Warnungen.
+
+## Commit-History
+- `1d6b304` feat: TemplateSet-Versionierung (vorheriger Commit, enthielt bereits alle Help-Requests-UI Änderungen)
+- `5a27fba` fix: sidebar duplicate Hilfeanfragen entry + add DIALYSIS_STAFF
 
 ## Prisma-Schema (Referenz)
 ```prisma

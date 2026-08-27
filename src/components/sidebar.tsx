@@ -35,10 +35,9 @@ const sidebarItems: SidebarItem[] = [
   { title: "Termine", href: "/dashboard/appointments", icon: Calendar, roles: ["PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
   { title: "Meine Untersuchungen", href: "/dashboard/tasks", icon: CheckSquare, roles: ["PATIENT", "CAREGIVER"] },
   { title: "Dokumente", href: "/dashboard/documents", icon: FileText, roles: ["PATIENT", "CAREGIVER", "ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
-  { title: "Hilfeanfragen", href: "/dashboard/help-requests", icon: LifeBuoy, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { title: "Auswertungen", href: "/dashboard/reports", icon: BarChart3, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { title: "Anforderungen", href: "/dashboard/requirements", icon: ClipboardList, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
-  { title: "Hilfeanfragen", href: "/dashboard/help-requests", icon: LifeBuoy, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER"] },
+  { title: "Hilfeanfragen", href: "/dashboard/help-requests", icon: LifeBuoy, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
   { title: "Audit Log", href: "/dashboard/admin/audit", icon: ClipboardList, roles: ["ADMIN"] },
   { title: "Admin", href: "/dashboard/admin", icon: ShieldCheck, roles: ["ADMIN"] },
 ];
