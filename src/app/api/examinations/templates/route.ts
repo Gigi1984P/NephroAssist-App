@@ -100,6 +100,7 @@ export async function POST(request: Request) {
         reviewRequired: true,
         validityDuration: data.validityDuration || null,
         renewalLeadTime: data.renewalLeadTime || null,
+        status: "PUBLISHED",
       },
     });
 
