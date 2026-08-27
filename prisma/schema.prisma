@@ -139,6 +139,7 @@ model Patient {
   caregiverAccess CaregiverAccess[]
   messages        Message[]
   helpRequests    HelpRequest[]
+  medications     Medication[]
   user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   Organization    Organization?     @relation(fields: [organizationId], references: [id])
   organizationId  String?
@@ -147,6 +148,28 @@ model Patient {
   @@index([consentStatus])
   @@index([userId])
   @@map("patients")
+}
+
+model Medication {
+  id          String   @id @default(uuid())
+  patientId   String   @map("patient_id")
+  name        String   // Medikamentenname (z.B. "Tacrolimus Sandoz")
+  substance   String   // Wirkstoff (z.B. "Tacrolimus")
+  dose        String   // Dosierung (z.B. "2mg", "500mg")
+  morning     Boolean  @default(false)
+  noon        Boolean  @default(false)
+  evening     Boolean  @default(false)
+  night       Boolean  @default(false)
+  notes       String?
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String?  @map("created_by")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("medications")
 }
 
 model PatientCase {

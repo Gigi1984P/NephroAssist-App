@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import MedicationPlan from "@/components/medication-plan";
 import {
   ArrowLeft, Calendar, User, Stethoscope, Building2, ClipboardList, Clock, Phone, Mail,
   AlertTriangle, CheckCircle, XCircle, AlertCircle, FileText, Bell, MessageCircle,
@@ -108,7 +109,7 @@ export default async function PatientClinicDetailPage({
   /* ---------------------------------------------------------------- */
   /*  ZUSATZDATEN                                                     */
   /* ---------------------------------------------------------------- */
-  const [documents, appointments, blockers, timelineEvents, requirements, helpRequests, tasks] = await Promise.all([
+  const [documents, appointments, blockers, timelineEvents, requirements, helpRequests, tasks, medications] = await Promise.all([
     prisma.document.findMany({
       where: { patientId: id },
       orderBy: { createdAt: "desc" },
@@ -150,6 +151,10 @@ export default async function PatientClinicDetailPage({
       orderBy: { dueDate: "asc" },
       take: 10,
       select: { id: true, title: true, status: true, dueDate: true, description: true },
+    }).catch(() => []),
+    prisma.medication.findMany({
+      where: { patientId: id },
+      orderBy: [{ substance: "asc" }, { name: "asc" }],
     }).catch(() => []),
   ]);
 
@@ -305,6 +310,9 @@ export default async function PatientClinicDetailPage({
           </div>
         </div>
       </div>
+
+      {/* MEDIKAMENTENPLAN */}
+      <MedicationPlan patientId={id} initialMedications={medications} />
 
       {/* OFFENE UNTERSUCHUNGEN */}
       <div className="card mb-4 shadow-sm">
