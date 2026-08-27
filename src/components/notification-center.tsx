@@ -112,6 +112,8 @@ export function NotificationCenter() {
         return "/dashboard/documents";
       case "TASK":
         return `/dashboard/tasks/${n.entityId}`;
+      case "PATIENT_REQUIREMENT":
+        return `/dashboard/tasks/${n.entityId}`;
       default:
         return null;
     }
