@@ -140,6 +140,7 @@ model Patient {
   messages        Message[]
   helpRequests    HelpRequest[]
   medications     Medication[]
+  dialysisRegimes DialysisRegime[]
   user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   Organization    Organization?     @relation(fields: [organizationId], references: [id])
   organizationId  String?
@@ -170,6 +171,62 @@ model Medication {
 
   @@index([patientId])
   @@map("medications")
+}
+
+model DialysisRegime {
+  id                    String   @id @default(uuid())
+  patientId             String   @map("patient_id")
+
+  // Dialyseverfahren
+  procedure             String   // Hämodialyse, Hämodiafiltration, Peritonealdialyse
+  frequency             String   // z.B. "3-mal pro Woche", "täglich", "2-mal pro Woche"
+  duration              String   // z.B. "4 Stunden", "5 Stunden", "8-10 Stunden (nächtlich)"
+
+  // Gefäßzugang
+  accessType            String   // AV-Fistel/Shunt, Dialysekatheter, Shaldon-Katheter, Peritonealdialyse-Katheter
+
+  // Gewicht
+  targetWeight            String?  @map("target_weight") // z.B. "72.5 kg"
+  ultrafiltrationTarget   String?  @map("ultrafiltration_target") // z.B. "2.5-3.0 L"
+
+  // Dialysegerät-Einstellungen
+  bloodFlow             String?  @map("blood_flow") // z.B. "250-300 ml/min"
+  dialysateFlow         String?  @map("dialysate_flow") // z.B. "500 ml/min"
+
+  // Dialysator
+  dialyzerType          String?  @map("dialyzer_type") // z.B. "High-Flux", "Low-Flux"
+  dialyzerSize          String?  @map("dialyzer_size") // z.B. "1.8 m²", "2.1 m²"
+
+  // Dialysatzusammensetzung
+  potassium             String?  // z.B. "2.0 mmol/L", "3.0 mmol/L", "4.0 mmol/L"
+  calcium               String?  // z.B. "1.25 mmol/L", "1.50 mmol/L", "1.75 mmol/L"
+  sodium                String?  // z.B. "138 mmol/L", "140 mmol/L"
+  bicarbonate           String?  // z.B. "32 mmol/L", "35 mmol/L"
+
+  // Antikoagulation
+  anticoagulation       String?  // z.B. "Heparin", "Citrat", "Keine", "Nadroparin"
+  anticoagulationDose   String?  @map("anticoagulation_dose") // z.B. "5000 IE Bolus, 1000 IE/h"
+
+  // Medikamente während Dialyse
+  medicationsDuring     String?  @map("medications_during") // z.B. "Erythropoetin 4000 IE", "Eisensaccharat 200 mg"
+
+  // Kontrollen
+  monitoring            String?  // z.B. "Blutdruck alle 30 min", "Gewicht vor/nach", "Kt/V monatlich"
+
+  // Labor-Kontrollen
+  labControls           String?  @map("lab_controls") // z.B. "Phosphat, PTH, Hb, Ferritin monatlich"
+
+  // Notizen
+  notes                 String?
+
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  createdBy             String?  @map("created_by")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("dialysis_regimes")
 }
 
 model PatientCase {
