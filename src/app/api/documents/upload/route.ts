@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { createHash } from "crypto";
-import { sendDocumentUploadedNotification } from "@/lib/email";
+import { sendEmail, getUploadNotificationEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +74,14 @@ export async function POST(request: Request) {
     });
 
     // E-Mail-Benachrichtigung senden
-    await sendDocumentUploadedNotification(document.id);
+    const patient = await prisma.patient.findUnique({
+      where: { id: document.patientId },
+      select: { firstName: true, lastName: true, email: true },
+    });
+    if (patient?.email) {
+      const emailData = getUploadNotificationEmail(`${patient.firstName} ${patient.lastName}`, document.filename);
+      await sendEmail({ to: patient.email, ...emailData });
+    }
 
     return NextResponse.json({
       message: "Dokument erfolgreich hochgeladen",
