@@ -39,13 +39,6 @@ function fmtDate(d: string | null): string {
   return new Date(d).toLocaleDateString("de-DE");
 }
 
-function daysUntil(dateStr: string | null): number | null {
-  if (!dateStr) return null;
-  const target = new Date(dateStr);
-  const today = new Date();
-  return Math.floor((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
-
 const STATUS_META: Record<
   string,
   { label: string; color: string; bg: string; icon: React.ReactNode }
@@ -178,7 +171,6 @@ export default function TasksPage() {
               ) : (
                 pageItems.map((req) => {
                   const meta = STATUS_META[req.status] || STATUS_META.NOT_STARTED;
-                  const expiryDays = req.expiresAt ? daysUntil(req.expiresAt) : null;
                   const displayName = req.template?.patientFriendlyDescription || req.template?.name || req.title || "—";
 
                   return (
@@ -195,29 +187,9 @@ export default function TasksPage() {
                           </div>
                           <div className="d-flex flex-wrap gap-2 mt-1" style={{ fontSize: "0.8rem" }}>
                             <span className="text-muted">{req.category || req.template?.category || ""}</span>
-                            {req.required && <span className="text-muted">· Pflicht</span>}
-                            {expiryDays !== null && (
-                              <span className={expiryDays < 0 ? "text-danger fw-medium" : expiryDays <= 30 ? "text-warning fw-medium" : "text-muted"}>
-                                · {expiryDays < 0 ? `Abgelaufen seit ${Math.abs(expiryDays)} Tagen` : `Gültig bis ${fmtDate(req.expiresAt)}`}
-                              </span>
-                            )}
                             {req.tasks.length > 0 && (
                               <span className="text-muted">· {req.tasks.length} Task{req.tasks.length !== 1 ? "s" : ""}</span>
                             )}
-                            {/* Ampel-Badges für Tasks */}
-                            {req.tasks.map((t) => {
-                              const taskDays = t.dueDate ? daysUntil(t.dueDate) : null;
-                              if (taskDays === null) return null;
-                              return (
-                                <span
-                                  key={t.id}
-                                  className={`badge rounded-pill ${taskDays < 0 ? "bg-danger" : taskDays <= 7 ? "bg-warning text-dark" : "bg-info text-dark"}`}
-                                  style={{ fontSize: "0.65rem" }}
-                                >
-                                  {taskDays < 0 ? "🔴 Überfällig" : taskDays <= 7 ? `🟡 ${taskDays} Tage` : `🔵 ${taskDays} Tage`}
-                                </span>
-                              );
-                            })}
                           </div>
                         </div>
                       </td>
