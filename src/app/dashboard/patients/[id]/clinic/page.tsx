@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import MedicationPlan from "@/components/medication-plan";
+import InlineAssignRequirement from "@/components/inline-assign-requirement";
 import {
   ArrowLeft, Calendar, User, Stethoscope, Building2, ClipboardList, Clock, Phone, Mail,
   AlertTriangle, CheckCircle, XCircle, AlertCircle, FileText, Bell, MessageCircle,
@@ -316,10 +317,13 @@ export default async function PatientClinicDetailPage({
 
       {/* OFFENE UNTERSUCHUNGEN */}
       <div className="card mb-4 shadow-sm">
-        <div className="card-header bg-warning text-dark d-flex align-items-center gap-2">
-          <ClipboardList size={18} /> Offene Untersuchungen ({requirements.length})
+        <div className="card-header bg-warning text-dark d-flex align-items-center justify-content-between">
+          <div className="d-flex align-items-center gap-2">
+            <ClipboardList size={18} /> Offene Untersuchungen ({requirements.length})
+          </div>
         </div>
-        <div className="card-body p-0">
+        <div className="card-body p-3">
+          <InlineAssignRequirement patientId={id} />
           {requirements.length > 0 ? (
             <div className="table-responsive">
               <table className="table table-hover table-sm mb-0">
