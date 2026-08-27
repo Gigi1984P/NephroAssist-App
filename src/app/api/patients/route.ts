@@ -97,12 +97,15 @@ export async function POST(request: Request) {
           generatedPassword,
           dbUser?.name || undefined
         );
-        await sendEmail({
+        const sendResult = await sendEmail({
           to: finalUserEmail,
           subject: emailPayload.subject,
           html: emailPayload.html,
           text: emailPayload.text,
         });
+        if (!sendResult.success) {
+          console.error("Patienten-Willkommens-E-Mail fehlgeschlagen:", sendResult.error);
+        }
       }
     }
 
