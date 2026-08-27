@@ -509,7 +509,7 @@ export default function TaskDetailPage() {
                               <Calendar size={14} className="me-1" />
                               Termin eintragen
                             </button>
-                          ) : (step.stepNumber === 3 || step.stepNumber === 4) && isUploadStep(step) ? (
+                          ) : step.stepNumber === 3 ? (
                             <div className="d-flex flex-column gap-2">
                               <input
                                 ref={fileInputRef}
