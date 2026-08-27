@@ -61,6 +61,12 @@ function canEditStep(step: WorkflowStep): boolean {
   return owner === "PATIENT";
 }
 
+// Gesperrte Schritte: nur Schritte, die NICHT direkt auf den aktiven folgen
+function isNextOrActiveStep(step: WorkflowStep, index: number, activeIdx: number): boolean {
+  if (activeIdx === -1) return false; // Alle erledigt
+  return index <= activeIdx + 1; // Aktiv + nächster sind freigeschaltet
+}
+
 function isUploadStep(step: WorkflowStep): boolean {
   const name = (step.stepName || step.title || "").toLowerCase();
   return name.includes("hochladen") || name.includes("upload") || name.includes("befund");
@@ -296,7 +302,7 @@ export default function TaskDetailPage() {
               {sortedSteps.map((step, index) => {
                 const isCompleted = step.status === "COMPLETED";
                 const isActive = index === activeStepIndex;
-                const isLocked = index > activeStepIndex && activeStepIndex !== -1;
+                const isLocked = index > activeStepIndex + 1 && activeStepIndex !== -1;
                 const showActions = canEditStep(step) && !isLocked;
                 const showUpload = showActions && isUploadStep(step);
 

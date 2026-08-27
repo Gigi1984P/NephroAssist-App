@@ -71,7 +71,7 @@ export async function PATCH(
       // Bestimme actionType aus stepName
       const stepName = task.stepName || "";
       const isUploadStep = stepName.toLowerCase().includes("hochladen");
-      const isClinicReview = stepName.toLowerCase().includes("prüfung") || stepName.toLowerCase().includes("freigabe");
+      const isClinicReview = stepName.toLowerCase().includes("prüf") || stepName.toLowerCase().includes("freig") || stepName.toLowerCase().includes("review") || stepName.toLowerCase().includes("approval");
 
       if (isClinicReview) {
         // Nur Klinik oder Dialyse
