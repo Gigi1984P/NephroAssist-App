@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify, SignJWT } from "jose";
 import type { UserRole } from "@prisma/client";
+import { cookies } from "next/headers";
 
 const secret = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production"
@@ -35,7 +36,10 @@ declare module "@auth/core/adapters" {
   }
 }
 
-export const { handlers, signIn, signOut } = NextAuth({
+// ================================================================
+// NextAuth-Konfiguration
+// ================================================================
+const { handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   trustHost: true,
@@ -107,9 +111,11 @@ export const { handlers, signIn, signOut } = NextAuth({
   },
 });
 
-/* ================================================================ */
-/*  Hilfsfunktionen                                                  */
-/* ================================================================ */
+export { handlers, signIn, signOut };
+
+// ================================================================
+// Hilfsfunktionen
+// ================================================================
 
 export async function createToken(user: {
   id: string;
@@ -134,14 +140,31 @@ function parseCookies(cookieHeader: string): Record<string, string> {
   return cookies;
 }
 
-// Custom auth function — liest Session aus Request-Cookies
+// ================================================================
+// AUTH-Funktion (Kombiniert NextAuth + Custom Token)
+// ================================================================
 export async function auth(): Promise<{ user: { id: string; email: string; name?: string | null; role: string } } | null> {
   try {
-    // Versuche cookies() aus next/headers (Next.js App Router)
-    const { cookies } = await import("next/headers");
+    // 1. Versuche NextAuth's eigene Session (liest next-auth.session-token automatisch)
     const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("next-auth.session-token")?.value ||
+                          cookieStore.get("__session")?.value;
+    
+    if (sessionToken) {
+      const { payload } = await jwtVerify(sessionToken, secret, { clockTolerance: 60 });
+      if (payload.sub && payload.email) {
+        return {
+          user: {
+            id: payload.sub as string,
+            email: payload.email as string,
+            name: payload.name as string | null | undefined,
+            role: payload.role as string,
+          },
+        };
+      }
+    }
 
-    // 1. Custom nephro-token
+    // 2. Fallback: Custom nephro-token
     const token = cookieStore.get("nephro-token")?.value;
     if (token) {
       const { payload } = await jwtVerify(token, secret, { clockTolerance: 60 });
@@ -156,25 +179,8 @@ export async function auth(): Promise<{ user: { id: string; email: string; name?
         };
       }
     }
-
-    // 2. NextAuth session-token
-    const sessionToken = cookieStore.get("__session")?.value ||
-                          cookieStore.get("next-auth.session-token")?.value;
-    if (sessionToken) {
-      const { payload } = await jwtVerify(sessionToken, secret, { clockTolerance: 60 });
-      if (payload.sub && payload.email) {
-        return {
-          user: {
-            id: payload.sub as string,
-            email: payload.email as string,
-            name: payload.name as string | null | undefined,
-            role: payload.role as string,
-          },
-        };
-      }
-    }
   } catch {
-    // cookies() nicht verfügbar oder fehlgeschlagen — Fallback
+    // Cookie-Parsing fehlgeschlagen
   }
 
   return null;
@@ -186,12 +192,12 @@ export async function authFromRequest(request: Request): Promise<{ user: { id: s
     const cookieHeader = request.headers.get("cookie");
     if (!cookieHeader) return null;
 
-    const cookies = parseCookies(cookieHeader);
+    const cookieMap = parseCookies(cookieHeader);
 
-    // 1. Custom nephro-token
-    const token = cookies["nephro-token"];
-    if (token) {
-      const { payload } = await jwtVerify(token, secret, { clockTolerance: 60 });
+    // 1. NextAuth Session Token
+    const sessionToken = cookieMap["next-auth.session-token"] || cookieMap["__session"];
+    if (sessionToken) {
+      const { payload } = await jwtVerify(sessionToken, secret, { clockTolerance: 60 });
       if (payload.sub && payload.email) {
         return {
           user: {
@@ -204,10 +210,10 @@ export async function authFromRequest(request: Request): Promise<{ user: { id: s
       }
     }
 
-    // 2. NextAuth session-token
-    const sessionToken = cookies["__session"] || cookies["next-auth.session-token"];
-    if (sessionToken) {
-      const { payload } = await jwtVerify(sessionToken, secret, { clockTolerance: 60 });
+    // 2. Custom nephro-token
+    const token = cookieMap["nephro-token"];
+    if (token) {
+      const { payload } = await jwtVerify(token, secret, { clockTolerance: 60 });
       if (payload.sub && payload.email) {
         return {
           user: {

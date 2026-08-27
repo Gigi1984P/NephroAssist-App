@@ -203,6 +203,10 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
     setLoading(true);
     try {
       const res = await fetch(`/api/patients/${id}`, { credentials: "include" });
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
       if (res.ok) {
         const json = await res.json();
         setData(json);

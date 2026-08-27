@@ -23,17 +23,7 @@ export async function GET(
     }
 
     if (!session) {
-      const cookieHeader = request.headers.get("cookie") || "";
-      const cookieNames = cookieHeader.split(";").map(c => c.trim().split("=")[0]).filter(Boolean);
-      return NextResponse.json({
-        error: "Nicht autorisiert",
-        debug: {
-          authSource,
-          cookieNames,
-          hasCookies: cookieNames.length > 0,
-          cookieCount: cookieNames.length,
-        }
-      }, { status: 401 });
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
     }
 
     if (!CLINIC_ROLES.includes(session.user.role)) {
