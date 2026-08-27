@@ -204,6 +204,20 @@ export default function TasksPage() {
                             {req.tasks.length > 0 && (
                               <span className="text-muted">· {req.tasks.length} Task{req.tasks.length !== 1 ? "s" : ""}</span>
                             )}
+                            {/* Ampel-Badges für Tasks */}
+                            {req.tasks.map((t) => {
+                              const taskDays = t.dueDate ? daysUntil(t.dueDate) : null;
+                              if (taskDays === null) return null;
+                              return (
+                                <span
+                                  key={t.id}
+                                  className={`badge rounded-pill ${taskDays < 0 ? "bg-danger" : taskDays <= 7 ? "bg-warning text-dark" : "bg-info text-dark"}`}
+                                  style={{ fontSize: "0.65rem" }}
+                                >
+                                  {taskDays < 0 ? "🔴 Überfällig" : taskDays <= 7 ? `🟡 ${taskDays} Tage` : `🔵 ${taskDays} Tage`}
+                                </span>
+                              );
+                            })}
                           </div>
                         </div>
                       </td>
