@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import MedicationPlan from "@/components/medication-plan";
 import InlineAssignRequirement from "@/components/inline-assign-requirement";
+import PatientRequirementsTable from "@/components/patient-requirements-table";
 import {
   ArrowLeft, Calendar, User, Stethoscope, Building2, ClipboardList, Clock, Phone, Mail,
   AlertTriangle, CheckCircle, XCircle, AlertCircle, FileText, Bell, MessageCircle,
@@ -324,54 +325,7 @@ export default async function PatientClinicDetailPage({
         </div>
         <div className="card-body p-3">
           <InlineAssignRequirement patientId={id} />
-          {requirements.length > 0 ? (
-            <div className="table-responsive">
-              <table className="table table-hover table-sm mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Name</th>
-                    <th>Kategorie</th>
-                    <th>Status</th>
-                    <th>Fällig</th>
-                    <th>Offene Tasks</th>
-                    <th>Wichtig</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {requirements.map((req) => {
-                    const openTasks = req.tasks.filter((t) => t.status !== "COMPLETED").length;
-                    return (
-                      <tr key={req.id}>
-                        <td>
-                          <div className="fw-medium">{req.template?.name || "Untersuchung"}</div>
-                          {req.required && <span className="badge bg-danger me-1">Pflicht</span>}
-                          {req.listingBlocker && <span className="badge bg-warning text-dark">Blocking</span>}
-                        </td>
-                        <td>{req.template?.category || "—"}</td>
-                        <td>
-                          <span className="badge bg-secondary">{req.status}</span>
-                        </td>
-                        <td>{formatDate(req.dueDate)}</td>
-                        <td>
-                          {openTasks > 0 ? (
-                            <span className="badge bg-warning text-dark">{openTasks} offen</span>
-                          ) : (
-                            <span className="badge bg-success">✓ Alle erledigt</span>
-                          )}
-                        </td>
-                        <td>{req.priority > 0 ? "🔥".repeat(req.priority) : "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center text-muted py-4">
-              <CheckCircle size={32} className="mb-2 text-success" />
-              <div>Keine offenen Untersuchungen vorhanden</div>
-            </div>
-          )}
+          <PatientRequirementsTable patientId={id} requirements={requirements as any} />
         </div>
       </div>
 
