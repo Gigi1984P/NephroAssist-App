@@ -3,7 +3,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { jwtVerify } from "jose";
+import { jwtVerify, SignJWT } from "jose";
 import type { UserRole } from "@prisma/client";
 import { cookies } from "next/headers";
 
@@ -108,7 +108,23 @@ export const { handlers, signIn, signOut } = NextAuth({
   },
 });
 
-// Custom auth function that checks our nephro-token (fallback for our custom login API)
+/* ================================================================ */
+/*  Hilfsfunktionen                                                  */
+/* ================================================================ */
+
+export async function createToken(user: {
+  id: string;
+  email: string;
+  name?: string | null;
+  role: string;
+}): Promise<string> {
+  return await new SignJWT({ sub: user.id, email: user.email, name: user.name, role: user.role })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("7d")
+    .sign(secret);
+}
+
+// Custom auth function — liest beide Session-Systeme
 export async function auth(): Promise<{ user: { id: string; email: string; name?: string | null; role: string } } | null> {
   try {
     const cookieStore = await cookies();
@@ -129,11 +145,10 @@ export async function auth(): Promise<{ user: { id: string; email: string; name?
       }
     }
 
-    // 2. NextAuth Session Token
-    const sessionToken = cookieStore.get("next-auth.session-token")?.value ||
-                          cookieStore.get("__session")?.value;
-    if (sessionToken) {
-      const { payload } = await jwtVerify(sessionToken, secret, { clockTolerance: 60 });
+    // 2. NextAuth Session Cookie (V5: __session, nicht next-auth.session-token bei JWT-Strategy)
+    const sessionCookie = cookieStore.get("__session")?.value;
+    if (sessionCookie) {
+      const { payload } = await jwtVerify(sessionCookie, secret, { clockTolerance: 60 });
       if (payload.sub && payload.email) {
         return {
           user: {
@@ -143,6 +158,33 @@ export async function auth(): Promise<{ user: { id: string; email: string; name?
             role: payload.role as string,
           },
         };
+      }
+    }
+
+    // 3. Fallback: Datenbank-Lookup per User-Id aus Cookie
+    // NextAuth speichert in JWT: sub = user.id
+    const nextAuthToken = cookieStore.get("next-auth.session-token")?.value;
+    if (nextAuthToken) {
+      try {
+        const { payload } = await jwtVerify(nextAuthToken, secret, { clockTolerance: 60 });
+        if (payload.sub) {
+          const user = await prisma.user.findUnique({
+            where: { id: payload.sub as string },
+            select: { id: true, email: true, name: true, role: true },
+          });
+          if (user) {
+            return {
+              user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+              },
+            };
+          }
+        }
+      } catch (e) {
+        // Token konnte nicht verifiziert werden
       }
     }
   } catch {
