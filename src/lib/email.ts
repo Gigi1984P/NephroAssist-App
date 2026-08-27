@@ -95,3 +95,67 @@ export function getExpirationReminderEmail(patientName: string, requirementName:
     `,
   };
 }
+
+export function getPatientWelcomeEmail(
+  firstName: string,
+  email: string,
+  password: string,
+  clinicName?: string
+): { subject: string; html: string; text: string } {
+  const loginUrl = "https://nephro-assist-app-pied.vercel.app/login";
+  return {
+    subject: "🩺 Ihr Zugang zum Patienten-Portal",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #3b82f6;">Willkommen bei NephroAssist</h2>
+        <p>Hallo ${firstName},</p>
+        <p>
+          ${clinicName ? `Die Klinik <strong>${clinicName}</strong> hat` : "Wir haben"}
+          für Sie ein Patienten-Portal-Konto angelegt.
+        </p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <h3 style="color: #1e40af;">Ihre Zugangsdaten</h3>
+        <table style="background: #f8fafc; padding: 16px; border-radius: 8px; width: 100%;">
+          <tr>
+            <td style="font-weight: bold; padding: 8px 0;">E-Mail:</td>
+            <td style="padding: 8px 0;">${email}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 8px 0;">Passwort:</td>
+            <td style="padding: 8px 0; font-family: monospace; font-size: 1.1em;">${password}</td>
+          </tr>
+        </table>
+        <p style="margin-top: 20px;">
+          <a href="${loginUrl}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            Zum Patienten-Portal →
+          </a>
+        </p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p style="font-size: 0.9em; color: #64748b;">
+          <strong>Hinweis:</strong> Bitte ändern Sie Ihr Passwort nach dem ersten Login unter Einstellungen.
+        </p>
+        <p style="font-size: 0.9em; color: #64748b;">
+          Bei Fragen erreichen Sie uns unter <a href="mailto:support@nephroassist.de">support@nephroassist.de</a>.
+        </p>
+        <br>
+        <p>Mit freundlichen Grüßen,<br>Ihr NephroAssist-Team</p>
+      </div>
+    `,
+    text: `Willkommen bei NephroAssist!
+
+Hallo ${firstName},
+
+${clinicName ? `Die Klinik ${clinicName} hat` : "Wir haben"} für Sie ein Patienten-Portal-Konto angelegt.
+
+Ihre Zugangsdaten:
+E-Mail: ${email}
+Passwort: ${password}
+
+Login: ${loginUrl}
+
+Hinweis: Bitte ändern Sie Ihr Passwort nach dem ersten Login unter Einstellungen.
+
+Mit freundlichen Grüßen,
+Ihr NephroAssist-Team`,
+  };
+}

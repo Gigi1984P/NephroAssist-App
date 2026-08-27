@@ -46,7 +46,6 @@ export default function PatientsPage() {
   // User-Account Form Felder
   const [createUserAccount, setCreateUserAccount] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const [userPassword, setUserPassword] = useState("");
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [formFirstName, setFormFirstName] = useState("");
   const [formLastName, setFormLastName] = useState("");
@@ -100,19 +99,9 @@ export default function PatientsPage() {
       setMessage({ type: "error", text: "Vor- und Nachname sind Pflicht" });
       return;
     }
-    if (createUserAccount) {
-      if (!userEmail.trim()) {
-        setMessage({ type: "error", text: "E-Mail für User-Account ist Pflicht" });
-        return;
-      }
-      if (!userPassword.trim()) {
-        setMessage({ type: "error", text: "Passwort für User-Account ist Pflicht" });
-        return;
-      }
-      if (userPassword.trim().length < 6) {
-        setMessage({ type: "error", text: "Passwort muss mindestens 6 Zeichen haben" });
-        return;
-      }
+    if (createUserAccount && !userEmail.trim()) {
+      setMessage({ type: "error", text: "E-Mail für User-Account ist Pflicht" });
+      return;
     }
     setSaving(true);
     try {
@@ -131,7 +120,6 @@ export default function PatientsPage() {
           gpPhone: formGpPhone.trim() || null,
           createUserAccount,
           userEmail: userEmail.trim() || null,
-          userPassword: userPassword.trim() || null,
         }),
       });
       const data = await res.json();
@@ -139,7 +127,7 @@ export default function PatientsPage() {
         let msg = "Patient angelegt";
         if (data.userCreated) {
           msg += ` + Login für ${data.userEmail}`;
-          setGeneratedPassword(userPassword);
+          setGeneratedPassword(data.password);
         }
         setMessage({ type: "success", text: msg });
         closeModal();
@@ -330,7 +318,6 @@ export default function PatientsPage() {
     setFormGpPhone("");
     setCreateUserAccount(false);
     setUserEmail("");
-    setUserPassword("");
     setGeneratedPassword("");
   };
 
@@ -650,7 +637,7 @@ export default function PatientsPage() {
                         {createUserAccount && (
                           <div className="row g-3">
                             <div className="col-md-6">
-                              <label className="form-label fw-medium">E-Mail *</label>
+                              <label className="form-label fw-medium">E-Mail für Login *</label>
                               <input
                                 type="email"
                                 className="form-control"
@@ -658,15 +645,16 @@ export default function PatientsPage() {
                                 onChange={(e) => setUserEmail(e.target.value)}
                                 placeholder="patient@email.de"
                               />
+                              <div className="form-text small">Das System generiert automatisch ein sicheres Passwort.</div>
                             </div>
                             <div className="col-md-6">
-                              <label className="form-label fw-medium">Passwort * (min. 6 Zeichen)</label>
+                              <label className="form-label fw-medium">Passwort</label>
                               <input
                                 type="text"
                                 className="form-control"
-                                value={userPassword}
-                                onChange={(e) => setUserPassword(e.target.value)}
-                                placeholder="Erstpasswort vergeben"
+                                value={generatedPassword || "Wird automatisch generiert..."}
+                                disabled
+                                readOnly
                               />
                             </div>
                             {generatedPassword && (
@@ -675,6 +663,9 @@ export default function PatientsPage() {
                                   <div className="fw-medium">✅ User-Account erstellt!</div>
                                   <div className="small">Login: {userEmail}</div>
                                   <div className="small">Passwort: <strong>{generatedPassword}</strong></div>
+                                  <div className="small text-muted mt-1">
+                                    E-Mail mit Zugangsdaten wurde an {userEmail} gesendet.
+                                  </div>
                                 </div>
                               </div>
                             )}
