@@ -81,6 +81,7 @@ export async function GET(
         listingBlocker: false,
         expiresAt: null,
         completedAt: fallbackTask.completedAt,
+        patientId: fallbackTask.patientId || null,
         template: null,
         patientCase: {
           patient: patient || { firstName: null, lastName: null },
@@ -154,7 +155,13 @@ export async function GET(
       return NextResponse.json({ error: "Untersuchung nicht gefunden" }, { status: 404 });
     }
 
-    return NextResponse.json({ requirement });
+    // patientId aus patientCase extrahieren für Frontend-Upload
+    const enrichedRequirement = {
+      ...requirement,
+      patientId: requirement.patientCase?.patientId || null,
+    };
+
+    return NextResponse.json({ requirement: enrichedRequirement });
   } catch (error) {
     console.error("Patient requirement detail error:", error);
     return NextResponse.json({ error: "Fehler beim Laden: " + String(error) }, { status: 500 });

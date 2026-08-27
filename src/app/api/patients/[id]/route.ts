@@ -231,6 +231,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Patient nicht gefunden" }, { status: 404 });
     }
 
+    // Child-Records vorher löschen (Reihenfolge beachten wegen FK-Constraints)
+    await prisma.task.deleteMany({ where: { patientId: id } });
+    await prisma.timelineEvent.deleteMany({ where: { patientCase: { patientId: id } } });
+    await prisma.blocker.deleteMany({ where: { patientCase: { patientId: id } } });
+    await prisma.document.deleteMany({ where: { patientId: id } });
+    await prisma.patientRequirement.deleteMany({ where: { patientCase: { patientId: id } } });
+    await prisma.appointment.deleteMany({ where: { patientId: id } });
+    await prisma.helpRequest.deleteMany({ where: { patientId: id } });
+    await prisma.patientCase.deleteMany({ where: { patientId: id } });
+
     await prisma.patient.delete({ where: { id } });
 
     return NextResponse.json({ success: true, message: "Patient gelöscht" });
