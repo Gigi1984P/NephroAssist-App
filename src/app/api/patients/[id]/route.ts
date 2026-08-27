@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth, authFromRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
+    // Versuche auth() (cookie-based) dann authFromRequest (request-header-based)
+    let session = await auth();
+    if (!session) {
+      session = await authFromRequest(request);
+    }
+
     if (!session) {
       return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
     }
@@ -78,8 +83,12 @@ export async function GET(
 
     try {
       blockers = await prisma.blocker.findMany({
-        where: { patientCase: { patientId: id }, status: "ACTIVE" },
-        select: { id: true, type: true, description: true, createdAt: true, requirement: { select: { title: true } } },
+        where: { patientCase: { patientId: id } },
+        include: {
+          requirement: { select: { title: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5,
       });
     } catch (e) { console.error("blockers error:", e); }
 
@@ -87,8 +96,7 @@ export async function GET(
       timelineEvents = await prisma.timelineEvent.findMany({
         where: { patientCase: { patientId: id } },
         orderBy: { createdAt: "desc" },
-        take: 15,
-        select: { id: true, description: true, createdAt: true, eventType: true },
+        take: 8,
       });
     } catch (e) { console.error("timelineEvents error:", e); }
 
@@ -96,14 +104,10 @@ export async function GET(
       requirements = await prisma.patientRequirement.findMany({
         where: { patientCase: { patientId: id } },
         include: {
-          template: {
-            select: { name: true, category: true, required: true, listingBlocker: true, renewalLeadTime: true, validityDuration: true },
-          },
-          tasks: {
-            select: { id: true, title: true, status: true, dueDate: true },
-            orderBy: { dueDate: "asc" },
-          },
+          tasks: { select: { id: true, status: true, title: true, stepNumber: true, ownerType: true } },
+          template: { select: { name: true, category: true, patientFriendlyDescription: true } },
         },
+        orderBy: { priority: "desc" },
       });
     } catch (e) { console.error("requirements error:", e); }
 
@@ -112,7 +116,6 @@ export async function GET(
         where: { patientId: id },
         orderBy: { createdAt: "desc" },
         take: 5,
-        select: { id: true, type: true, status: true, description: true, createdAt: true },
       });
     } catch (e) { console.error("helpRequests error:", e); }
 
@@ -163,7 +166,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
+    let session = await auth();
+    if (!session) {
+      session = await authFromRequest(request);
+    }
+
     if (!session) {
       return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
     }
@@ -177,26 +184,34 @@ export async function PUT(
 
     const {
       firstName, lastName, dateOfBirth, email, phone,
-      generalPractitionerName, generalPractitionerEmail, generalPractitionerPhone, generalPractitionerCity,
+      generalPractitionerName, generalPractitionerEmail,
+      generalPractitionerPhone, generalPractitionerCity,
     } = body;
 
-    const updateData: any = {};
-    if (firstName !== undefined) updateData.firstName = firstName?.trim() || null;
-    if (lastName !== undefined) updateData.lastName = lastName?.trim() || null;
-    if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
-    if (email !== undefined) updateData.email = email?.trim() || null;
-    if (phone !== undefined) updateData.phone = phone?.trim() || null;
-    if (generalPractitionerName !== undefined) updateData.generalPractitionerName = generalPractitionerName?.trim() || null;
-    if (generalPractitionerEmail !== undefined) updateData.generalPractitionerEmail = generalPractitionerEmail?.trim() || null;
-    if (generalPractitionerPhone !== undefined) updateData.generalPractitionerPhone = generalPractitionerPhone?.trim() || null;
-    if (generalPractitionerCity !== undefined) updateData.generalPractitionerCity = generalPractitionerCity?.trim() || null;
-
-    const patient = await prisma.patient.update({
+    const existing = await prisma.patient.findUnique({
       where: { id },
-      data: updateData,
+      select: { id: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Patient nicht gefunden" }, { status: 404 });
+    }
+
+    const updated = await prisma.patient.update({
+      where: { id },
+      data: {
+        firstName: firstName?.trim() || undefined,
+        lastName: lastName?.trim() || undefined,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        email: email?.trim() || null,
+        phone: phone?.trim() || null,
+        generalPractitionerName: generalPractitionerName?.trim() || null,
+        generalPractitionerEmail: generalPractitionerEmail?.trim() || null,
+        generalPractitionerPhone: generalPractitionerPhone?.trim() || null,
+        generalPractitionerCity: generalPractitionerCity?.trim() || null,
+      },
     });
 
-    return NextResponse.json({ patient });
+    return NextResponse.json({ patient: updated });
   } catch (error) {
     console.error("Patient PUT error:", error);
     return NextResponse.json({ error: "Fehler beim Speichern" }, { status: 500 });
@@ -211,7 +226,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
+    let session = await auth();
+    if (!session) {
+      session = await authFromRequest(request);
+    }
+
     if (!session) {
       return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
     }
