@@ -16,12 +16,24 @@ export async function GET(
   try {
     // Versuche auth() (cookie-based) dann authFromRequest (request-header-based)
     let session = await auth();
+    let authSource = "auth()";
     if (!session) {
       session = await authFromRequest(request);
+      authSource = "authFromRequest()";
     }
 
     if (!session) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      const cookieHeader = request.headers.get("cookie") || "";
+      const cookieNames = cookieHeader.split(";").map(c => c.trim().split("=")[0]).filter(Boolean);
+      return NextResponse.json({
+        error: "Nicht autorisiert",
+        debug: {
+          authSource,
+          cookieNames,
+          hasCookies: cookieNames.length > 0,
+          cookieCount: cookieNames.length,
+        }
+      }, { status: 401 });
     }
 
     if (!CLINIC_ROLES.includes(session.user.role)) {
