@@ -46,12 +46,6 @@ interface RequirementDetail {
   tasks: WorkflowStep[];
 }
 
-interface SessionUser {
-  id: string;
-  role: string;
-  name?: string;
-}
-
 const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   PENDING: { label: "Ausstehend", color: "#64748b", bg: "#f1f5f9", icon: Clock },
   IN_PROGRESS: { label: "In Bearbeitung", color: "#3b82f6", bg: "#eff6ff", icon: ChevronRight },
@@ -60,13 +54,20 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; ic
   EXPIRED: { label: "Abgelaufen", color: "#ea580c", bg: "#fff7ed", icon: AlertTriangle },
 };
 
+function canEditStep(step: WorkflowStep): boolean {
+  // Nur offene Schritte, die vom Patienten erledigt werden
+  if (step.status === "COMPLETED") return false;
+  if (step.status === "CANCELLED") return false;
+  const owner = step.ownerType?.toUpperCase() || "";
+  return owner === "PATIENT" || owner === "PATIENT";
+}
+
 export default function TaskDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
 
   const [requirement, setRequirement] = useState<RequirementDetail | null>(null);
-  const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingStepId, setUpdatingStepId] = useState<string | null>(null);
@@ -74,23 +75,8 @@ export default function TaskDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetchSession();
     fetchRequirement();
   }, [id]);
-
-  async function fetchSession() {
-    try {
-      const res = await fetch("/api/auth/session", { cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user) {
-          setUser(data.user);
-        }
-      }
-    } catch {
-      // Session optional – nicht blockieren
-    }
-  }
 
   async function fetchRequirement() {
     try {
@@ -129,27 +115,12 @@ export default function TaskDetailPage() {
         setUpdateError(data.error || "Fehler beim Aktualisieren");
         return;
       }
-      // Nach Erfolg neu laden
       await fetchRequirement();
     } catch {
       setUpdateError("Netzwerkfehler beim Aktualisieren");
     } finally {
       setUpdatingStepId(null);
     }
-  }
-
-  function canPatientEditStep(step: WorkflowStep): boolean {
-    if (!user) return false;
-    const role = user.role;
-    if (role !== "PATIENT" && role !== "CAREGIVER") return false;
-    if (step.status !== "PENDING" && step.status !== "IN_PROGRESS") return false;
-
-    const stepName = (step.stepName || step.title || "").toLowerCase();
-    // Klinik-Schritte (Prüfung/Freigabe) darf Patient nicht bearbeiten
-    if (stepName.includes("prüfung") || stepName.includes("freigabe") || stepName.includes("review") || stepName.includes("approval")) {
-      return false;
-    }
-    return true;
   }
 
   if (loading) {
@@ -210,7 +181,6 @@ export default function TaskDetailPage() {
   const totalSteps = sortedSteps.length || 1;
   const progressPercent = Math.round((completedSteps / totalSteps) * 100);
 
-  // Bestimme den aktiven Schritt (erster nicht erledigter)
   const activeStepIndex = sortedSteps.findIndex((s) => s.status !== "COMPLETED");
 
   return (
@@ -273,7 +243,7 @@ export default function TaskDetailPage() {
                 const isCompleted = step.status === "COMPLETED";
                 const isActive = index === activeStepIndex;
                 const isLocked = index > activeStepIndex && activeStepIndex !== -1;
-                const patientCanEdit = canPatientEditStep(step);
+                const patientCanEdit = canEditStep(step) && !isLocked;
 
                 const meta = STATUS_META[step.status] || STATUS_META.PENDING;
                 const IconComp = meta.icon;
@@ -350,7 +320,7 @@ export default function TaskDetailPage() {
                         )}
                       </div>
 
-                      {/* Aktionen */}
+                      {/* Aktionen: Patient kann seinen Schritt erledigen */}
                       {patientCanEdit && (
                         <div className="mt-3">
                           <button
