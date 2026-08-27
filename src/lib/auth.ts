@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify, SignJWT } from "jose";
 import type { UserRole } from "@prisma/client";
+import { cookies } from "next/headers";
 
 const secret = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production"
@@ -42,7 +43,7 @@ export const {
   handlers,
   signIn,
   signOut,
-  auth: nextAuth,          // ← NextAuth's eingebaute auth()
+  auth: nextAuth,
 } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
@@ -96,11 +97,11 @@ export const {
 });
 
 // ================================================================
-// AUTH-Funktion (verwendet NextAuth's eingebaute auth())
+// AUTH-Funktion (NextAuth Session + Custom nephro-token Fallback)
 // ================================================================
 export async function auth(): Promise<{ user: { id: string; email: string; name?: string | null; role: string } } | null> {
   try {
-    // 1. Versuche NextAuth's eingebaute auth() (liest Session-Cookies korrekt)
+    // 1. Versuche NextAuth's eingebaute auth()
     const session = await nextAuth();
     if (session?.user?.id) {
       return {
@@ -116,13 +117,33 @@ export async function auth(): Promise<{ user: { id: string; email: string; name?
     // NextAuth Session nicht gefunden
   }
 
+  try {
+    // 2. Fallback: Custom nephro-token (von /api/login)
+    const cookieStore = await cookies();
+    const token = cookieStore.get("nephro-token")?.value;
+    if (token) {
+      const { payload } = await jwtVerify(token, secret, { clockTolerance: 60 });
+      if (payload.sub && payload.email) {
+        return {
+          user: {
+            id: payload.sub as string,
+            email: payload.email as string,
+            name: payload.name as string | null | undefined,
+            role: payload.role as string,
+          },
+        };
+      }
+    }
+  } catch {
+    // Token ungültig
+  }
+
   return null;
 }
 
-// Auth mit Request-Header (für Middleware / Edge Cases)
+// Auth mit Request-Header (für API Routes / Edge Cases)
 export async function authFromRequest(request: Request): Promise<{ user: { id: string; email: string; name?: string | null; role: string } } | null> {
   try {
-    // Cookie-Header parsen
     const cookieHeader = request.headers.get("cookie");
     if (!cookieHeader) return null;
 
