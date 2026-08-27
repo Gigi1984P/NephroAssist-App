@@ -189,7 +189,11 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [availableTemplates, setAvailableTemplates] = useState<Array<{ id: string; name: string; category: string }>>([]);
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<Set<string>>(new Set());
   const [assigning, setAssigning] = useState(false);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [removeReqId, setRemoveReqId] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
   const [editForm, setEditForm] = useState({
     firstName: "", lastName: "", dateOfBirth: "", email: "", phone: "",
     generalPractitionerName: "", generalPractitionerEmail: "", generalPractitionerPhone: "", generalPractitionerCity: "",
@@ -261,19 +265,31 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
       if (res.ok) {
         const data = await res.json();
         setAvailableTemplates(data.templates || []);
+        setSelectedTemplateIds(new Set());
         setShowAssignModal(true);
       }
     } catch (e) { console.error(e); }
   };
 
-  const handleAssign = async (templateId: string) => {
+  const toggleTemplate = (templateId: string) => {
+    setSelectedTemplateIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(templateId)) next.delete(templateId);
+      else next.add(templateId);
+      return next;
+    });
+  };
+
+  const handleAssign = async () => {
+    const ids = Array.from(selectedTemplateIds);
+    if (ids.length === 0) return;
     setAssigning(true);
     try {
       const res = await fetch(`/api/patients/${id}/assign-requirement`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patientId: id, templateId }),
+        body: JSON.stringify({ patientId: id, templateIds: ids }),
       });
       if (res.ok) {
         setShowAssignModal(false);
@@ -284,6 +300,30 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
       }
     } catch { alert("Netzwerkfehler"); }
     finally { setAssigning(false); }
+  };
+
+  const openRemove = (reqId: string) => {
+    setRemoveReqId(reqId);
+    setShowRemoveModal(true);
+  };
+
+  const handleRemove = async () => {
+    if (!removeReqId) return;
+    setRemoving(true);
+    try {
+      const res = await fetch(`/api/patients/${id}/assign-requirement?patientId=${id}&requirementId=${removeReqId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.ok) {
+        setShowRemoveModal(false);
+        await loadPatient();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Fehler beim Entfernen");
+      }
+    } catch { alert("Netzwerkfehler"); }
+    finally { setRemoving(false); }
   };
 
   if (loading) return <div className="p-4 text-center text-muted">Laden...</div>;
@@ -469,30 +509,81 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
                       </div>
                     </div>
                   ) : (
-                    <div className="d-flex flex-column gap-2">
-                      <div className="text-muted small mb-1">
-                        Wählen Sie eine Untersuchung aus, die Sie <strong>{patient.firstName} {patient.lastName}</strong> zuweisen möchten:
+                    <>
+                      <div className="text-muted small mb-2">
+                        Wählen Sie die Untersuchungen aus, die Sie <strong>{patient.firstName} {patient.lastName}</strong> zuweisen möchten:
                       </div>
-                      {availableTemplates.map((template) => (
-                        <button
-                          key={template.id}
-                          className="btn btn-outline-primary text-start d-flex justify-content-between align-items-center"
-                          onClick={() => handleAssign(template.id)}
-                          disabled={assigning}
-                        >
-                          <div>
-                            <div className="fw-medium">{template.name}</div>
-                            <div className="small text-muted">{template.category}</div>
+                      <div className="d-flex flex-column gap-2">
+                        {availableTemplates.map((template) => (
+                          <div
+                            key={template.id}
+                            className="form-check p-2 border rounded d-flex align-items-center gap-2"
+                            style={{
+                              background: selectedTemplateIds.has(template.id) ? "#eff6ff" : "#f8fafc",
+                              borderColor: selectedTemplateIds.has(template.id) ? "#3b82f6" : "#e2e8f0",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => toggleTemplate(template.id)}
+                          >
+                            <input
+                              type="checkbox"
+                              className="form-check-input ms-1"
+                              checked={selectedTemplateIds.has(template.id)}
+                              onChange={() => {}}
+                              style={{ cursor: "pointer" }}
+                            />
+                            <div className="flex-grow-1">
+                              <div className="fw-medium">{template.name}</div>
+                              <div className="small text-muted">{template.category}</div>
+                            </div>
                           </div>
-                          <span className="badge bg-primary">{assigning ? "Wird zugewiesen..." : "Zuweisen"}</span>
-                        </button>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                      {selectedTemplateIds.size > 0 && (
+                        <div className="alert alert-info py-2 mt-3 mb-0" style={{ fontSize: "0.85rem" }}>
+                          <strong>{selectedTemplateIds.size}</strong> Untersuchung(en) ausgewählt
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="modal-footer">
                   <button className="btn btn-secondary btn-sm" onClick={() => setShowAssignModal(false)} disabled={assigning}>
                     Abbrechen
+                  </button>
+                  {selectedTemplateIds.size > 0 && (
+                    <button className="btn btn-success btn-sm d-inline-flex align-items-center gap-1" onClick={handleAssign} disabled={assigning}>
+                      <ClipboardList size={14} />
+                      {assigning ? "Wird zugewiesen..." : `${selectedTemplateIds.size} Untersuchung(en) zuweisen`}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* === UNTERSUCHUNG ENTFERNEN MODAL === */}
+      {showRemoveModal && (
+        <>
+          <div className="modal show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header border-danger">
+                  <h5 className="modal-title fw-bold text-danger">Untersuchung entfernen</h5>
+                  <button className="btn-close" onClick={() => setShowRemoveModal(false)} />
+                </div>
+                <div className="modal-body">
+                  <p>Sind Sie sicher, dass Sie diese Untersuchung vom Patienten entfernen möchten?</p>
+                  <div className="alert alert-warning" style={{ fontSize: "0.85rem" }}>
+                    <strong>Achtung:</strong> Alle zugehörigen Workflow-Schritte und hochgeladenen Dokumente werden ebenfalls gelöscht.
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary btn-sm" onClick={() => setShowRemoveModal(false)} disabled={removing}>Abbrechen</button>
+                  <button className="btn btn-danger btn-sm d-inline-flex align-items-center gap-1" onClick={handleRemove} disabled={removing}>
+                    <Trash2 size={14} /> {removing ? "Wird entfernt..." : "Ja, entfernen"}
                   </button>
                 </div>
               </div>
@@ -775,7 +866,7 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
                 <div className="table-responsive">
                   <table className="table table-hover mb-0">
                     <thead className="table-light">
-                      <tr><th>Name</th><th>Kategorie</th><th>Status</th><th>Befund/Info</th><th>Gültigkeit</th><th>Verantwortlich</th><th>Offene Tasks</th></tr>
+                      <tr><th>Name</th><th>Kategorie</th><th>Status</th><th>Befund/Info</th><th>Gültigkeit</th><th>Verantwortlich</th><th>Offene Tasks</th><th style={{ width: "1%" }}></th></tr>
                     </thead>
                     <tbody>
                       {sortedReqs.map((req) => {
@@ -800,6 +891,16 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
                             </td>
                             <td>{req.responsibleRole || "—"}</td>
                             <td>{req.tasks.length > 0 ? <span className="badge bg-warning text-dark" style={{ fontSize: "0.7rem" }}>{req.tasks.length} Task{req.tasks.length !== 1 ? "s" : ""}</span> : <span className="text-muted small">—</span>}</td>
+                            <td className="text-end">
+                              <button
+                                className="btn btn-outline-danger btn-sm py-0 px-1"
+                                style={{ fontSize: "0.7rem" }}
+                                onClick={() => openRemove(req.id)}
+                                title="Untersuchung entfernen"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}

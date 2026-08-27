@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 /* ================================================================ */
-/*  POST: Einzelne Untersuchung einem Patienten zuweisen            */
+/*  POST: Einzelne oder mehrere Untersuchungen zuweisen              */
 /* ================================================================ */
 export async function POST(request: Request) {
   try {
@@ -21,10 +21,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { patientId, templateId } = body;
+    const { patientId, templateId, templateIds } = body;
 
-    if (!patientId || !templateId) {
-      return NextResponse.json({ error: "patientId und templateId sind Pflicht" }, { status: 400 });
+    const idsToAssign: string[] = templateIds || (templateId ? [templateId] : []);
+
+    if (!patientId || idsToAssign.length === 0) {
+      return NextResponse.json({ error: "patientId und templateId(s) sind Pflicht" }, { status: 400 });
     }
 
     // Patient + aktiver Case laden
@@ -59,89 +61,151 @@ export async function POST(request: Request) {
       });
     }
 
-    // Template laden
-    const template = await prisma.requirementTemplate.findUnique({
-      where: { id: templateId },
-    });
+    const results: string[] = [];
 
-    if (!template) {
-      return NextResponse.json({ error: "Untersuchung nicht gefunden" }, { status: 404 });
-    }
+    for (const tid of idsToAssign) {
+      const template = await prisma.requirementTemplate.findUnique({
+        where: { id: tid },
+      });
+      if (!template) continue;
 
-    // Prüfen ob bereits zugewiesen
-    const existing = await prisma.patientRequirement.findFirst({
-      where: { caseId: patientCase.id, templateId },
-    });
-    if (existing) {
-      return NextResponse.json({ error: "Untersuchung bereits zugewiesen" }, { status: 400 });
-    }
+      // Prüfen ob bereits zugewiesen
+      const existing = await prisma.patientRequirement.findFirst({
+        where: { caseId: patientCase.id, templateId: tid },
+      });
+      if (existing) continue;
 
-    // Ablaufdatum berechnen
-    let expiresAt: Date | undefined;
-    if (template.validityDuration) {
-      expiresAt = new Date();
-      expiresAt.setMonth(expiresAt.getMonth() + template.validityDuration);
-    }
+      // Ablaufdatum berechnen
+      let expiresAt: Date | undefined;
+      if (template.validityDuration) {
+        expiresAt = new Date();
+        expiresAt.setMonth(expiresAt.getMonth() + template.validityDuration);
+      }
 
-    // PatientRequirement erstellen
-    const patientReq = await prisma.patientRequirement.create({
-      data: {
-        caseId: patientCase.id,
-        templateId: template.id,
-        organizationId: patientCase.organizationId,
-        programId: patientCase.programId,
-        title: template.name,
-        category: template.category,
-        description: template.description || null,
-        required: template.required,
-        listingBlocker: template.listingBlocker,
-        responsibleRole: "PATIENT",
-        reviewRequired: true,
-        validityDuration: template.validityDuration,
-        renewalLeadTime: template.renewalLeadTime,
-        patientFriendlyDescription: template.patientFriendlyDescription || null,
-        status: "NOT_STARTED",
-        priority: template.listingBlocker ? 10 : 5,
-        ...(expiresAt ? { expiresAt } : {}),
-      },
-    });
-
-    // 5-Schritte-Workflow
-    const workflowSteps = [
-      { stepNumber: 1, title: "Überweisung einholen", desc: "Hausarzt-Überweisung anfordern", owner: "PATIENT" as const },
-      { stepNumber: 2, title: "Termin vereinbaren", desc: "Facharzt-Termin vereinbaren", owner: "PATIENT" as const },
-      { stepNumber: 3, title: "Befund/Bericht hochladen", desc: "Dokumente hochladen", owner: "PATIENT" as const },
-      { stepNumber: 4, title: "Dokument prüfen", desc: "Prüfung durch Klinik", owner: "TRANSPLANT_CENTER" as const },
-      { stepNumber: 5, title: "Freigabe durch Transplantationszentrum", desc: "Abschluss und Freigabe", owner: "TRANSPLANT_CENTER" as const },
-    ];
-
-    for (const step of workflowSteps) {
-      await prisma.task.create({
+      // PatientRequirement erstellen
+      const patientReq = await prisma.patientRequirement.create({
         data: {
-          requirementId: patientReq.id,
           caseId: patientCase.id,
-          patientId,
-          title: step.title,
-          description: step.desc,
-          ownerType: step.owner,
-          status: step.stepNumber === 1 ? "IN_PROGRESS" : "PENDING",
-          isWorkflowStep: true,
-          stepNumber: step.stepNumber,
-          stepName: step.title,
-          stepDescription: step.desc,
-          dueDate: expiresAt,
+          templateId: template.id,
+          organizationId: patientCase.organizationId,
+          programId: patientCase.programId,
+          title: template.name,
+          category: template.category,
+          description: template.description || null,
+          required: template.required,
+          listingBlocker: template.listingBlocker,
+          responsibleRole: "PATIENT",
+          reviewRequired: true,
+          validityDuration: template.validityDuration,
+          renewalLeadTime: template.renewalLeadTime,
+          patientFriendlyDescription: template.patientFriendlyDescription || null,
+          status: "NOT_STARTED",
+          priority: template.listingBlocker ? 10 : 5,
+          ...(expiresAt ? { expiresAt } : {}),
         },
       });
+
+      // 5-Schritte-Workflow
+      const workflowSteps = [
+        { stepNumber: 1, title: "Überweisung einholen", desc: "Hausarzt-Überweisung anfordern", owner: "PATIENT" as const },
+        { stepNumber: 2, title: "Termin vereinbaren", desc: "Facharzt-Termin vereinbaren", owner: "PATIENT" as const },
+        { stepNumber: 3, title: "Befund/Bericht hochladen", desc: "Dokumente hochladen", owner: "PATIENT" as const },
+        { stepNumber: 4, title: "Dokument prüfen", desc: "Prüfung durch Klinik", owner: "TRANSPLANT_CENTER" as const },
+        { stepNumber: 5, title: "Freigabe durch Transplantationszentrum", desc: "Abschluss und Freigabe", owner: "TRANSPLANT_CENTER" as const },
+      ];
+
+      for (const step of workflowSteps) {
+        await prisma.task.create({
+          data: {
+            requirementId: patientReq.id,
+            caseId: patientCase.id,
+            patientId,
+            title: step.title,
+            description: step.desc,
+            ownerType: step.owner,
+            status: step.stepNumber === 1 ? "IN_PROGRESS" : "PENDING",
+            isWorkflowStep: true,
+            stepNumber: step.stepNumber,
+            stepName: step.title,
+            stepDescription: step.desc,
+            dueDate: expiresAt,
+          },
+        });
+      }
+
+      results.push(template.name);
     }
 
     return NextResponse.json({
       success: true,
-      requirement: patientReq,
-      message: `Untersuchung "${template.name}" zugewiesen`,
+      assignedCount: results.length,
+      assignedNames: results,
+      message: `${results.length} Untersuchung(en) zugewiesen`,
     });
   } catch (error) {
     console.error("Assign requirement error:", error);
     return NextResponse.json({ error: "Fehler bei der Zuweisung" }, { status: 500 });
+  }
+}
+
+/* ================================================================ */
+/*  DELETE: Einzelne Untersuchung vom Patienten entfernen           */
+/* ================================================================ */
+export async function DELETE(request: Request) {
+  try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const user = session.user;
+    const clinicRoles = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"];
+    if (!clinicRoles.includes(user.role)) {
+      return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const patientId = searchParams.get("patientId");
+    const requirementId = searchParams.get("requirementId");
+
+    if (!patientId || !requirementId) {
+      return NextResponse.json({ error: "patientId und requirementId sind Pflicht" }, { status: 400 });
+    }
+
+    // Prüfen ob PatientRequirement existiert und zum Patienten gehört
+    const patientCase = await prisma.patientCase.findFirst({
+      where: { patientId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const patientReq = await prisma.patientRequirement.findFirst({
+      where: {
+        id: requirementId,
+        caseId: patientCase?.id,
+      },
+    });
+
+    if (!patientReq) {
+      return NextResponse.json({ error: "Untersuchung nicht gefunden" }, { status: 404 });
+    }
+
+    // Zugehörige Tasks löschen (Cascade wäre ideal, aber wir machen es explizit)
+    await prisma.task.deleteMany({
+      where: { requirementId },
+    });
+
+    // PatientRequirement löschen
+    await prisma.patientRequirement.delete({
+      where: { id: requirementId },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Untersuchung entfernt",
+    });
+  } catch (error) {
+    console.error("Remove requirement error:", error);
+    return NextResponse.json({ error: "Fehler beim Entfernen" }, { status: 500 });
   }
 }
 
