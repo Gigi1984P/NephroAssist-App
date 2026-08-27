@@ -78,8 +78,8 @@ export default function TasksPage() {
     setLoading(true);
     try {
       const [reqRes, profileRes] = await Promise.all([
-        fetch("/api/patient-requirements"),
-        fetch("/api/user/profile"),
+        fetch("/api/patient-requirements", { credentials: "include" }),
+        fetch("/api/user/profile", { credentials: "include" }),
       ]);
 
       if (reqRes.ok) {

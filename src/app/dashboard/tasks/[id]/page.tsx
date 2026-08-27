@@ -172,6 +172,7 @@ export default function TaskDetailPage() {
 
       const res = await fetch("/api/documents/upload", {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
       const data = await res.json();
@@ -206,7 +207,7 @@ export default function TaskDetailPage() {
 
       const startTime = new Date(`${appointmentDate}T${appointmentTime}`);
 
-      const res = await fetch("/api/appointments", {
+      const res = await fetch("/api/appointments", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -247,6 +248,7 @@ export default function TaskDetailPage() {
       setHelpSuccess("");
       const res = await fetch("/api/help-requests", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: helpType,

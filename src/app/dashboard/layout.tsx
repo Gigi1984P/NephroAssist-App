@@ -36,7 +36,7 @@ export default function DashboardLayout({
 
   /* Load user from session */
   useEffect(() => {
-    fetch("/api/user/profile")
+    fetch("/api/user/profile", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setUser(d.user))
       .catch(() => {

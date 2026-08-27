@@ -33,7 +33,7 @@ export default function CalendarPage() {
 
   const loadAppointments = async () => {
     try {
-      const res = await fetch("/api/appointments");
+      const res = await fetch("/api/appointments", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setAppointments(data.appointments || []);

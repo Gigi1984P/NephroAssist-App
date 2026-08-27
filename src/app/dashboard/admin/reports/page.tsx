@@ -18,7 +18,7 @@ export default function ReportsPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/admin/reports");
+      const res = await fetch("/api/admin/reports", { credentials: "include" });
       if (res.ok) {
         const d = await res.json();
         setData(d);
