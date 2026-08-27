@@ -68,7 +68,8 @@ function isUploadStep(step: WorkflowStep): boolean {
 
 function isAppointmentStep(step: WorkflowStep): boolean {
   const name = (step.stepName || step.title || "").toLowerCase();
-  return name.includes("termin") || name.includes("vereinbaren") || name.includes("appointment");
+  const stepNum = step.stepNumber ?? 0;
+  return stepNum === 2 || name.includes("termin") || name.includes("vereinbaren") || name.includes("appointment");
 }
 
 export default function TaskDetailPage() {
@@ -418,8 +419,6 @@ export default function TaskDetailPage() {
                 const isActive = index === activeStepIndex;
                 const isLocked = index > activeStepIndex + 1 && activeStepIndex !== -1;
                 const showActions = canEditStep(step) && !isLocked;
-                const showUpload = showActions && isUploadStep(step);
-                const showAppointment = showActions && isAppointmentStep(step);
 
                 const meta = STATUS_META[step.status] || STATUS_META.PENDING;
                 const IconComp = meta.icon;
@@ -499,7 +498,18 @@ export default function TaskDetailPage() {
                       {/* Aktionen */}
                       {showActions && (
                         <div className="mt-3">
-                          {showUpload ? (
+                          {step.stepNumber === 2 ? (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => {
+                                setAppointmentStepId(step.id);
+                                setShowAppointmentModal(true);
+                              }}
+                            >
+                              <Calendar size={14} className="me-1" />
+                              Termin eintragen
+                            </button>
+                          ) : (step.stepNumber === 3 || step.stepNumber === 4) && isUploadStep(step) ? (
                             <div className="d-flex flex-column gap-2">
                               <input
                                 ref={fileInputRef}
@@ -530,17 +540,6 @@ export default function TaskDetailPage() {
                               </button>
                               <small className="text-muted">Erlaubt: PDF, JPG, PNG (max. 10 MB)</small>
                             </div>
-                          ) : showAppointment ? (
-                            <button
-                              className="btn btn-primary btn-sm"
-                              onClick={() => {
-                                setAppointmentStepId(step.id);
-                                setShowAppointmentModal(true);
-                              }}
-                            >
-                              <Calendar size={14} className="me-1" />
-                              Termin eintragen
-                            </button>
                           ) : (
                             <button
                               className="btn btn-success btn-sm"
