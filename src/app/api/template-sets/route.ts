@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const CLINIC_ROLES = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"];
 
 /* ================================================================ */
-/*  GET: Alle TemplateSets (mit items als JSON)                      */
+/*  GET: Alle aktuellen TemplateSets (isLatest=true) + Versionen   */
 /* ================================================================ */
 export async function GET() {
   try {
@@ -16,15 +16,47 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
     if (!CLINIC_ROLES.includes(session.user.role)) return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
 
+    // Nur aktuelle Versionen laden
     const templateSets = await prisma.templateSet.findMany({
+      where: { isLatest: true },
       orderBy: { updatedAt: "desc" },
+      include: {
+        parent: {
+          select: { id: true, version: true, updatedAt: true },
+        },
+      },
     });
 
-    // items JSON parsen
-    const parsed = templateSets.map((set: any) => ({
-      ...set,
-      items: (set.items as any[]) || [],
-    }));
+    // Für jedes Set: alle Versionen laden
+    const parsed = await Promise.all(
+      templateSets.map(async (set: any) => {
+        const allVersions = await prisma.templateSet.findMany({
+          where: {
+            OR: [
+              { id: set.id },
+              { parentId: set.id },
+              ...(set.parentId ? [{ parentId: set.parentId }, { id: set.parentId }] : []),
+            ],
+          },
+          orderBy: { version: "asc" },
+          select: { id: true, version: true, createdAt: true, updatedAt: true, items: true },
+        });
+
+        // items JSON parsen
+        const versions = allVersions.map((v: any) => ({
+          ...v,
+          items: (v.items as any[]) || [],
+          itemCount: ((v.items as any[]) || []).length,
+        }));
+
+        return {
+          ...set,
+          items: (set.items as any[]) || [],
+          versions,
+          versionCount: versions.length,
+        };
+      })
+    );
 
     return NextResponse.json({ templateSets: parsed });
   } catch (error) {
@@ -34,7 +66,7 @@ export async function GET() {
 }
 
 /* ================================================================ */
-/*  POST: Neues TemplateSet erstellen (mit items als Textfelder)     */
+/*  POST: Neues TemplateSet erstellen (Version 1)                    */
 /* ================================================================ */
 export async function POST(request: Request) {
   try {
@@ -61,6 +93,8 @@ export async function POST(request: Request) {
         name: data.name,
         description: data.description || null,
         items: data.items as any,
+        version: 1,
+        isLatest: true,
         createdBy: session.user.id,
       },
     });

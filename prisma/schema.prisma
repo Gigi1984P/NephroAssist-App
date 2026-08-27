@@ -300,12 +300,21 @@ model TemplateSet {
   description String?
   items       Json?     // [{ name, category, required, description }]
   version     Int       @default(1)
+  isLatest    Boolean   @default(true) @map("is_latest")
+  parentId    String?   @map("parent_id")  // Verweis auf vorherige Version
   status      TemplateStatus @default(PUBLISHED)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
 
+  // Relation zu vorheriger Version
+  parent TemplateSet? @relation("TemplateSetVersions", fields: [parentId], references: [id])
+  versions TemplateSet[] @relation("TemplateSetVersions")
+
+  @@index([name])
+  @@index([isLatest])
+  @@index([parentId])
   @@map("template_sets")
 }
 

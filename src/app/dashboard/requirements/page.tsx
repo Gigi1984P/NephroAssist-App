@@ -32,6 +32,10 @@ interface TemplateSet {
   description: string | null;
   items: SetItem[];
   version: number;
+  versionCount?: number;
+  versions?: { id: string; version: number; createdAt: string; updatedAt: string; itemCount: number; isLatest: boolean }[];
+  isLatest: boolean;
+  parentId: string | null;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -267,6 +271,12 @@ export default function RequirementsPage() {
   };
 
   const openDelS = (set: TemplateSet) => { setSelSet(set); setActiveModal("delS"); };
+
+  // ===================== VERSION HISTORY =====================
+  const openVersionHistory = (set: TemplateSet) => {
+    setSelSet(set);
+    setActiveModal("versions");
+  };
   const handleDelS = async () => {
     if (!selSet) return;
     try {
@@ -341,7 +351,21 @@ export default function RequirementsPage() {
                           </div>
                         ) : "—"}
                       </td>
-                      <td><span className="badge bg-primary">v{set.version}</span></td>
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <span className="badge bg-primary">v{set.version}</span>
+                          {(set.versionCount || set.versions?.length || 0) > 1 && (
+                            <span className="badge bg-secondary">{set.versionCount || set.versions?.length} Ver.</span>
+                          )}
+                          <button
+                            className="btn btn-sm btn-outline-info px-1 py-0"
+                            style={{ fontSize: "0.7rem" }}
+                            onClick={() => openVersionHistory(set)}
+                          >
+                            Verlauf
+                          </button>
+                        </div>
+                      </td>
                       <td><span className="text-muted small">{fmtDate(set.createdAt)}</span></td>
                       <td><span className="text-muted small">{fmtDateTime(set.updatedAt)}</span></td>
                       <td className="text-end">
@@ -596,6 +620,54 @@ export default function RequirementsPage() {
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={closeAll}>Abbrechen</button>
                 <button className="btn btn-danger" onClick={handleDelS}><Trash2 size={14} className="me-1" /> Löschen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VERSION HISTORY MODAL */}
+      {activeModal === "versions" && selSet && (
+        <div className="modal show d-block" tabIndex={-1} style={{ zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Versionsverlauf: {selSet.name}</h5>
+                <button className="btn-close" onClick={closeAll} />
+              </div>
+              <div className="modal-body">
+                {selSet.versions && selSet.versions.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="table table-sm">
+                      <thead>
+                        <tr>
+                          <th>Version</th>
+                          <th>Untersuchungen</th>
+                          <th>Erstellt</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selSet.versions.map((v: any) => (
+                          <tr key={v.id} className={v.isLatest ? "table-success" : ""}>
+                            <td>
+                              <span className="badge bg-primary">v{v.version}</span>
+                              {v.isLatest && <span className="badge bg-success ms-1">Aktuell</span>}
+                            </td>
+                            <td>{v.itemCount} Untersuchungen</td>
+                            <td>{fmtDateTime(v.createdAt)}</td>
+                            <td>{v.isLatest ? "✅ Aktiv" : "🗄️ Archiv"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-muted">Keine Versionshistorie verfügbar.</p>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeAll}>Schließen</button>
               </div>
             </div>
           </div>

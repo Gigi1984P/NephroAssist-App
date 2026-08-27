@@ -686,6 +686,75 @@ export default function TaskDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Hilfeanfrage-Modal */}
+      {showHelpModal && (
+        <div className="modal show" style={{ display: "block", background: "rgba(0,0,0,0.5)" }} tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Hilfe anfordern</h5>
+                <button type="button" className="btn-close" onClick={() => setShowHelpModal(false)} />
+              </div>
+              <div className="modal-body">
+                {helpSuccess && (
+                  <div className="alert alert-success" role="alert">{helpSuccess}</div>
+                )}
+                {helpError && (
+                  <div className="alert alert-danger" role="alert">{helpError}</div>
+                )}
+                <div className="mb-3">
+                  <label className="form-label fw-medium">Typ *</label>
+                  <select
+                    className="form-select"
+                    value={helpType}
+                    onChange={(e) => setHelpType(e.target.value)}
+                  >
+                    <option value="I_DONT_UNDERSTAND">Verstehe nicht</option>
+                    <option value="NO_APPOINTMENT">Kein Termin</option>
+                    <option value="MISSING_PRESCRIPTION">Fehlende Überweisung</option>
+                    <option value="DOCTOR_WONT_ISSUE">Arzt stellt nicht aus</option>
+                    <option value="TRANSPORT">Transport</option>
+                    <option value="LANGUAGE">Sprache</option>
+                    <option value="ORGANIZATIONAL">Organisatorisch</option>
+                    <option value="OTHER">Sonstiges</option>
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-medium">Beschreibung *</label>
+                  <textarea
+                    className="form-control"
+                    rows={3}
+                    value={helpDescription}
+                    onChange={(e) => setHelpDescription(e.target.value)}
+                    placeholder="Beschreiben Sie Ihr Problem..."
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setShowHelpModal(false)}>Abbrechen</button>
+                <button
+                  className="btn btn-danger"
+                  onClick={submitHelpRequest}
+                  disabled={helpSubmitting || !helpDescription.trim()}
+                >
+                  {helpSubmitting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-1" role="status" />
+                      Wird gesendet...
+                    </>
+                  ) : (
+                    <>
+                      <HelpCircle size={14} className="me-1" />
+                      Hilfe anfordern
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
