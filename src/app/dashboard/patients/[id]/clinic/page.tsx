@@ -195,7 +195,7 @@ export default function ClinicPatientPage({ params }: ClinicPatientPageProps) {
   const loadPatient = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/patients/${id}`);
+      const res = await fetch(`/api/patients/${id}`, { credentials: "include" });
       if (res.ok) {
         const json = await res.json();
         setData(json);
