@@ -135,6 +135,24 @@ export async function PATCH(
       data: updateData,
     });
 
+    // Audit Log schreiben
+    try {
+      const { logAuditEvent } = await import("@/lib/audit");
+      await logAuditEvent({
+        actorId: user.id,
+        action: newStatus === "COMPLETED" ? "TASK_COMPLETED" : "STATUS_CHANGE",
+        entityType: "TASK",
+        entityId: id,
+        organizationId: task.requirementId || "system",
+        metadata: {
+          fromStatus: task.status,
+          toStatus: newStatus,
+          stepName: task.stepName,
+          stepNumber: task.stepNumber,
+        },
+      });
+    } catch { /* ignore */ }
+
     // 5. Wenn COMPLETED und Workflow-Schritt: Nächsten aktivieren + Timeline
     if (newStatus === "COMPLETED" && task.isWorkflowStep) {
       const nextStep = await prisma.task.findFirst({
