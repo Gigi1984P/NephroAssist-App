@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { ArrowLeft, Clock, CheckCircle, AlertTriangle, Calendar, XCircle, ChevronRight, Lock, Upload } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle, AlertTriangle, Calendar, XCircle, ChevronRight, Lock, Upload, HelpCircle, X } from "lucide-react";
 
 interface WorkflowStep {
   id: string;
@@ -80,6 +80,14 @@ export default function TaskDetailPage() {
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Hilfeanfrage Modal
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [helpType, setHelpType] = useState("OTHER");
+  const [helpDescription, setHelpDescription] = useState("");
+  const [helpSubmitting, setHelpSubmitting] = useState(false);
+  const [helpSuccess, setHelpSuccess] = useState("");
+  const [helpError, setHelpError] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -167,6 +175,39 @@ export default function TaskDetailPage() {
     }
   }
 
+  async function submitHelpRequest() {
+    try {
+      setHelpSubmitting(true);
+      setHelpError("");
+      setHelpSuccess("");
+      const res = await fetch("/api/help-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: helpType,
+          description: helpDescription.trim(),
+          requirementId: id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setHelpError(data.error || "Fehler beim Erstellen");
+        return;
+      }
+      setHelpSuccess("Hilfeanfrage erfolgreich gesendet!");
+      setTimeout(() => {
+        setShowHelpModal(false);
+        setHelpSuccess("");
+        setHelpDescription("");
+        setHelpType("OTHER");
+      }, 2000);
+    } catch {
+      setHelpError("Netzwerkfehler");
+    } finally {
+      setHelpSubmitting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="container py-4">
@@ -243,6 +284,19 @@ export default function TaskDetailPage() {
             {requirement.listingBlocker && <span className="badge bg-warning text-dark ms-2">Listing-Blocker</span>}
           </p>
         </div>
+        <button
+          className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
+          onClick={() => {
+            setShowHelpModal(true);
+            setHelpError("");
+            setHelpSuccess("");
+            setHelpDescription("");
+            setHelpType("OTHER");
+          }}
+        >
+          <HelpCircle size={16} />
+          Hilfe anfordern
+        </button>
       </div>
 
       {/* Patient-Info */}

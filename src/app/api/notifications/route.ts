@@ -14,15 +14,25 @@ export async function GET() {
     const notifications = await prisma.notification.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: 20,
+      select: {
+        id: true,
+        title: true,
+        message: true,
+        read: true,
+        readAt: true,
+        createdAt: true,
+        type: true,
+        entityType: true,
+        entityId: true,
+      },
     });
 
-    return NextResponse.json({ notifications });
+    const unreadCount = notifications.filter((n) => !n.read).length;
+
+    return NextResponse.json({ notifications, unreadCount });
   } catch (error) {
-    console.error("Fetch notifications error:", error);
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Benachrichtigungen" },
-      { status: 500 }
-    );
+    console.error("Notifications fetch error:", error);
+    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
   }
 }
