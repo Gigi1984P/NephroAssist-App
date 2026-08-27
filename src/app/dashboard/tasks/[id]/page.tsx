@@ -46,6 +46,12 @@ interface RequirementDetail {
   tasks: WorkflowStep[];
 }
 
+interface SessionUser {
+  id: string;
+  role: string;
+  name?: string;
+}
+
 const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   PENDING: { label: "Ausstehend", color: "#64748b", bg: "#f1f5f9", icon: Clock },
   IN_PROGRESS: { label: "In Bearbeitung", color: "#3b82f6", bg: "#eff6ff", icon: ChevronRight },
@@ -60,18 +66,37 @@ export default function TaskDetailPage() {
   const id = params?.id as string;
 
   const [requirement, setRequirement] = useState<RequirementDetail | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingStepId, setUpdatingStepId] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState("");
 
   useEffect(() => {
     if (!id) return;
+    fetchSession();
     fetchRequirement();
   }, [id]);
+
+  async function fetchSession() {
+    try {
+      const res = await fetch("/api/auth/session", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+        }
+      }
+    } catch {
+      // Session optional – nicht blockieren
+    }
+  }
 
   async function fetchRequirement() {
     try {
       setLoading(true);
       setError("");
+      setUpdateError("");
       const res = await fetch(`/api/patient-requirements/${id}`, { cache: "no-store" });
       const data = await res.json();
 
@@ -88,6 +113,43 @@ export default function TaskDetailPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function markStepComplete(stepId: string) {
+    try {
+      setUpdatingStepId(stepId);
+      setUpdateError("");
+      const res = await fetch(`/api/tasks/${stepId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "COMPLETED" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUpdateError(data.error || "Fehler beim Aktualisieren");
+        return;
+      }
+      // Nach Erfolg neu laden
+      await fetchRequirement();
+    } catch {
+      setUpdateError("Netzwerkfehler beim Aktualisieren");
+    } finally {
+      setUpdatingStepId(null);
+    }
+  }
+
+  function canPatientEditStep(step: WorkflowStep): boolean {
+    if (!user) return false;
+    const role = user.role;
+    if (role !== "PATIENT" && role !== "CAREGIVER") return false;
+    if (step.status !== "PENDING" && step.status !== "IN_PROGRESS") return false;
+
+    const stepName = (step.stepName || step.title || "").toLowerCase();
+    // Klinik-Schritte (Prüfung/Freigabe) darf Patient nicht bearbeiten
+    if (stepName.includes("prüfung") || stepName.includes("freigabe") || stepName.includes("review") || stepName.includes("approval")) {
+      return false;
+    }
+    return true;
   }
 
   if (loading) {
@@ -177,6 +239,14 @@ export default function TaskDetailPage() {
         </div>
       </div>
 
+      {/* Update-Fehler */}
+      {updateError && (
+        <div className="alert alert-danger alert-dismissible" role="alert">
+          {updateError}
+          <button type="button" className="btn-close" onClick={() => setUpdateError("")} />
+        </div>
+      )}
+
       {/* Fortschritt */}
       {sortedSteps.length > 0 && (
         <div className="card mb-4">
@@ -203,6 +273,7 @@ export default function TaskDetailPage() {
                 const isCompleted = step.status === "COMPLETED";
                 const isActive = index === activeStepIndex;
                 const isLocked = index > activeStepIndex && activeStepIndex !== -1;
+                const patientCanEdit = canPatientEditStep(step);
 
                 const meta = STATUS_META[step.status] || STATUS_META.PENDING;
                 const IconComp = meta.icon;
@@ -278,6 +349,29 @@ export default function TaskDetailPage() {
                           </span>
                         )}
                       </div>
+
+                      {/* Aktionen */}
+                      {patientCanEdit && (
+                        <div className="mt-3">
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={() => markStepComplete(step.id)}
+                            disabled={updatingStepId === step.id}
+                          >
+                            {updatingStepId === step.id ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />
+                                Wird aktualisiert...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle size={14} className="me-1" />
+                                Als erledigt markieren
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
 
                       {/* Hinweis für gesperrte Schritte */}
                       {isLocked && (
