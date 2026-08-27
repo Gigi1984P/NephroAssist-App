@@ -224,7 +224,7 @@ export async function DELETE(
 
     const existing = await prisma.patient.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, userId: true },
     });
 
     if (!existing) {
@@ -242,6 +242,13 @@ export async function DELETE(
     await prisma.patientCase.deleteMany({ where: { patientId: id } });
 
     await prisma.patient.delete({ where: { id } });
+
+    // Zugehörigen User-Account löschen
+    if (existing.userId) {
+      await prisma.user.delete({ where: { id: existing.userId } }).catch((e) => {
+        console.warn("User löschen fehlgeschlagen (möglicherweise bereits gelöscht):", e);
+      });
+    }
 
     return NextResponse.json({ success: true, message: "Patient gelöscht" });
   } catch (error) {
