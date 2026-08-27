@@ -30,14 +30,14 @@ export async function POST(request: Request) {
       select: { organizationId: true },
     });
 
-    if (!patient) {
-      return NextResponse.json({ error: "Patient nicht gefunden" }, { status: 404 });
+    if (!patient || !patient.organizationId) {
+      return NextResponse.json({ error: "Patient hat keine Organisation zugeordnet" }, { status: 400 });
     }
 
     await prisma.secureUploadLink.create({
       data: {
         patientId,
-        organizationId: patient.organizationId,
+        organizationId: patient.organizationId || "",
         documentType: documentType || undefined,
         tokenHash,
         expiresAt,
