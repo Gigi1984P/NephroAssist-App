@@ -8,7 +8,7 @@ import {
   Pencil, Power, PowerOff, Clock, Key, RefreshCw,
   ChevronLeft, ChevronRight, Search, Activity, Database,
   AlertTriangle, Eye, EyeOff, CheckSquare, ChevronDown,
-  ChevronUp
+  ChevronUp, Settings2
 } from "lucide-react";
 import type { UserRole } from "@prisma/client";
 
@@ -341,6 +341,13 @@ export function AdminPanel({ users: initialUsers, organizations, roles }: AdminP
         description="Benutzer- und Rollenverwaltung"
         action={
           <div className="d-flex gap-2">
+            <a
+              href="/dashboard/admin/settings"
+              className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2 text-decoration-none"
+            >
+              <Settings2 size={16} />
+              Einstellungen
+            </a>
             <button
               className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
               onClick={() => setShowStatsModal(true)}

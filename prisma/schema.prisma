@@ -1247,3 +1247,20 @@ enum UserRole {
   CAREGIVER
   DIALYSIS_STAFF
 }
+
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String?
+  type      String   @default("string")  // string, boolean, number, json
+  label     String?
+  description String?
+  category  String   @default("general") // general, email, notifications, security, maintenance
+  editable  Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([key])
+  @@map("system_configs")
+}
