@@ -1,0 +1,235 @@
+{
+  "_description": "In-app notification and reminder copy for NephroAssist patients. Language: German. Tone: compassionate, clear, encouraging.",
+  "_language": "de",
+  "_version": "1.0",
+
+  "medicationReminders": {
+    "morning": {
+      "title": "Guten Morgen! 🌅",
+      "body": "Zeit für Ihre morgendlichen Medikamente. Ein gesunder Start in den Tag. 💊",
+      "actionLabel": "Als erledigt markieren"
+    },
+    "noon": {
+      "title": "Mittags-Erinnerung 🕛",
+      "body": "Vergessen Sie nicht Ihre mittäglichen Medikamente. Bleiben Sie dran! 💊",
+      "actionLabel": "Als erledigt markieren"
+    },
+    "evening": {
+      "title": "Guten Abend 🌙",
+      "body": "Vergessen Sie nicht Ihre abendlichen Medikamente. Schlafen Sie gut! 💊",
+      "actionLabel": "Als erledigt markieren"
+    },
+    "night": {
+      "title": "Nächtliche Erinnerung 🌌",
+      "body": "Ihre nächtliche Medikamenteneinnahme steht an. 💊",
+      "actionLabel": "Als erledigt markieren"
+    },
+    "overdue": {
+      "title": "Medikament überfällig ⚠️",
+      "body": "Sie haben ein Medikament noch nicht eingenommen. Bitte holen Sie es nach, falls sicher.",
+      "actionLabel": "Jetzt einnehmen"
+    }
+  },
+
+  "appointmentReminders": {
+    "upcoming3Days": {
+      "title": "Termin in 3 Tagen 📅",
+      "body": "Erinnerung: Ihr Termin \"{appointmentType}\" ist am {date} um {time}. Wir freuen uns, Sie zu sehen.",
+      "actionLabel": "Details ansehen"
+    },
+    "upcoming1Day": {
+      "title": "Termin morgen 📅",
+      "body": "Ihr Termin \"{appointmentType}\" ist morgen um {time} in {location}. Gute Fahrt!",
+      "actionLabel": "Details ansehen"
+    },
+    "upcoming1Hour": {
+      "title": "Termin in 1 Stunde ⏰",
+      "body": "Ihr Termin \"{appointmentType}\" ist in einer Stunde. Vergessen Sie nicht Ihre Unterlagen.",
+      "actionLabel": "Unterlagen prüfen"
+    },
+    "missed": {
+      "title": "Termin verpasst 😔",
+      "body": "Sie haben Ihren Termin \"{appointmentType}\" verpasst. Bitte vereinbaren Sie einen Nachholtermin.",
+      "actionLabel": "Nachholtermin vereinbaren"
+    },
+    "rescheduleRequired": {
+      "title": "Neu terminieren nötig 🔁",
+      "body": "Ihr Termin \"{appointmentType}\" muss neu geplant werden. Bitte kontaktieren Sie uns.",
+      "actionLabel": "Jetzt anrufen"
+    }
+  },
+
+  "requirementReminders": {
+    "newAssigned": {
+      "title": "Neue Aufgabe zugewiesen ✅",
+      "body": "\"{requirementName}\" wurde Ihnen zugewiesen. {description}",
+      "actionLabel": "Jetzt starten"
+    },
+    "actionRequired": {
+      "title": "Handlung erforderlich ⚡",
+      "body": "\"{requirementName}\" wartet auf Ihre Bearbeitung. Bitte schauen Sie sich die nächsten Schritte an.",
+      "actionLabel": "Nächste Schritte"
+    },
+    "expiresSoon": {
+      "title": "Läuft bald ab ⏳",
+      "body": "\"{requirementName}\" läuft in {days} Tagen ab ({expiresAt}). Bitte erneuern Sie rechtzeitig.",
+      "actionLabel": "Erneuern"
+    },
+    "expired": {
+      "title": "Abgelaufen 🚨",
+      "body": "\"{requirementName}\" ist abgelaufen. Bitte vereinbaren Sie einen Nachholtermin.",
+      "actionLabel": "Nachholtermin"
+    },
+    "accepted": {
+      "title": "Aufgabe bestätigt 🎉",
+      "body": "\"{requirementName}\" wurde von Ihrem Team bestätigt. Gut gemacht!",
+      "actionLabel": "Weiter"
+    },
+    "rejected": {
+      "title": "Überarbeitung nötig 🔍",
+      "body": "\"{requirementName}\" hat eine Beanstandung erhalten. Kein Grund zur Sorge — Ihr Team erklärt Ihnen die nächsten Schritte.",
+      "actionLabel": "Details ansehen"
+    },
+    "documentUploaded": {
+      "title": "Dokument hochgeladen 📄",
+      "body": "Ihr Dokument für \"{requirementName}\" wurde erfolgreich hochgeladen. Das Team prüft es.",
+      "actionLabel": "Status prüfen"
+    }
+  },
+
+  "phaseNotifications": {
+    "referral": {
+      "title": "Willkommen bei NephroAssist! 👋",
+      "body": "Ihre Transplantationsreise beginnt hier. Schauen Sie sich das erste Bildungsmodul an, um die ersten Schritte zu verstehen. 💙",
+      "actionLabel": "Modul öffnen"
+    },
+    "intake": {
+      "title": "Aufnahme läuft 🏥",
+      "body": "Sie sind jetzt im Transplantationszentrum registriert. Ihr nächster Schritt: Das Erstgespräch.",
+      "actionLabel": "Checkliste ansehen"
+    },
+    "evaluation": {
+      "title": "Evaluation läuft 📋",
+      "body": "Sie haben {completed} von {total} Untersuchungen abgeschlossen. Die nächste Aufgabe: {nextTask}",
+      "actionLabel": "Weitermachen"
+    },
+    "evaluationComplete": {
+      "title": "Evaluation abgeschlossen! 🎉",
+      "body": "Alle Untersuchungen sind abgeschlossen. Ihr Fall wird nun vom Transplantationsteam geprüft.",
+      "actionLabel": "Status ansehen"
+    },
+    "waitlisted": {
+      "title": "Sie sind auf der Warteliste 💙",
+      "body": "Herzlichen Glückwunsch! Sie sind nun auf der Warteliste. Halten Sie sich gesund — wir sind für Sie da.",
+      "actionLabel": "Wartezeit-Tipps"
+    },
+    "waitlistWeekly": {
+      "title": "Wochen-Erinnerung 🌱",
+      "body": "Es ist schwer, zu warten. Sie tun alles Richtig. Bleiben Sie gesund und positiv — Medikamente pünktlich, Kontrollen einhalten, gut auf sich achten.",
+      "actionLabel": "Meine Aufgaben"
+    },
+    "organOffer": {
+      "title": "WICHTIG: Organangebot 📞",
+      "body": "Ihr Zentrum hat Sie versucht zu erreichen. Bitte rufen Sie umgehend zurück: {phoneNumber}",
+      "actionLabel": "Jetzt anrufen"
+    },
+    "transplanted": {
+      "title": "Herzlichen Glückwunsch! 💙",
+      "body": "Die Operation ist geschafft. Die ersten Tage sind herausfordernd — Ihr Team ist für Sie da. Zögern Sie nicht, Fragen zu stellen.",
+      "actionLabel": "Nachsorge-Checkliste"
+    }
+  },
+
+  "blockerNotifications": {
+    "newBlocker": {
+      "title": "Offener Punkt ⚠️",
+      "body": "Es gibt einen offenen Punkt, der geklärt werden muss: {blockerDescription}. Bitte kontaktieren Sie Ihren Koordinator.",
+      "actionLabel": "Koordinator kontaktieren"
+    },
+    "blockerResolved": {
+      "title": "Problem gelöst ✅",
+      "body": "Der offene Punkt \"{blockerDescription}\" wurde gelöst. Sie können weitermachen!",
+      "actionLabel": "Weiter"
+    }
+  },
+
+  "documentNotifications": {
+    "uploadRequested": {
+      "title": "Dokument hochladen 📄",
+      "body": "Bitte laden Sie {documentType} für \"{requirementName}\" hoch. Akzeptierte Formate: PDF, JPG, PNG.",
+      "actionLabel": "Jetzt hochladen"
+    },
+    "uploadRejected": {
+      "title": "Dokument nicht akzeptiert ❌",
+      "body": "Ein hochgeladenes Dokument konnte nicht verarbeitet werden. Bitte prüfen Sie die Qualität und laden Sie es erneut hoch.",
+      "actionLabel": "Erneut hochladen"
+    },
+    "reviewComplete": {
+      "title": "Prüfung abgeschlossen ✅",
+      "body": "Ihr Dokument \"{documentName}\" wurde geprüft und {result}.",
+      "actionLabel": "Details"
+    }
+  },
+
+  "generalNotifications": {
+    "welcome": {
+      "title": "Willkommen bei NephroAssist! 💙",
+      "body": "Hallo {name}! Wir begleiten Sie auf Ihrem Weg zur Nierentransplantation. Ihr nächster Schritt: {nextStep}",
+      "actionLabel": "Loslegen"
+    },
+    "consentPending": {
+      "title": "Einwilligung ausstehend 🔒",
+      "body": "Bitte bestätigen Sie noch Ihre Einwilligung zur Datenverarbeitung, damit wir Sie optimal unterstützen können.",
+      "actionLabel": "Einwilligen"
+    },
+    "goBagReminder": {
+      "title": "Haben Sie Ihre Go-Bag gepackt? 🎒",
+      "body": "Bei einem Anruf muss es schnell gehen. Prüfen Sie Ihre Checkliste und packen Sie vorsorglich.",
+      "actionLabel": "Checkliste öffnen"
+    },
+    "weeklySummary": {
+      "title": "Ihre Wochenübersicht 📊",
+      "body": "Diese Woche: {completed} Aufgaben erledigt, {pending} ausstehend. Sie sind auf einem guten Weg!",
+      "actionLabel": "Übersicht ansehen"
+    },
+    "helpRequestResponse": {
+      "title": "Antwort auf Ihre Hilfeanfrage 💬",
+      "body": "{coordinatorName} hat auf Ihre Anfrage geantwortet: \"{responseSnippet}\"",
+      "actionLabel": "Gespräch öffnen"
+    },
+    "systemMaintenance": {
+      "title": "Wartungsarbeiten 🔧",
+      "body": "Die App ist am {date} von {startTime} bis {endTime} Uhr nicht verfügbar. Wir entschuldigen uns für die Unannehmlichkeiten.",
+      "actionLabel": "Verstanden"
+    }
+  },
+
+  "_placeholders": {
+    "description": "Use curly braces for dynamic values: {variableName}. All strings should be HTML-escaped when rendered in-app.",
+    "supportedVariables": [
+      "{name}",
+      "{appointmentType}",
+      "{date}",
+      "{time}",
+      "{location}",
+      "{requirementName}",
+      "{description}",
+      "{days}",
+      "{expiresAt}",
+      "{completed}",
+      "{total}",
+      "{nextTask}",
+      "{phoneNumber}",
+      "{blockerDescription}",
+      "{documentType}",
+      "{documentName}",
+      "{result}",
+      "{nextStep}",
+      "{pending}",
+      "{coordinatorName}",
+      "{responseSnippet}",
+      "{startTime}",
+      "{endTime}"
+    ]
+  }
+}

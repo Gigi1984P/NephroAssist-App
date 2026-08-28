@@ -1,0 +1,208 @@
+{
+  "_description": "Patient-friendly requirement descriptions in German for NephroAssist. These map to RequirementTemplate.patientFriendlyDescription and can be imported into the database or used by seed scripts.",
+  "_language": "de",
+  "_target_audience": "Transplant patients and caregivers",
+
+  "templates": [
+    {
+      "name": "Aktuelle Laborwerte",
+      "category": "Labor",
+      "patientFriendlyDescription": "Blutuntersuchung beim Hausarzt oder im Transplantationszentrum. Ihr Team prüft, wie gut Ihre Nieren arbeiten und ob alle Werte für die Transplantation passen. Bitte bringen Sie die Ergebnisse mit — sie dürfen nicht älter als 3 Monate sein.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": true,
+      "validityDurationMonths": 3,
+      "renewalLeadTimeDays": 14
+    },
+    {
+      "name": "Herzuntersuchung",
+      "category": "Kardiologie",
+      "patientFriendlyDescription": "Untersuchung Ihres Herzens beim Kardiologen. Das Team muss sicherstellen, dass Ihr Herz die Operation und die Narkose gut verkraften kann. Meistens reichen ein EKG und ein Ultraschall des Herzens (Echokardiographie).",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": true,
+      "validityDurationMonths": 6,
+      "renewalLeadTimeDays": 21
+    },
+    {
+      "name": "Zahnärztliche Untersuchung",
+      "category": "Zahnmedizin",
+      "patientFriendlyDescription": "Kontrolltermin beim Zahnarzt mit Gesundheitsbescheinigung. Mundentzündungen oder Karies können nach der Transplantation gefährlich werden, weil das Immunsystem gehemmt ist. Lassen Sie alles vorher in Ordnung bringen.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": true,
+      "validityDurationMonths": 3,
+      "renewalLeadTimeDays": 14
+    },
+    {
+      "name": "Impfausweis aktualisieren",
+      "category": "Impfungen",
+      "patientFriendlyDescription": "Prüfen und aktualisieren Sie Ihren Impfstatus. Einige Impfungen (z. B. Hepatitis B, MMR) müssen vor der Transplantation erfolgen, da lebende Impfstoffe danach nicht mehr gegeben werden dürfen. Fragen Sie Ihren Hausarzt.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": null,
+      "renewalLeadTimeDays": null
+    },
+    {
+      "name": "Psychosoziale Evaluation",
+      "category": "Psychosozial",
+      "patientFriendlyDescription": "Ein Gespräch mit einem Sozialarbeiter oder Psychologen des Zentrums. Es geht darum, ob Sie emotional und sozial gut auf die Herausforderungen der Transplantation vorbereitet sind. Es ist kein Test — niemand wird abgelehnt wegen einer schlechten Note.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": true,
+      "validityDurationMonths": 12,
+      "renewalLeadTimeDays": 30
+    },
+    {
+      "name": "Finanzielle Klärung",
+      "category": "Verwaltung",
+      "patientFriendlyDescription": "Gespräch mit der Krankenkassenberatung oder dem Sozialdienst Ihres Zentrums. Klären Sie, welche Kosten die Versicherung übernimmt und welche Eigenanteile anfallen. Bringen Sie Ihre Versicherungskarte und aktuelle Bescheide mit.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": null,
+      "renewalLeadTimeDays": null
+    },
+    {
+      "name": "Krebsscreening",
+      "category": "Onkologie",
+      "patientFriendlyDescription": "Vorsorgeuntersuchungen zur Krebsfrüherkennung, abhängig von Alter und Geschlecht (z. B. Mammographie, Darmkrebsvorsorge, Prostata-Screening). Eine bestehende Krebserkrankung muss vor der Transplantation stabil sein.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": true,
+      "validityDurationMonths": 12,
+      "renewalLeadTimeDays": 30
+    },
+    {
+      "name": "Infektionsscreening",
+      "category": "Infektiologie",
+      "patientFriendlyDescription": "Bluttests auf Infektionskrankheiten wie Hepatitis, HIV und Tuberkulose. Diese Tests schützen Sie und das Transplantationsteam. Die Ergebnisse sind vertraulich.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": true,
+      "validityDurationMonths": 6,
+      "renewalLeadTimeDays": 14
+    },
+    {
+      "name": "Röntgen Thorax",
+      "category": "Radiologie",
+      "patientFriendlyDescription": "Eine einfache Röntgenaufnahme des Brustkorbs. Das Team prüft, ob Lunge und Herz gesund aussehen. Die Untersuchung dauert nur wenige Minuten und ist schmerzlos.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": 12,
+      "renewalLeadTimeDays": 30
+    },
+    {
+      "name": "Abdominalultraschall",
+      "category": "Radiologie",
+      "patientFriendlyDescription": "Ultraschalluntersuchung des Bauchraums. Der Arzt schaut sich Ihre vorhandenen Nieren, die Leber, Gallenblase und Blutgefäße an. Schmerzlos, keine Vorbereitung nötig.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": 12,
+      "renewalLeadTimeDays": 30
+    },
+    {
+      "name": "Nephrologische Erstuntersuchung",
+      "category": "Nephrologie",
+      "patientFriendlyDescription": "Erstgespräch und Untersuchung beim Nierenarzt im Transplantationszentrum. Der Arzt besprechen Ihre Krankengeschichte, aktuellen Beschwerden und die nächsten Schritte mit Ihnen.",
+      "phase": "INTAKE",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": null,
+      "renewalLeadTimeDays": null
+    },
+    {
+      "name": "Transplantationsgespräch",
+      "category": "Beratung",
+      "patientFriendlyDescription": "Ein ausführliches Beratungsgespräch mit Ihrem Transplantationsteam. Sie erfahren alles über Risiken, Chancen, die Wartezeit und die Nachsorge. Bringen Sie alle Fragen mit — es gibt keine dummen Fragen.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": null,
+      "renewalLeadTimeDays": null
+    },
+    {
+      "name": "Dialyseprotokolle übermitteln",
+      "category": "Dialyse",
+      "patientFriendlyDescription": "Ihr Dialysezentrum soll die aktuellen Behandlungsprotokolle direkt an das Transplantationszentrum übermitteln. Fragen Sie im Dialysezentrum nach — sie kennen diesen Ablauf.",
+      "phase": "EVALUATION",
+      "responsibleRole": "DIALYSIS_CENTER",
+      "listingBlocker": false,
+      "validityDurationMonths": 1,
+      "renewalLeadTimeDays": 7
+    },
+    {
+      "name": "Sozialanamnese",
+      "category": "Psychosozial",
+      "patientFriendlyDescription": "Ein Fragebogen oder Gespräch über Ihre Lebenssituation: Familie, Wohnen, Arbeit, Unterstützung durch Angehörige. Das hilft dem Team, Sie bestmöglich zu unterstützen.",
+      "phase": "EVALUATION",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": 12,
+      "renewalLeadTimeDays": 30
+    },
+    {
+      "name": "Medikamentenplan aktualisieren",
+      "category": "Medikamente",
+      "patientFriendlyDescription": "Aktualisieren Sie Ihre Medikamentenliste in der App. Tragen Sie alle aktuellen Medikamente, Dosierungen und Einnahmezeiten ein. Das hilft dem Team, Wechselwirkungen zu vermeiden.",
+      "phase": "WAITLIST",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": 1,
+      "renewalLeadTimeDays": 7
+    },
+    {
+      "name": "Quartalskontrolle Labor",
+      "category": "Labor",
+      "patientFriendlyDescription": "Regelmäßige Blutuntersuchung während der Wartezeit. Ihr Team muss sicherstellen, dass Ihre Werte stabil bleiben. Sie erhalten Terminvorschläge automatisch.",
+      "phase": "WAITLIST",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": 3,
+      "renewalLeadTimeDays": 14
+    },
+    {
+      "name": "Telefon immer erreichbar halten",
+      "category": "Kommunikation",
+      "patientFriendlyDescription": "Stellen Sie sicher, dass das Transplantationszentrum Sie jederzeit telefonisch erreichen kann. Laden Sie Ihr Handy regelmäßig auf und hinterlegen Sie eine Notfallnummer einer Angehörigen Person.",
+      "phase": "WAITLIST",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": null,
+      "renewalLeadTimeDays": null
+    },
+    {
+      "name": "Go-Bag vorbereiten",
+      "category": "Vorbereitung",
+      "patientFriendlyDescription": "Packen Sie eine Tasche für den Fall des Anrufs. Darin sollten sein: Versicherungskarte, Medikamentenliste, Handy-Ladegerät, bequeme Kleidung für ein paar Tage, Hygieneartikel und etwas zum Lesen. Bei einem Anruf muss es schnell gehen.",
+      "phase": "WAITLIST",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": false,
+      "validityDurationMonths": null,
+      "renewalLeadTimeDays": null
+    },
+    {
+      "name": "Post-Transplant Erstuntersuchung",
+      "category": "Nachsorge",
+      "patientFriendlyDescription": "Ihre erste Kontrolle nach der Transplantation. Das Team prüft die Funktion der neuen Niere, passt Ihre Medikamente an und bespricht die nächsten Schritte. Sie müssen diesen Termin keinesfalls versäumen.",
+      "phase": "POST_TRANSPLANT",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": true,
+      "validityDurationMonths": null,
+      "renewalLeadTimeDays": null
+    },
+    {
+      "name": "Immunsuppressiva-Anpassung",
+      "category": "Medikamente",
+      "patientFriendlyDescription": "Blutabnahme zur Kontrolle der Spiegel Ihrer Anti-Abstoßungs-Medikamente (z. B. Tacrolimus oder Ciclosporin). Die Dosis wird je nach Ergebnis angepasst. Pünktlich erscheinen — am besten nüchtern.",
+      "phase": "POST_TRANSPLANT",
+      "responsibleRole": "PATIENT",
+      "listingBlocker": true,
+      "validityDurationMonths": 1,
+      "renewalLeadTimeDays": 7
+    }
+  ]
+}

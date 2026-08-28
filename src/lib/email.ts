@@ -1,4 +1,7 @@
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
+import type SMTPTransport from "nodemailer/lib/smtp-transport";
+import { prisma } from "./prisma";
 
 let resend: Resend | null = null;
 
@@ -13,8 +16,77 @@ export interface EmailPayload {
   text?: string;
 }
 
-export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string; logged?: boolean; resultId?: string }> {
-  // ── Fallback: Wenn Resend nicht konfiguriert, logge die E-Mail ──
+async function getEmailConfig(): Promise<Record<string, string | null>> {
+  try {
+    const configs = await prisma.systemConfig.findMany({
+      where: { category: "email" },
+    });
+    const map: Record<string, string | null> = {};
+    for (const c of configs) {
+      map[c.key] = c.value;
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+export async function sendEmail(
+  payload: EmailPayload
+): Promise<{ success: boolean; error?: string; logged?: boolean; resultId?: string }> {
+  const cfg = await getEmailConfig();
+
+  const provider = cfg["EMAIL_PROVIDER"] || (process.env.SMTP_HOST ? "smtp" : "resend");
+  const from = cfg["EMAIL_FROM"] || process.env.EMAIL_FROM || "onboarding@resend.dev";
+  const isEnabled = cfg["EMAIL_ENABLED"] === "true" || (!cfg["EMAIL_ENABLED"] && !!process.env.RESEND_API_KEY);
+
+  if (!isEnabled) {
+    console.warn("=".repeat(60));
+    console.warn("📧 E-MAIL VERSAND – DEAKTIVIERT");
+    console.warn("   EMAIL_ENABLED ist false oder nicht konfiguriert.");
+    console.warn("=".repeat(60));
+    return { success: false, error: "E-Mail-Versand ist deaktiviert", logged: true };
+  }
+
+  // ── SMTP ──
+  if (provider === "smtp") {
+    const host = cfg["SMTP_HOST"] || process.env.SMTP_HOST;
+    if (!host) {
+      return { success: false, error: "SMTP-Host nicht konfiguriert" };
+    }
+
+    const port = parseInt(cfg["SMTP_PORT"] || process.env.SMTP_PORT || "587", 10);
+    const secure = cfg["SMTP_SECURE"] === "true" || (port === 465);
+    const user = cfg["SMTP_USER"] || process.env.SMTP_USER || "";
+    const pass = cfg["SMTP_PASS"] || process.env.SMTP_PASS || "";
+
+    const transportOptions: SMTPTransport.Options = {
+      host,
+      port,
+      secure,
+      auth: user ? { user, pass } : undefined,
+      tls: !secure ? { rejectUnauthorized: false } : undefined,
+    };
+
+    const transporter = nodemailer.createTransport(transportOptions);
+
+    try {
+      const result = await transporter.sendMail({
+        from,
+        to: payload.to,
+        subject: payload.subject,
+        html: payload.html,
+        text: payload.text || payload.html.replace(/\u003c[^\u003e]*\u003e/g, ""),
+      });
+      console.log("✅ E-Mail via SMTP gesendet:", result.messageId);
+      return { success: true, resultId: result.messageId || undefined };
+    } catch (error: any) {
+      console.error("❌ SMTP-Versand fehlgeschlagen:", error.message);
+      return { success: false, error: `SMTP-Fehler: ${error.message}` };
+    }
+  }
+
+  // ── RESEND (Default) ──
   if (!resend) {
     console.warn("=".repeat(60));
     console.warn("📧 E-MAIL VERSAND – RESEND NICHT KONFIGURIERT");
@@ -29,9 +101,6 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
   }
 
   try {
-    // WICHTIG: Resend erfordert eine verifizierte Domain.
-    // Ohne Verifizierung muss man onboarding@resend.dev als Absender verwenden.
-    const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
     const result = await resend.emails.send({
       from,
       to: payload.to,
@@ -39,13 +108,15 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
       html: payload.html,
       text: payload.text || payload.html.replace(/\u003c[^\u003e]*\u003e/g, ""),
     });
-    console.log("✅ E-Mail gesendet:", (result as any)?.id || "OK");
+    console.log("✅ E-Mail via Resend gesendet:", (result as any)?.id || "OK");
     return { success: true, resultId: (result as any)?.id };
   } catch (error) {
     console.error("E-Mail-Versand fehlgeschlagen:", error);
     return { success: false, error: String(error) };
   }
 }
+
+// ── Email Templates ──
 
 export function getTaskCompletionEmail(patientName: string, taskName: string): { subject: string; html: string } {
   return {

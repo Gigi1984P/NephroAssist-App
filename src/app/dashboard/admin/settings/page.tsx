@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import {
   Save, Mail, Bell, ShieldCheck, Wrench, Clock, Settings2,
-  RotateCcw, ChevronDown, ChevronUp, AlertTriangle
+  RotateCcw, ChevronDown, ChevronUp, AlertTriangle, Send
 } from "lucide-react";
 
 interface SystemConfig {
@@ -40,6 +40,9 @@ export default function SettingsPanel() {
     new Set(["email", "notifications", "security"])
   );
   const [hasChanges, setHasChanges] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const loadConfigs = async () => {
     setLoading(true);
@@ -103,6 +106,34 @@ export default function SettingsPanel() {
       }
     } catch (e) {
       setMessage({ type: "error", text: "Fehler beim Initialisieren" });
+    }
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmail || !testEmail.includes("@")) {
+      setTestResult({ success: false, message: "Bitte eine gültige E-Mail-Adresse eingeben." });
+      return;
+    }
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const provider = configs.find((c) => c.key === "EMAIL_PROVIDER")?.value || "resend";
+      const res = await fetch("/api/admin/settings/test-email", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: testEmail, provider }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTestResult({ success: true, message: "Test-E-Mail gesendet! Bitte Posteingang prüfen." });
+      } else {
+        setTestResult({ success: false, message: data.error || "Fehler beim Senden" });
+      }
+    } catch (e) {
+      setTestResult({ success: false, message: "Netzwerkfehler beim Senden" });
+    } finally {
+      setTestSending(false);
     }
   };
 
@@ -227,6 +258,40 @@ export default function SettingsPanel() {
                     </div>
                   ))}
                 </div>
+                {key === "email" && (
+                  <div className="mt-4 pt-3" style={{ borderTop: "1px solid #e2e8f0" }}>
+                    <label className="form-label fw-medium d-flex align-items-center gap-2">
+                      <Send size={16} />
+                      Test-E-Mail senden
+                    </label>
+                    <div className="row g-2">
+                      <div className="col-md-6">
+                        <div className="input-group">
+                          <input
+                            type="email"
+                            className="form-control"
+                            placeholder="test@example.com"
+                            value={testEmail}
+                            onChange={(e) => setTestEmail(e.target.value)}
+                          />
+                          <button
+                            className="btn btn-outline-primary d-inline-flex align-items-center gap-1"
+                            onClick={handleTestEmail}
+                            disabled={testSending}
+                          >
+                            {testSending ? "Wird gesendet..." : "Senden"}
+                            {!testSending && <Send size={14} className="ms-1" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    {testResult && (
+                      <div className={`alert alert-${testResult.success ? "success" : "danger"} mt-2 py-2`} style={{ fontSize: "0.85rem" }}>
+                        {testResult.message}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
