@@ -8,7 +8,7 @@ import MedicationPlan from "@/components/medication-plan";
 import InlineAssignRequirement from "@/components/inline-assign-requirement";
 import PatientRequirementsTable from "@/components/patient-requirements-table";
 import AssignTemplateSet from "@/components/assign-template-set";
-import DialysisRegime from "@/components/dialysis-regime";
+import DialysisRegimeInline from "@/components/dialysis-regime-inline";
 import InlineEditField from "@/components/inline-edit-field";
 import InlineEditSelect from "@/components/inline-edit-select";
 import InlineEditTextarea from "@/components/inline-edit-textarea";
@@ -544,7 +544,7 @@ export default function PatientClinicDetailPage({
       <MedicationPlan patientId={id} initialMedications={medications} />
 
       {/* DIALYSEREGIME */}
-      <DialysisRegime patientId={id} />
+      <DialysisRegimeInline patientId={id} />
 
       {/* OFFENE UNTERSUCHUNGEN */}
       <div className="card mb-4 shadow-sm">
