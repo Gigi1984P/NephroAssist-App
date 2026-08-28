@@ -185,23 +185,23 @@ export default function LoginPage() {
           ) : (
             <div className="mb-3">
               <label htmlFor="2fa-code" className="form-label fw-medium d-flex align-items-center gap-2" style={{ fontSize: "0.85rem", color: "#374151" }}>
-                <Shield size={16} /> Bestätigungscode
+                <Shield size={16} /> {t("auth.code", "Bestätigungscode")}
               </label>
               <div className="position-relative">
                 <input type="text" id="2fa-code" inputMode="numeric" maxLength={6} className="form-control text-center fw-bold" placeholder="000000" value={twoFactorCode} onChange={(e) => setTwoFactorCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))} style={{ padding: "0.75rem", borderRadius: "0.5rem", border: "1px solid #d1d5db", fontSize: "1.5rem", letterSpacing: "8px", fontFamily: "monospace" }} autoFocus />
               </div>
               <div className="d-flex justify-content-between mt-2">
-                <span className="text-muted" style={{ fontSize: "0.75rem" }}>⏰ Gültig noch: {fmtCD(countdown)}</span>
-                <button type="button" className="btn btn-link text-decoration-none p-0" style={{ fontSize: "0.75rem", color: "#2563eb" }} onClick={() => { setShow2FA(false); setTwoFactorCode(""); setError(""); }}>Abbrechen</button>
+                <span className="text-muted" style={{ fontSize: "0.75rem" }}>⏰ {t("auth.validFor", "Gültig noch:")} {fmtCD(countdown)}</span>
+                <button type="button" className="btn btn-link text-decoration-none p-0" style={{ fontSize: "0.75rem", color: "#2563eb" }} onClick={() => { setShow2FA(false); setTwoFactorCode(""); setError(""); }}>{t("nav.cancel", "Abbrechen")}</button>
               </div>
             </div>
           )}
 
           <button type="submit" disabled={loading || (show2FA && twoFactorCode.length !== 6)} className="btn btn-primary w-100 fw-medium" style={{ borderRadius: "0.5rem", padding: "0.75rem", fontSize: "0.95rem", background: "linear-gradient(135deg, #2563eb, #1d4ed8)", border: "none", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}>
             {loading ? (
-              <span className="d-flex align-items-center justify-content-center gap-2"><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>{show2FA ? "Verifizieren..." : "Anmelden..."}</span>
+              <span className="d-flex align-items-center justify-content-center gap-2"><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>{show2FA ? t("auth.verifying", "Verifizieren...") : t("auth.signingIn", "Anmelden...")}</span>
             ) : (
-              show2FA ? "Code bestätigen" : "Anmelden"
+              show2FA ? t("auth.verify", "Code bestätigen") : t("auth.login", "Anmelden")
             )}
           </button>
         </form>
@@ -209,29 +209,29 @@ export default function LoginPage() {
         {!show2FA && (
           <>
             <div className="text-center mt-3" style={{ fontSize: "0.875rem" }}>
-              <span className="text-muted">Noch kein Konto? </span>
-              <Link href="/register" className="text-decoration-none" style={{ color: "#2563eb", fontWeight: 500 }}>Registrieren</Link>
+              <span className="text-muted">{t("auth.noAccount", "Noch kein Konto?")} </span>
+              <Link href="/register" className="text-decoration-none" style={{ color: "#2563eb", fontWeight: 500 }}>{t("auth.register", "Registrieren")}</Link>
             </div>
             <div className="text-center mt-3" style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-              <Link href="/legal/terms-of-service" className="text-decoration-none" style={{ color: "#94a3b8" }}>AGB</Link>{" · "}
-              <Link href="/legal/privacy-policy" className="text-decoration-none" style={{ color: "#94a3b8" }}>Datenschutz</Link>{" · "}
-              <Link href="/legal/impressum" className="text-decoration-none" style={{ color: "#94a3b8" }}>Impressum</Link>
+              <Link href="/legal/terms-of-service" className="text-decoration-none" style={{ color: "#94a3b8" }}>{t("auth.terms", "AGB")}</Link>{" · "}
+              <Link href="/legal/privacy-policy" className="text-decoration-none" style={{ color: "#94a3b8" }}>{t("auth.privacy", "Datenschutz")}</Link>{" · "}
+              <Link href="/legal/impressum" className="text-decoration-none" style={{ color: "#94a3b8" }}>{t("auth.imprint", "Impressum")}</Link>
             </div>
 
             <div className="mt-4">
               <div className="d-flex align-items-center gap-2 mb-2">
                 <CheckCircle size={16} style={{ color: "#2563eb" }} />
-                <span className="fw-semibold" style={{ fontSize: "0.8rem", color: "#2563eb" }}>Demo-Zugangsdaten</span>
+                <span className="fw-semibold" style={{ fontSize: "0.8rem", color: "#2563eb" }}>{t("auth.demoAccounts", "Demo-Zugangsdaten")}</span>
               </div>
               <div className="d-flex flex-column gap-1">
                 {demoAccounts.map((acc) => (
                   <button key={acc.email} onClick={() => fillCredentials(acc.email, acc.password)} className="btn btn-sm text-start d-flex justify-content-between align-items-center" style={{ fontSize: "0.75rem", border: "1px solid #e2e8f0", background: "#fff", color: "#334155", borderRadius: "0.5rem", padding: "0.5rem 0.75rem" }}>
                     <span className="d-flex align-items-center gap-1"><span className="fw-medium">{acc.role}</span><span className="text-muted" style={{ fontSize: "0.7rem" }}>— {acc.name}</span></span>
-                    <span className="text-muted" style={{ fontSize: "0.7rem" }}>Klicken</span>
+                    <span className="text-muted" style={{ fontSize: "0.7rem" }}>{t("auth.clickToFill", "Klicken")}</span>
                   </button>
                 ))}
               </div>
-              <div className="text-center mt-2" style={{ fontSize: "0.7rem", color: "#94a3b8" }}>Passwort für alle: Test1234!</div>
+              <div className="text-center mt-2" style={{ fontSize: "0.7rem", color: "#94a3b8" }}>{t("auth.passwordForAll", "Passwort für alle:")} Test1234!</div>
             </div>
           </>
         )}

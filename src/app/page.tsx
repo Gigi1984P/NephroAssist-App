@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useTranslation } from "@/components/i18n-provider";
 
 interface DemoAccount {
   email: string;
@@ -67,6 +68,7 @@ function CheckCircleIcon({ size = 16 }: { size?: number }) {
 }
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -102,10 +104,10 @@ export default function LoginPage() {
       } else if (data.user) {
         window.location.href = "/dashboard";
       } else {
-        setError("Ungültige Antwort");
+        setError(t("auth.invalidResponse", "Ungültige Antwort"));
       }
     } catch (err) {
-      setError(`Netzwerk: ${err instanceof Error ? err.message : "Unbekannt"}`);
+      setError(t("auth.networkError", `Netzwerk: ${err instanceof Error ? err.message : "Unbekannt"}`));
     } finally {
       setLoading(false);
     }
@@ -177,9 +179,9 @@ export default function LoginPage() {
             </div>
             <span style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", letterSpacing: "-0.01em" }}>NephroAssist</span>
           </div>
-          <h1 className="h4 fw-bold mb-1" style={{ color: "#1e293b" }}>Anmelden</h1>
+          <h1 className="h4 fw-bold mb-1" style={{ color: "#1e293b" }}>{t("auth.login", "Anmelden")}</h1>
           <p className="text-muted mb-0" style={{ fontSize: "0.9rem" }}>
-            Melden Sie sich mit Ihren Zugangsdaten an
+            {t("auth.loginSubtitle", "Melden Sie sich mit Ihren Zugangsdaten an")}
           </p>
         </div>
 

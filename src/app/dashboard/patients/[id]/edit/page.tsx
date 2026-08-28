@@ -363,7 +363,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerName}
                   onChange={(e) => handleChange("generalPractitionerName", e.target.value)}
-                  placeholder=t("patient.gpName", "Dr. Max Mustermann")
+                  placeholder={t("patient.gpName", "Dr. Max Mustermann")}
                 />
               </div>
               <div className="col-md-6">
@@ -373,7 +373,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerCity}
                   onChange={(e) => handleChange("generalPractitionerCity", e.target.value)}
-                  placeholder=t("common.city", "Berlin")
+                  placeholder={t("common.city", "Berlin")}
                 />
               </div>
               <div className="col-md-6">
@@ -383,7 +383,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerEmail}
                   onChange={(e) => handleChange("generalPractitionerEmail", e.target.value)}
-                  placeholder=t("patient.gpEmail", "arzt@beispiel.de")
+                  placeholder={t("patient.gpEmail", "arzt@beispiel.de")}
                 />
               </div>
               <div className="col-md-6">
@@ -393,7 +393,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerPhone}
                   onChange={(e) => handleChange("generalPractitionerPhone", e.target.value)}
-                  placeholder=t("patient.gpPhone", "+49 30 123456")
+                  placeholder={t("patient.gpPhone", "+49 30 123456")}
                 />
               </div>
               <div className="col-12">
@@ -403,7 +403,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerAddress}
                   onChange={(e) => handleChange("generalPractitionerAddress", e.target.value)}
-                  placeholder=t("patient.gpAddress", "Musterstraße 1, 10115 Berlin")
+                  placeholder={t("patient.gpAddress", "Musterstraße 1, 10115 Berlin")}
                 />
               </div>
             </div>

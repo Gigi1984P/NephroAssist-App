@@ -803,7 +803,7 @@ export default function PatientsPage() {
                           rows={3}
                           value={bulkNote}
                           onChange={(e) => setBulkNote(e.target.value)}
-                          placeholder=t("patient.notePlaceholder", "z.B. Wartezeit verkürzt, Priorität erhöht...")
+                          placeholder={t("patient.notePlaceholder", "z.B. Wartezeit verkürzt, Priorität erhöht...")}
                         />
                       </div>
                     </div>
