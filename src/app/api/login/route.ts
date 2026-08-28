@@ -44,14 +44,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Ungültige Anmeldedaten" }, { status: 401 });
       }
 
-      if (!user.emailVerified) {
-        return NextResponse.json(
-          { error: "Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse." },
-          { status: 403 }
-        );
-      }
-
-      // Demo-Zugangsdaten: 2FA überspringen
+      // Demo-Zugangsdaten: Email-Verifizierung + 2FA überspringen
       const DEMO_EMAILS = [
         "admin@nephroassist.de",
         "koordinator@nephroassist.de",
@@ -62,6 +55,13 @@ export async function POST(request: Request) {
         "angehorige@beispiel.de",
       ];
       const isDemo = DEMO_EMAILS.includes(user.email);
+
+      if (!user.emailVerified && !isDemo) {
+        return NextResponse.json(
+          { error: "Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse." },
+          { status: 403 }
+        );
+      }
 
       // Wenn 2FA nicht aktiv ODER Demo-Account, direkt einloggen
       if (!user.twoFactorEnabled || isDemo) {
