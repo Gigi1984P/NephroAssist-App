@@ -51,8 +51,20 @@ export async function POST(request: Request) {
         );
       }
 
-      // Wenn 2FA nicht aktiv, direkt einloggen (Rückwärtskompatibel)
-      if (!user.twoFactorEnabled) {
+      // Demo-Zugangsdaten: 2FA überspringen
+      const DEMO_EMAILS = [
+        "admin@nephroassist.de",
+        "koordinator@nephroassist.de",
+        "arzt@nephroassist.de",
+        "patient@beispiel.de",
+        "dialyse@beispiel.de",
+        "transplant@beispiel.de",
+        "angehorige@beispiel.de",
+      ];
+      const isDemo = DEMO_EMAILS.includes(user.email);
+
+      // Wenn 2FA nicht aktiv ODER Demo-Account, direkt einloggen
+      if (!user.twoFactorEnabled || isDemo) {
         await prisma.user.update({
           where: { id: user.id },
           data: { lastLoginAt: new Date() },
