@@ -15,10 +15,15 @@ La presente informativa è resa ai sensi dell'articolo 13 del Regolamento (UE) 2
 
 ---
 
-## 1. Titolare del trattamento
+## 1. Titolare e Responsabile del trattamento
 
-Il titolare del trattamento dei dati personali è:
+**Titolare del trattamento (Data Controller):**
+Il titolare del trattamento dei dati personali è il centro trapianti presso cui il paziente è in cura (la Struttura Sanitaria). Il Titolare è identificato nel contratto di cura del paziente e nella documentazione di ammissione del rispettivo centro.
 
+**Responsabile del trattamento (Data Processor — GDPR Art. 28):**
+NephroAssist GmbH agisce in qualità di Responsabile del trattamento per conto del Titolare, sulla base di un contratto di nomina (DPA) ai sensi dell'art. 28 GDPR. NephroAssist fornisce la piattaforma tecnologica e i servizi di elaborazione dei dati, ma non determina le finalità e i mezzi del trattamento.
+
+Per questioni relative alla piattaforma:
 **NephroAssist GmbH**  
 Indirizzo: [Indirizzo sede legale]  
 Partita IVA: [PIVA]  
@@ -124,14 +129,14 @@ Al termine del periodo di conservazione, i dati saranno cancellati o resi anonim
 In qualità di interessato, lei ha il diritto di:
 
 - **Accesso** (art. 15 GDPR): ottenere la conferma che sia in corso un trattamento dei suoi dati personali e, in tal caso, accedere ai dati
-- **Retttifica** (art. 16 GDPR): ottenere la rettifica dei dati personali inesatti
+- **Rettifica** (art. 16 GDPR): ottenere la rettifica dei dati personali inesatti
 - **Cancellazione** (art. 17 GDPR): ottenere la cancellazione dei dati («diritto all'oblio»), nei limiti previsti dalla legge
 - **Limitazione** (art. 18 GDPR): ottenere la limitazione del trattamento
 - **Portabilità** (art. 20 GDPR): ricevere i dati in formato strutturato, di uso comune e leggibile da dispositivo automatico
 - **Opposizione** (art. 21 GDPR): opporsi al trattamento basato sull'interesse legittimo
 - **Revoca del consenso** (art. 7 GDPR): revocare in qualsiasi momento il consenso, senza pregiudicare la liceità del trattamento basata sul consenso prima della revoca
 
-Per esercitare i suoi diritti, può contattare il Titolare o il DPO agli indirizzi indicati sopra. Le richieste saranno elaborate entro 30 giorni.
+Per esercitare i suoi diritti, può contattare il Titolare (il suo centro trapianti) o il DPO di NephroAssist agli indirizzi indicati sopra. Le richieste saranno elaborate entro 30 giorni.
 
 ---
 

@@ -1,0 +1,304 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+const TRANSLATIONS = [
+  // === GENERAL / NAVIGATION ===
+  { key: "app.title", de: "NephroAssist", it: "NephroAssist", category: "general" },
+  { key: "nav.dashboard", de: "Dashboard", it: "Dashboard", category: "general" },
+  { key: "nav.patients", de: "Patienten", it: "Pazienti", category: "general" },
+  { key: "nav.admin", de: "Administration", it: "Amministrazione", category: "general" },
+  { key: "nav.settings", de: "Einstellungen", it: "Impostazioni", category: "general" },
+  { key: "nav.logout", de: "Abmelden", it: "Disconnetti", category: "general" },
+  { key: "nav.login", de: "Anmelden", it: "Accedi", category: "general" },
+  { key: "nav.back", de: "Zurück", it: "Indietro", category: "general" },
+  { key: "nav.save", de: "Speichern", it: "Salva", category: "general" },
+  { key: "nav.cancel", de: "Abbrechen", it: "Annulla", category: "general" },
+  { key: "nav.edit", de: "Bearbeiten", it: "Modifica", category: "general" },
+  { key: "nav.delete", de: "Löschen", it: "Elimina", category: "general" },
+  { key: "nav.create", de: "Erstellen", it: "Crea", category: "general" },
+  { key: "nav.search", de: "Suchen", it: "Cerca", category: "general" },
+  { key: "nav.filter", de: "Filtern", it: "Filtra", category: "general" },
+  { key: "nav.actions", de: "Aktionen", it: "Azioni", category: "general" },
+
+  // === PATIENT ===
+  { key: "patient.title", de: "Patienten", it: "Pazienti", category: "patient" },
+  { key: "patient.new", de: "Neuer Patient", it: "Nuovo Paziente", category: "patient" },
+  { key: "patient.edit", de: "Patient bearbeiten", it: "Modifica Paziente", category: "patient" },
+  { key: "patient.firstName", de: "Vorname", it: "Nome", category: "patient" },
+  { key: "patient.lastName", de: "Nachname", it: "Cognome", category: "patient" },
+  { key: "patient.fullName", de: "Name", it: "Nome Completo", category: "patient" },
+  { key: "patient.dateOfBirth", de: "Geburtsdatum", it: "Data di Nascita", category: "patient" },
+  { key: "patient.age", de: "Alter", it: "Età", category: "patient" },
+  { key: "patient.email", de: "E-Mail", it: "Email", category: "patient" },
+  { key: "patient.phone", de: "Telefon", it: "Telefono", category: "patient" },
+  { key: "patient.language", de: "Sprache", it: "Lingua", category: "patient" },
+  { key: "patient.createdAt", de: "Erstellt", it: "Creato", category: "patient" },
+  { key: "patient.updatedAt", de: "Aktualisiert", it: "Aggiornato", category: "patient" },
+  { key: "patient.id", de: "Patienten-ID", it: "ID Paziente", category: "patient" },
+  { key: "patient.notFound", de: "Patient nicht gefunden", it: "Paziente non trovato", category: "patient" },
+  { key: "patient.details", de: "Patientendetails", it: "Dettagli Paziente", category: "patient" },
+  { key: "patient.clinic", de: "Klinik", it: "Clinica", category: "patient" },
+  { key: "patient.gp", de: "Hausarzt", it: "Medico di Medicina Generale", category: "patient" },
+  { key: "patient.gpName", de: "Hausarzt Name", it: "Nome MMG", category: "patient" },
+  { key: "patient.gpCity", de: "Hausarzt Stadt", it: "Città MMG", category: "patient" },
+  { key: "patient.gpEmail", de: "Hausarzt E-Mail", it: "Email MMG", category: "patient" },
+  { key: "patient.gpPhone", de: "Hausarzt Telefon", it: "Telefono MMG", category: "patient" },
+  { key: "patient.gpAddress", de: "Hausarzt Adresse", it: "Indirizzo MMG", category: "patient" },
+
+  // === ORGANIZATION ===
+  { key: "org.title", de: "Organisation", it: "Organizzazione", category: "org" },
+  { key: "org.name", de: "Organisationsname", it: "Nome Organizzazione", category: "org" },
+  { key: "org.select", de: "Organisation auswählen", it: "Seleziona Organizzazione", category: "org" },
+
+  // === CONSENT ===
+  { key: "consent.title", de: "Einwilligung", it: "Consenso", category: "consent" },
+  { key: "consent.pending", de: "Ausstehend", it: "In Attesa", category: "consent" },
+  { key: "consent.granted", de: "Erteilt", it: "Concesso", category: "consent" },
+  { key: "consent.revoked", de: "Widerrufen", it: "Revocato", category: "consent" },
+
+  // === TRANSPLANT ===
+  { key: "transplant.title", de: "Transplantation", it: "Trapianto", category: "transplant" },
+  { key: "transplant.type", de: "Transplantationstyp", it: "Tipo di Trapianto", category: "transplant" },
+  { key: "transplant.kidney", de: "Niere", it: "Rene", category: "transplant" },
+  { key: "transplant.liver", de: "Leber", it: "Fegato", category: "transplant" },
+  { key: "transplant.heart", de: "Herz", it: "Cuore", category: "transplant" },
+  { key: "transplant.lung", de: "Lunge", it: "Polmone", category: "transplant" },
+  { key: "transplant.pancreas", de: "Bauchspeicheldrüse", it: "Pancreas", category: "transplant" },
+  { key: "transplant.combined", de: "Kombiniert", it: "Combinato", category: "transplant" },
+  { key: "transplant.waitlist", de: "Warteliste", it: "Lista d'Attesa", category: "transplant" },
+  { key: "transplant.waitlistSince", de: "Auf Warteliste seit", it: "In Lista d'Attesa dal", category: "transplant" },
+  { key: "transplant.readiness", de: "Transplantations-Readiness", it: "Prontezza al Trapianto", category: "transplant" },
+  { key: "transplant.readinessScore", de: "Readiness-Score", it: "Punteggio di Prontezza", category: "transplant" },
+
+  // === CASE ===
+  { key: "case.title", de: "Fall", it: "Caso", category: "case" },
+  { key: "case.status", de: "Status", it: "Stato", category: "case" },
+  { key: "case.active", de: "Aktiv", it: "Attivo", category: "case" },
+  { key: "case.onHold", de: "Pausiert", it: "In Pausa", category: "case" },
+  { key: "case.closed", de: "Abgeschlossen", it: "Chiuso", category: "case" },
+  { key: "case.archived", de: "Archiviert", it: "Archiviato", category: "case" },
+  { key: "case.program", de: "Programm", it: "Programma", category: "case" },
+  { key: "case.coordinator", de: "Koordinator", it: "Coordinatore", category: "case" },
+  { key: "case.created", de: "Fall erstellt", it: "Caso Creato", category: "case" },
+  { key: "case.referralDate", de: "Einweisung", it: "Data di Invio", category: "case" },
+  { key: "case.intakeDate", de: "Aufnahme", it: "Data di Ricovero", category: "case" },
+
+  // === REQUIREMENTS ===
+  { key: "req.title", de: "Untersuchungen", it: "Esami", category: "requirements" },
+  { key: "req.open", de: "Offene Untersuchungen", it: "Esami Aperti", category: "requirements" },
+  { key: "req.assign", de: "Zuweisen", it: "Assegna", category: "requirements" },
+  { key: "req.status", de: "Status", it: "Stato", category: "requirements" },
+  { key: "req.notStarted", de: "Nicht begonnen", it: "Non Iniziato", category: "requirements" },
+  { key: "req.inProgress", de: "In Bearbeitung", it: "In Corso", category: "requirements" },
+  { key: "req.accepted", de: "Akzeptiert", it: "Accettato", category: "requirements" },
+  { key: "req.waived", de: "Befreit", it: "Esonerato", category: "requirements" },
+  { key: "req.dueDate", de: "Fällig am", it: "Scadenza", category: "requirements" },
+  { key: "req.completedAt", de: "Abgeschlossen am", it: "Completato il", category: "requirements" },
+
+  // === DIALYSIS ===
+  { key: "dialysis.title", de: "Dialyseregime", it: "Regime di Dialisi", category: "dialysis" },
+  { key: "dialysis.procedure", de: "Dialyseverfahren", it: "Procedura di Dialisi", category: "dialysis" },
+  { key: "dialysis.frequency", de: "Häufigkeit", it: "Frequenza", category: "dialysis" },
+  { key: "dialysis.duration", de: "Dauer", it: "Durata", category: "dialysis" },
+  { key: "dialysis.accessType", de: "Gefäßzugang", it: "Accesso Vascolare", category: "dialysis" },
+  { key: "dialysis.targetWeight", de: "Zielgewicht", it: "Peso Obiettivo", category: "dialysis" },
+  { key: "dialysis.ultrafiltration", de: "Ultrafiltrationsziel", it: "Obiettivo Ultrafiltrazione", category: "dialysis" },
+  { key: "dialysis.bloodFlow", de: "Blutfluss", it: "Flusso ematico", category: "dialysis" },
+  { key: "dialysis.dialysateFlow", de: "Dialysatfluss", it: "Flusso Dialisato", category: "dialysis" },
+  { key: "dialysis.dialyzerType", de: "Dialysator-Typ", it: "Tipo di Dializzatore", category: "dialysis" },
+  { key: "dialysis.dialyzerSize", de: "Dialysator-Größe", it: "Dimensione Dializzatore", category: "dialysis" },
+  { key: "dialysis.potassium", de: "Kalium", it: "Potassio", category: "dialysis" },
+  { key: "dialysis.calcium", de: "Calcium", it: "Calcio", category: "dialysis" },
+  { key: "dialysis.sodium", de: "Natrium", it: "Sodio", category: "dialysis" },
+  { key: "dialysis.bicarbonate", de: "Bicarbonat", it: "Bicarbonato", category: "dialysis" },
+  { key: "dialysis.anticoagulation", de: "Antikoagulation", it: "Anticoagulazione", category: "dialysis" },
+  { key: "dialysis.anticoagulationDose", de: "Antikoagulations-Dosierung", it: "Dosaggio Anticoagulante", category: "dialysis" },
+  { key: "dialysis.medications", de: "Medikamente während Dialyse", it: "Farmaci durante la Dialisi", category: "dialysis" },
+  { key: "dialysis.monitoring", de: "Überwachung", it: "Monitoraggio", category: "dialysis" },
+  { key: "dialysis.labControls", de: "Labor-Kontrollen", it: "Controlli di Laboratorio", category: "dialysis" },
+  { key: "dialysis.notes", de: "Notizen", it: "Note", category: "dialysis" },
+  { key: "dialysis.hemodialysis", de: "Hämodialyse", it: "Emodialisi", category: "dialysis" },
+  { key: "dialysis.hemodiafiltration", de: "Hämodiafiltration", it: "Emodiafiltrazione", category: "dialysis" },
+  { key: "dialysis.peritoneal", de: "Peritonealdialyse", it: "Dialisi Peritoneale", category: "dialysis" },
+
+  // === LAB ===
+  { key: "lab.title", de: "Laborwerte", it: "Valori di Laboratorio", category: "lab" },
+  { key: "lab.testType", de: "Testtyp", it: "Tipo di Test", category: "lab" },
+  { key: "lab.value", de: "Wert", it: "Valore", category: "lab" },
+  { key: "lab.unit", de: "Einheit", it: "Unità", category: "lab" },
+  { key: "lab.reference", de: "Referenzbereich", it: "Range di Riferimento", category: "lab" },
+  { key: "lab.testedAt", de: "Getestet am", it: "Testato il", category: "lab" },
+
+  // === MEDICATIONS ===
+  { key: "med.title", de: "Medikamentenplan", it: "Piano Farmacologico", category: "medications" },
+  { key: "med.name", de: "Medikament", it: "Farmaco", category: "medications" },
+  { key: "med.dosage", de: "Dosierung", it: "Dosaggio", category: "medications" },
+  { key: "med.frequency", de: "Häufigkeit", it: "Frequenza", category: "medications" },
+  { key: "med.route", de: "Darreichungsform", it: "Via di Somministrazione", category: "medications" },
+
+  // === DOCUMENTS ===
+  { key: "doc.title", de: "Dokumente", it: "Documenti", category: "documents" },
+  { key: "doc.upload", de: "Dokument hochladen", it: "Carica Documento", category: "documents" },
+  { key: "doc.filename", de: "Datei", it: "File", category: "documents" },
+  { key: "doc.type", de: "Typ", it: "Tipo", category: "documents" },
+  { key: "doc.status", de: "Status", it: "Stato", category: "documents" },
+  { key: "doc.uploadedAt", de: "Hochgeladen", it: "Caricato", category: "documents" },
+
+  // === APPOINTMENTS ===
+  { key: "appt.title", de: "Termine", it: "Appuntamenti", category: "appointments" },
+  { key: "appt.new", de: "Neuer Termin", it: "Nuovo Appuntamento", category: "appointments" },
+  { key: "appt.type", de: "Typ", it: "Tipo", category: "appointments" },
+  { key: "appt.date", de: "Datum", it: "Data", category: "appointments" },
+  { key: "appt.location", de: "Ort", it: "Luogo", category: "appointments" },
+
+  // === ONBOARDING ===
+  { key: "onboarding.title", de: "Onboarding-Checkliste", it: "Checklist di Onboarding", category: "onboarding" },
+  { key: "onboarding.progress", de: "Fortschritt", it: "Avanzamento", category: "onboarding" },
+  { key: "onboarding.completed", de: "Abgeschlossen", it: "Completato", category: "onboarding" },
+  { key: "onboarding.pending", de: "Ausstehend", it: "In Attesa", category: "onboarding" },
+
+  // === COMMENTS ===
+  { key: "comments.title", de: "Team-Kommentare", it: "Commenti del Team", category: "comments" },
+  { key: "comments.placeholder", de: "Kommentar hinzufügen...", it: "Aggiungi commento...", category: "comments" },
+  { key: "comments.send", de: "Senden", it: "Invia", category: "comments" },
+
+  // === LOGIN / AUTH ===
+  { key: "auth.login", de: "Anmelden", it: "Accedi", category: "auth" },
+  { key: "auth.logout", de: "Abmelden", it: "Disconnetti", category: "auth" },
+  { key: "auth.email", de: "E-Mail-Adresse", it: "Indirizzo Email", category: "auth" },
+  { key: "auth.password", de: "Passwort", it: "Password", category: "auth" },
+  { key: "auth.forgotPassword", de: "Passwort vergessen?", it: "Password dimenticata?", category: "auth" },
+  { key: "auth.demoAccounts", de: "Demo-Zugangsdaten", it: "Account Demo", category: "auth" },
+  { key: "auth.twoFactor", de: "Zwei-Faktor-Authentifizierung", it: "Autenticazione a Due Fattori", category: "auth" },
+  { key: "auth.code", de: "Bestätigungscode", it: "Codice di Conferma", category: "auth" },
+  { key: "auth.verify", de: "Code bestätigen", it: "Conferma Codice", category: "auth" },
+  { key: "auth.resend", de: "Code erneut senden", it: "Reinvia Codice", category: "auth" },
+  { key: "auth.invalidCredentials", de: "Ungültige Anmeldedaten", it: "Credenziali non valide", category: "auth" },
+  { key: "auth.sessionExpired", de: "Sitzung abgelaufen", it: "Sessione scaduta", category: "auth" },
+
+  // === ADMIN ===
+  { key: "admin.title", de: "Administration", it: "Amministrazione", category: "admin" },
+  { key: "admin.users", de: "Benutzer", it: "Utenti", category: "admin" },
+  { key: "admin.userList", de: "Benutzerliste", it: "Elenco Utenti", category: "admin" },
+  { key: "admin.roles", de: "Rollen", it: "Ruoli", category: "admin" },
+  { key: "admin.role", de: "Rolle", it: "Ruolo", category: "admin" },
+  { key: "admin.admin", de: "Admin", it: "Amministratore", category: "admin" },
+  { key: "admin.coordinator", de: "Koordinator", it: "Coordinatore", category: "admin" },
+  { key: "admin.physician", de: "Arzt", it: "Medico", category: "admin" },
+  { key: "admin.nurse", de: "Pflege", it: "Infermiere", category: "admin" },
+  { key: "admin.patient", de: "Patient", it: "Paziente", category: "admin" },
+  { key: "admin.caregiver", de: "Angehöriger", it: "Caregiver", category: "admin" },
+  { key: "admin.dialysisStaff", de: "Dialyse-Personal", it: "Personale Dialisi", category: "admin" },
+  { key: "admin.active", de: "Aktiv", it: "Attivo", category: "admin" },
+  { key: "admin.inactive", de: "Inaktiv", it: "Inattivo", category: "admin" },
+  { key: "admin.lastLogin", de: "Letzter Login", it: "Ultimo Accesso", category: "admin" },
+  { key: "admin.twoFactorEnabled", de: "2FA aktiviert", it: "2FA Attivato", category: "admin" },
+  { key: "admin.settings", de: "System-Einstellungen", it: "Impostazioni di Sistema", category: "admin" },
+  { key: "admin.auditLog", de: "Audit Log", it: "Log di Audit", category: "admin" },
+  { key: "admin.statistics", de: "Statistiken", it: "Statistiche", category: "admin" },
+
+  // === SETTINGS ===
+  { key: "settings.title", de: "Einstellungen", it: "Impostazioni", category: "settings" },
+  { key: "settings.save", de: "Einstellungen speichern", it: "Salva Impostazioni", category: "settings" },
+  { key: "settings.email", de: "E-Mail-Einstellungen", it: "Impostazioni Email", category: "settings" },
+  { key: "settings.smtp", de: "SMTP-Konfiguration", it: "Configurazione SMTP", category: "settings" },
+  { key: "settings.notifications", de: "Benachrichtigungen", it: "Notifiche", category: "settings" },
+  { key: "settings.security", de: "Sicherheit", it: "Sicurezza", category: "settings" },
+  { key: "settings.language", de: "Sprache", it: "Lingua", category: "settings" },
+  { key: "settings.testEmail", de: "Test-E-Mail senden", it: "Invia Email di Test", category: "settings" },
+
+  // === ERRORS ===
+  { key: "error.generic", de: "Ein Fehler ist aufgetreten", it: "Si è verificato un errore", category: "errors" },
+  { key: "error.network", de: "Netzwerkfehler", it: "Errore di Rete", category: "errors" },
+  { key: "error.notFound", de: "Nicht gefunden", it: "Non Trovato", category: "errors" },
+  { key: "error.unauthorized", de: "Nicht autorisiert", it: "Non Autorizzato", category: "errors" },
+  { key: "error.forbidden", de: "Zugriff verweigert", it: "Accesso Negato", category: "errors" },
+  { key: "error.required", de: "Dieses Feld ist erforderlich", it: "Questo campo è obbligatorio", category: "errors" },
+  { key: "error.invalidEmail", de: "Ungültige E-Mail-Adresse", it: "Indirizzo Email non valido", category: "errors" },
+
+  // === SUCCESS ===
+  { key: "success.saved", de: "Gespeichert", it: "Salvato", category: "success" },
+  { key: "success.created", de: "Erstellt", it: "Creato", category: "success" },
+  { key: "success.updated", de: "Aktualisiert", it: "Aggiornato", category: "success" },
+  { key: "success.deleted", de: "Gelöscht", it: "Eliminato", category: "success" },
+
+  // === LOADING ===
+  { key: "loading.title", de: "Laden...", it: "Caricamento...", category: "loading" },
+  { key: "loading.patient", de: "Patientendaten werden geladen...", it: "Caricamento dati paziente...", category: "loading" },
+
+  // === COMMON ===
+  { key: "common.yes", de: "Ja", it: "Sì", category: "common" },
+  { key: "common.no", de: "Nein", it: "No", category: "common" },
+  { key: "common.ok", de: "OK", it: "OK", category: "common" },
+  { key: "common.close", de: "Schließen", it: "Chiudi", category: "common" },
+  { key: "common.confirm", de: "Bestätigen", it: "Conferma", category: "common" },
+  { key: "common.submit", de: "Absenden", it: "Invia", category: "common" },
+  { key: "common.next", de: "Weiter", it: "Avanti", category: "common" },
+  { key: "common.previous", de: "Zurück", it: "Indietro", category: "common" },
+  { key: "common.none", de: "— Keiner —", it: "— Nessuno —", category: "common" },
+  { key: "common.select", de: "Bitte wählen...", it: "Seleziona...", category: "common" },
+  { key: "common.email", de: "E-Mail", it: "Email", category: "common" },
+  { key: "common.phone", de: "Telefon", it: "Telefono", category: "common" },
+  { key: "common.address", de: "Adresse", it: "Indirizzo", category: "common" },
+  { key: "common.city", de: "Stadt", it: "Città", category: "common" },
+  { key: "common.notes", de: "Notizen", it: "Note", category: "common" },
+  { key: "common.date", de: "Datum", it: "Data", category: "common" },
+  { key: "common.time", de: "Zeit", it: "Ora", category: "common" },
+  { key: "common.status", de: "Status", it: "Stato", category: "common" },
+  { key: "common.type", de: "Typ", it: "Tipo", category: "common" },
+  { key: "common.name", de: "Name", it: "Nome", category: "common" },
+  { key: "common.description", de: "Beschreibung", it: "Descrizione", category: "common" },
+
+  // === SIDEBAR ===
+  { key: "sidebar.patients", de: "Patienten", it: "Pazienti", category: "sidebar" },
+  { key: "sidebar.overview", de: "Übersicht", it: "Panoramica", category: "sidebar" },
+  { key: "sidebar.clinic", de: "Klinik", it: "Clinica", category: "sidebar" },
+  { key: "sidebar.documents", de: "Dokumente", it: "Documenti", category: "sidebar" },
+  { key: "sidebar.appointments", de: "Termine", it: "Appuntamenti", category: "sidebar" },
+  { key: "sidebar.requirements", de: "Untersuchungen", it: "Esami", category: "sidebar" },
+  { key: "sidebar.messages", de: "Nachrichten", it: "Messaggi", category: "sidebar" },
+  { key: "sidebar.admin", de: "Administration", it: "Amministrazione", category: "sidebar" },
+  { key: "sidebar.users", de: "Benutzer", it: "Utenti", category: "sidebar" },
+  { key: "sidebar.systemSettings", de: "System-Einstellungen", it: "Impostazioni di Sistema", category: "sidebar" },
+  { key: "sidebar.auditLog", de: "Audit Log", it: "Log di Audit", category: "sidebar" },
+  { key: "sidebar.statistics", de: "Statistiken", it: "Statistiche", category: "sidebar" },
+];
+
+/* POST /api/translations/seed */
+export async function POST() {
+  try {
+    const session = await auth();
+    if (!session || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
+    }
+
+    let created = 0;
+    let updated = 0;
+
+    for (const item of TRANSLATIONS) {
+      // German
+      const de = await prisma.translation.upsert({
+        where: { key_language: { key: item.key, language: "de" } },
+        create: { key: item.key, language: "de", value: item.de, category: item.category },
+        update: { value: item.de, category: item.category },
+      });
+      if (de.createdAt.getTime() === de.updatedAt.getTime()) created++; else updated++;
+
+      // Italian
+      const it = await prisma.translation.upsert({
+        where: { key_language: { key: item.key, language: "it" } },
+        create: { key: item.key, language: "it", value: item.it, category: item.category },
+        update: { value: item.it, category: item.category },
+      });
+      if (it.createdAt.getTime() === it.updatedAt.getTime()) created++; else updated++;
+    }
+
+    return NextResponse.json({ success: true, created, updated, total: TRANSLATIONS.length * 2 });
+  } catch (error) {
+    console.error("Translations seed error:", error);
+    return NextResponse.json({ error: "Fehler beim Seed" }, { status: 500 });
+  }
+}

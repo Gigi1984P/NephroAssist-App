@@ -49,7 +49,7 @@ Dopo l'accesso vedrà la dashboard principale con quattro aree:
 ### 2.1 Aggiungere un nuovo paziente
 
 1. Clicchi su «Nuovo paziente» in alto a destra
-2. Compila i campi obbligatori:
+2. Compili i campi obbligatori:
    - Nome e cognome
    - Codice fiscale
    - Data di nascita (GG/MM/AAAA)

@@ -26,7 +26,7 @@
     },
     "overdue": {
       "title": "Farmaco in ritardo ⚠️",
-      "body": "Ha un farmaco che non ha ancora assunto. Lo assuma ora, se sicura/o.",
+      "body": "Ha un farmaco che non ha ancora assunto. Lo assuma ora, se si sente pronto/a.",
       "actionLabel": "Assumi ora"
     }
   },
@@ -125,7 +125,7 @@
     },
     "waitlistWeekly": {
       "title": "Promemoria settimanale 🌱",
-      "body": "È difficile aspettare. Sta facendo tutto bene. Resti in salute e positiva/o — farmaci puntuali, controlli regolari, stia bene.",
+      "body": "È difficile aspettare. Sta facendo tutto bene. Resti in salute — farmaci puntuali, controlli regolari, stia bene.",
       "actionLabel": "Le mie attività"
     },
     "organOffer": {

@@ -1344,6 +1344,20 @@ model EmailVerificationToken {
   @@map("email_verification_tokens")
 }
 
+model Translation {
+  id        String   @id @default(uuid())
+  key       String
+  language  String
+  value     String
+  category  String   @default("general")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([key, language])
+  @@index([category])
+  @@map("translations")
+}
+
 model TwoFactorCode {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")

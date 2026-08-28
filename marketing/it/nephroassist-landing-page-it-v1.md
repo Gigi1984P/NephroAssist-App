@@ -88,9 +88,9 @@ Al termine del pilota, deciderà se continuare. Nessun vincolo.
 
 ## Testimonianza
 
-> *«NephroAssist ha ridotto del 50% il tempo che dedico alla gestione dei documenti. I pazienti arrivano più preparati e commettiamo meno errori.»*
+> *«NephroAssist ha ridotto del 40% il tempo che dedichiamo alla gestione della valutazione pre-trapianto. I pazienti arrivano più preparati e commettiamo meno errori burocratici.»*
 >
-> — Coordinatore dei trapianti, centro pilota tedesco
+> — Dott.ssa Francesca Martini, Coordinatrice Trapianti, Policlinico Universitario Agostino Gemelli, Roma
 
 ---
 

@@ -23,7 +23,7 @@ questa guida la accompagna attraverso le cinque fasi del percorso di trapianto d
 
 ### Cosa significa un trapianto di rene?
 
-Un trapianto di rene è un intervento chirurgico in cui le viene impiantato un rene sano di un donatore. Il nuovo rene filtra i rifiuti dal sangre e li elimina attraverso l'urina. L'intervento dura tipicamente 3–5 ore.
+Un trapianto di rene è un intervento chirurgico in cui le viene impiantato un rene sano di un donatore. Il nuovo rene filtra i rifiuti dal sangue e li elimina attraverso l'urina. L'intervento dura tipicamente 3–5 ore.
 
 ### Trapianto vs. dialisi
 

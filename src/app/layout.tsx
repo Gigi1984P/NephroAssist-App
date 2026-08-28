@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/toast-provider";
 import { NProgressWrapper } from "@/components/nprogress-wrapper";
+import { I18nProvider } from "@/components/i18n-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,8 +34,10 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <NProgressWrapper />
-        <ToastProvider>{children}</ToastProvider>
+        <I18nProvider>
+          <NProgressWrapper />
+          <ToastProvider>{children}</ToastProvider>
+        </I18nProvider>
       </body>
     </html>
   );
