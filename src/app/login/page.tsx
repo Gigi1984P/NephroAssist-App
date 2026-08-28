@@ -11,17 +11,15 @@ interface DemoAccount {
   name: string;
 }
 
-const demoAccounts: DemoAccount[] = process.env.NODE_ENV === "production"
-  ? []
-  : [
-      { email: "admin@nephroassist.de", password: "Test1234!", role: "Admin", name: "Dr. Anna Admin" },
-      { email: "koordinator@nephroassist.de", password: "Test1234!", role: "Koordinator", name: "Max Koordinator" },
-      { email: "arzt@nephroassist.de", password: "Test1234!", role: "Arzt", name: "Dr. Petra Arzt" },
-      { email: "patient@beispiel.de", password: "Test1234!", role: "Patient", name: "Hans Patient" },
-      { email: "dialyse@beispiel.de", password: "Test1234!", role: "Dialyse", name: "Lisa Dialyse" },
-      { email: "transplant@beispiel.de", password: "Test1234!", role: "Transplant", name: "Dr. Transplantklinik" },
-      { email: "angehorige@beispiel.de", password: "Test1234!", role: "Pflege", name: "Marie Pflege" },
-    ];
+const demoAccounts: DemoAccount[] = [
+  { email: "admin@nephroassist.de", password: "Test1234!", role: "Admin", name: "Dr. Anna Admin" },
+  { email: "koordinator@nephroassist.de", password: "Test1234!", role: "Koordinator", name: "Max Koordinator" },
+  { email: "arzt@nephroassist.de", password: "Test1234!", role: "Arzt", name: "Dr. Petra Arzt" },
+  { email: "patient@beispiel.de", password: "Test1234!", role: "Patient", name: "Hans Patient" },
+  { email: "dialyse@beispiel.de", password: "Test1234!", role: "Dialyse", name: "Lisa Dialyse" },
+  { email: "transplant@beispiel.de", password: "Test1234!", role: "Transplant", name: "Dr. Transplantklinik" },
+  { email: "angehorige@beispiel.de", password: "Test1234!", role: "Pflege", name: "Marie Pflege" },
+];
 
 export default function LoginPage() {
   const [error, setError] = useState("");
