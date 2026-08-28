@@ -18,10 +18,25 @@ export async function GET() {
       return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
     }
 
+    // Tenant isolation
+    let orgFilter = {};
+    if (user.role !== "ADMIN") {
+      const memberships = await prisma.organizationMembership.findMany({
+        where: { userId: user.id },
+        select: { organizationId: true },
+      });
+      const orgIds = memberships.map((m) => m.organizationId);
+      if (orgIds.length === 0) {
+        return NextResponse.json({ documents: [] });
+      }
+      orgFilter = { organizationId: { in: orgIds } };
+    }
+
     // Dokumente die geprüft werden müssen
     const documents = await prisma.document.findMany({
       where: {
         processingStatus: { in: ["UPLOADED", "READY_FOR_REVIEW", "UNDER_REVIEW"] },
+        ...orgFilter,
       },
       orderBy: { createdAt: "desc" },
       include: {

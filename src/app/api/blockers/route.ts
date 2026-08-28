@@ -22,8 +22,22 @@ export async function GET() {
       return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
     }
 
+    // Tenant isolation
+    let orgFilter = {};
+    if (user.role !== "ADMIN") {
+      const memberships = await prisma.organizationMembership.findMany({
+        where: { userId: user.id },
+        select: { organizationId: true },
+      });
+      const orgIds = memberships.map((m) => m.organizationId);
+      if (orgIds.length === 0) {
+        return NextResponse.json({ blockers: [] });
+      }
+      orgFilter = { patientCase: { organizationId: { in: orgIds } } };
+    }
+
     const blockers = await prisma.blocker.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: "ACTIVE", ...orgFilter },
       include: {
         patientCase: {
           include: {

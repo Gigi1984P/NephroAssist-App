@@ -2,424 +2,93 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAllowedPatientIds } from "@/lib/permissions";
-import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { CheckCircle, ExternalLink, Clock, Calendar } from "lucide-react";
+import PatientDashboardClient from "./_components/patient-dashboard-client";
+import CoordinatorQueueClient from "./_components/coordinator-queue-client";
 
 export default async function DashboardPage() {
   const session = await auth();
-
-  if (!session) {
-    redirect("/login");
-  }
+  if (!session) redirect("/login");
 
   const user = session.user;
   const userRole = user.role as "ADMIN" | "COORDINATOR" | "PHYSICIAN" | "NURSE" | "PATIENT" | "CAREGIVER" | "DIALYSIS_STAFF";
-  const allowedPatientIds = await getAllowedPatientIds({ ...user, role: userRole });
-
   const isPatientOrCaregiver = userRole === "PATIENT" || userRole === "CAREGIVER";
 
-  // Patienten-Dashboard: zeigt ProgressCard + Termine
   if (isPatientOrCaregiver) {
-    // Termine laden
+    // Patient dashboard data
+    const allowedPatientIds = await getAllowedPatientIds({ ...user, role: userRole });
     const patientId = Array.isArray(allowedPatientIds) && allowedPatientIds.length > 0
       ? allowedPatientIds[0]
       : null;
 
+    let requirements: any[] = [];
     let appointments: any[] = [];
+
     if (patientId) {
-      try {
-        appointments = await prisma.appointment.findMany({
-          where: {
-            patientId,
-            startTime: { gte: new Date() },
-          },
-          orderBy: { startTime: "asc" },
-          take: 10,
-          select: {
-            id: true,
-            type: true,
-            provider: true,
-            location: true,
-            startTime: true,
-            endTime: true,
-            status: true,
-            notes: true,
-          },
-        });
-      } catch (e) { console.error("appointments error:", e); }
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      requirements = await prisma.patientRequirement.findMany({
+        where: { patientCase: { patientId } },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          dueDate: true,
+          expiresAt: true,
+          completedAt: true,
+          patientFriendlyDescription: true,
+          category: true,
+        },
+        orderBy: [{ priority: "asc" }, { dueDate: "asc" }],
+      });
+
+      appointments = await prisma.appointment.findMany({
+        where: { patientId, startTime: { gte: now }, deletedAt: null },
+        orderBy: { startTime: "asc" },
+        take: 3,
+        select: {
+          id: true,
+          type: true,
+          provider: true,
+          location: true,
+          startTime: true,
+          endTime: true,
+          status: true,
+          notes: true,
+        },
+      });
+
+      return (
+        <PatientDashboardClient
+          userName={user.name || ""}
+          requirements={requirements}
+          appointments={appointments}
+          nowIso={now.toISOString()}
+          sevenDaysAgoIso={sevenDaysAgo.toISOString()}
+          thirtyDaysFromNowIso={thirtyDaysFromNow.toISOString()}
+        />
+      );
     }
 
-    const formatDateTime = (date: Date) => {
-      return new Date(date).toLocaleDateString("de-DE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    };
-
-    const getStatusBadge = (status: string) => {
-      switch (status) {
-        case "CONFIRMED": return "bg-success text-white";
-        case "PLANNED": return "bg-primary text-white";
-        case "RESCHEDULE_REQUIRED": return "bg-warning text-dark";
-        case "CANCELLED": return "bg-secondary";
-        default: return "bg-info text-dark";
-      }
-    };
-
-    const getStatusLabel = (status: string) => {
-      switch (status) {
-        case "CONFIRMED": return "Bestätigt";
-        case "PLANNED": return "Geplant";
-        case "RESCHEDULE_REQUIRED": return "Neu terminieren";
-        case "CANCELLED": return "Abgesagt";
-        case "COMPLETED": return "Abgeschlossen";
-        case "NO_SHOW": return "Nicht erschienen";
-        default: return status;
-      }
-    };
-
     return (
-      <div>
-        <div className="mb-4">
-          <h2 className="h3 fw-bold mb-1" style={{ color: "#1e293b" }}>
-            Willkommen zurück{user.name ? `, ${user.name}` : ""}!
-          </h2>
-          <p className="text-muted mb-0">Hier ist ein Überblick über Ihre aktuellen Aktivitäten.</p>
-        </div>
-        <PatientProgressCard />
-
-        {/* Termine-Tabelle */}
-        <div className="dashboard-card mb-4">
-          <div className="card-header-custom d-flex justify-content-between align-items-center">
-            <span className="fw-semibold d-flex align-items-center gap-2">
-              <Calendar size={16} />
-              Meine Termine
-            </span>
-            <Link href="/dashboard/tasks" className="btn btn-sm btn-outline-primary">
-              Alle ansehen →
-            </Link>
-          </div>
-          <div className="card-body-custom p-0">
-            {appointments.length === 0 ? (
-              <div className="p-4 text-center text-muted">
-                <div className="mb-2"><Calendar size={24} className="text-muted" /></div>
-                <div className="fw-medium">Keine anstehenden Termine</div>
-                <div className="small">Sobald Termine vereinbart sind, erscheinen sie hier.</div>
-              </div>
-            ) : (
-              <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th>Termin</th>
-                      <th>Typ</th>
-                      <th>Ort</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {appointments.map((apt) => (
-                      <tr key={apt.id}>
-                        <td>
-                          <div className="fw-medium">{formatDateTime(apt.startTime)}</div>
-                          {apt.endTime && (
-                            <div className="small text-muted">
-                              bis {new Date(apt.endTime).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <div className="fw-medium">{apt.type || "—"}</div>
-                          {apt.provider && <div className="small text-muted">{apt.provider}</div>}
-                        </td>
-                        <td>
-                          <span className="small">{apt.location || "—"}</span>
-                        </td>
-                        <td>
-                          <span className={`badge ${getStatusBadge(apt.status)}`}>
-                            {getStatusLabel(apt.status)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <PatientDashboardClient
+        userName={user.name || ""}
+        requirements={[]}
+        appointments={[]}
+        nowIso={new Date().toISOString()}
+        sevenDaysAgoIso={new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}
+        thirtyDaysFromNowIso={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()}
+      />
     );
   }
 
-  // KLINIK-DASHBOARD
-  const patientFilter = userRole === "ADMIN" || allowedPatientIds === null
-    ? {}
-    : allowedPatientIds.length > 0
-      ? { id: { in: allowedPatientIds } }
-      : { id: "" };
-
-  // ALLE Patienten mit Cases/Requirements
-  const patients = await prisma.patient.findMany({
-    where: patientFilter,
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phone: true,
-      consentStatus: true,
-      updatedAt: true,
-      cases: {
-        select: {
-          id: true,
-          requirements: {
-            select: {
-              id: true,
-              status: true,
-              title: true,
-              template: {
-                select: { name: true, category: true },
-              },
-            },
-          },
-        },
-      },
-    },
-    orderBy: { lastName: "asc" },
-    take: 100,
-  });
-
-  // Patienten mit allen abgeschlossenen Untersuchungen
-  const completedPatients = patients
-    .map((patient) => {
-      const allRequirements = patient.cases.flatMap((c) => c.requirements);
-      const totalCount = allRequirements.length;
-      const completedCount = allRequirements.filter(
-        (r) => r.status === "ACCEPTED" || r.status === "WAIVED" || r.status === "NOT_APPLICABLE"
-      ).length;
-
-      return {
-        id: patient.id,
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        email: patient.email,
-        phone: patient.phone,
-        consentStatus: patient.consentStatus,
-        totalRequirements: totalCount,
-        completedRequirements: completedCount,
-        allDone: totalCount > 0 && totalCount === completedCount,
-      };
-    })
-    .filter((p) => p.allDone);
-
-  // ZULETZT AUFGERUFENE Patienten (nach updatedAt, von Patienten-Detail-Aufruf)
-  const recentlyViewed = [...patients]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 10)
-    .map((p) => ({
-      id: p.id,
-      firstName: p.firstName,
-      lastName: p.lastName,
-      email: p.email,
-      phone: p.phone,
-      updatedAt: p.updatedAt,
-    }));
-
-  const getConsentBadgeClass = (status: string) => {
-    switch (status) {
-      case "GRANTED": return "bg-success";
-      case "PENDING": return "bg-warning text-dark";
-      case "DENIED": return "bg-danger";
-      default: return "bg-secondary";
-    }
-  };
-
-  const getConsentLabel = (status: string) => {
-    switch (status) {
-      case "GRANTED": return "Einwilligt";
-      case "PENDING": return "Ausstehend";
-      case "DENIED": return "Abgelehnt";
-      default: return status;
-    }
-  };
-
-  const formatDateTime = (date: Date) => {
-    return new Date(date).toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
+  // Clinic dashboard — pass through to client component
   return (
     <div>
-      <PageHeader
-        title="Dashboard"
-        description="Klinik-Dashboard"
-      />
-
-      {/* Tabelle: Zuletzt aufgerufene Patienten */}
-      <div className="dashboard-card mb-4">
-        <div className="card-header-custom d-flex justify-content-between align-items-center">
-          <span className="fw-semibold d-flex align-items-center gap-2">
-            <Clock size={16} />
-            Zuletzt aufgerufene Patienten
-          </span>
-        </div>
-        <div className="card-body-custom p-0">
-          {recentlyViewed.length === 0 ? (
-            <div className="p-4 text-center text-muted">
-              <div className="mb-2"><Clock size={24} className="text-muted" /></div>
-              <div className="fw-medium">Keine kürzlich aufgerufenen Patienten</div>
-              <div className="small">Patienten erscheinen hier, sobald Sie deren Detailseite besuchen.</div>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Patient</th>
-                    <th>Kontakt</th>
-                    <th>Zuletzt aufgerufen</th>
-                    <th className="text-end">Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentlyViewed.map((patient) => {
-                    const initials = (patient.firstName?.charAt(0) || "") + (patient.lastName?.charAt(0) || "");
-                    return (
-                      <tr key={patient.id}>
-                        <td>
-                          <div className="d-flex align-items-center gap-2">
-                            <div
-                              className="d-flex align-items-center justify-content-center fw-bold text-white"
-                              style={{
-                                width: 36, height: 36, borderRadius: "50%", background: "#3b82f6", fontSize: "0.8rem", flexShrink: 0,
-                              }}
-                            >
-                              {initials}
-                            </div>
-                            <div>
-                              <div className="fw-medium">{patient.firstName} {patient.lastName}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div style={{ fontSize: "0.85rem" }}>
-                            <div>{patient.email || "—"}</div>
-                            <div className="text-muted">{patient.phone || "—"}</div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="badge bg-info text-dark">
-                            <Clock size={10} className="me-1" />
-                            {formatDateTime(patient.updatedAt)}
-                          </span>
-                        </td>
-                        <td className="text-end">
-                          <Link
-                            href={`/dashboard/patients/${patient.id}/clinic`}
-                            className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-                          >
-                            <ExternalLink size={14} /> Details
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Tabelle: Patienten mit allen abgeschlossenen Untersuchungen */}
-      <div className="dashboard-card">
-        <div className="card-header-custom d-flex justify-content-between align-items-center">
-          <span className="fw-semibold">Patienten — Alle Untersuchungen abgeschlossen</span>
-        </div>
-        <div className="card-body-custom p-0">
-          {completedPatients.length === 0 ? (
-            <div className="p-5 text-center text-muted">
-              <div className="mb-2"><CheckCircle size={32} className="text-muted" /></div>
-              <div className="fw-medium">Keine Patienten mit allen abgeschlossenen Untersuchungen</div>
-              <div className="small">Sobald ein Patient alle Anforderungen erfüllt hat, erscheint er hier.</div>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Patient</th>
-                    <th>Kontakt</th>
-                    <th>Einwilligung</th>
-                    <th>Untersuchungen</th>
-                    <th className="text-end">Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {completedPatients.map((patient) => {
-                    const initials = (patient.firstName?.charAt(0) || "") + (patient.lastName?.charAt(0) || "");
-                    return (
-                      <tr key={patient.id}>
-                        <td>
-                          <div className="d-flex align-items-center gap-2">
-                            <div
-                              className="d-flex align-items-center justify-content-center fw-bold text-white"
-                              style={{
-                                width: 36, height: 36, borderRadius: "50%", background: "#3b82f6", fontSize: "0.8rem", flexShrink: 0,
-                              }}
-                            >
-                              {initials}
-                            </div>
-                            <div>
-                              <div className="fw-medium">{patient.firstName} {patient.lastName}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div style={{ fontSize: "0.85rem" }}>
-                            <div>{patient.email || "—"}</div>
-                            <div className="text-muted">{patient.phone || "—"}</div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`badge ${getConsentBadgeClass(patient.consentStatus)}`}>{getConsentLabel(patient.consentStatus)}</span>
-                        </td>
-                        <td>
-                          <span className="badge bg-success">
-                            <CheckCircle size={12} className="me-1" />
-                            {patient.completedRequirements} / {patient.totalRequirements}
-                          </span>
-                        </td>
-                        <td className="text-end">
-                          <Link
-                            href={`/dashboard/patients/${patient.id}/clinic`}
-                            className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-                          >
-                            <ExternalLink size={14} /> Details
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+      <PageHeader title="Dashboard" description="Klinik-Dashboard" />
+      <CoordinatorQueueClient />
     </div>
   );
 }
-
-/* Client-Component Import für Patienten-Dashboard */
-import PatientProgressCard from "@/components/patient-progress-card";

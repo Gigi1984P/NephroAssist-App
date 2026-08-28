@@ -16,9 +16,23 @@ export async function GET() {
     const { user } = session;
 
     if (CLINIC_ROLES.includes(user.role)) {
+      // Tenant isolation
+      let orgFilter = {};
+      if (user.role !== "ADMIN") {
+        const memberships = await prisma.organizationMembership.findMany({
+          where: { userId: user.id },
+          select: { organizationId: true },
+        });
+        const orgIds = memberships.map((m) => m.organizationId);
+        if (orgIds.length === 0) {
+          return NextResponse.json({ helpRequests: [] });
+        }
+        orgFilter = { organizationId: { in: orgIds } };
+      }
+
       // Klinik: Alle offenen Hilfeanfragen
       const helpRequests = await prisma.helpRequest.findMany({
-        where: { status: { in: ["OPEN", "IN_PROGRESS"] } },
+        where: { status: { in: ["OPEN", "IN_PROGRESS"] }, ...orgFilter },
         orderBy: { createdAt: "desc" },
         include: {
           patient: { select: { firstName: true, lastName: true } },
