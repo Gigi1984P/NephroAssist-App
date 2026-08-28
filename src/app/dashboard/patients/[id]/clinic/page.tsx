@@ -31,26 +31,20 @@ const CLINIC_ROLES = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"];
 /* ------------------------------------------------------------------ */
 function formatDate(dateStr: string | null | Date): string {
   if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  } catch { return "—"; }
 }
 
 function formatDateTime(dateStr: string | null | Date): string {
   if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch { return "—"; }
 }
 
 function getStatusBadge(status: string | null) {
@@ -95,89 +89,149 @@ export default async function PatientClinicDetailPage({
   /* ---------------------------------------------------------------- */
   const { id } = await params;
 
-  const patient = await prisma.patient.findUnique({
-    where: { id },
-    include: {
-      user: { select: { email: true } },
-      Organization: { select: { name: true, id: true } },
-      cases: {
-        include: {
-          program: { select: { name: true, type: true } },
+  let patient: any = null;
+  try {
+    patient = await prisma.patient.findUnique({
+      where: { id },
+      include: {
+        user: { select: { email: true } },
+        Organization: { select: { name: true, id: true } },
+        cases: {
+          include: {
+            program: { select: { name: true, type: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 1,
         },
-        orderBy: { createdAt: "desc" },
-        take: 1,
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error("[ClinicPage] Patient fetch error:", err);
+    // Try minimal fallback
+    try {
+      patient = await prisma.patient.findUnique({ where: { id } });
+    } catch (err2) {
+      console.error("[ClinicPage] Minimal patient fetch error:", err2);
+    }
+  }
 
   if (!patient) {
     notFound();
   }
 
   /* ---------------------------------------------------------------- */
-  /*  ZUSATZDATEN                                                     */
+  /*  ZUSATZDATEN – mit individuellem Error-Handling                  */
   /* ---------------------------------------------------------------- */
-  const [documents, appointments, blockers, timelineEvents, requirements, helpRequests, tasks, medications] = await Promise.all([
-    prisma.document.findMany({
+  let documents: any[] = [];
+  let appointments: any[] = [];
+  let blockers: any[] = [];
+  let timelineEvents: any[] = [];
+  let requirements: any[] = [];
+  let helpRequests: any[] = [];
+  let tasks: any[] = [];
+  let medications: any[] = [];
+
+  // Dokumente
+  try {
+    documents = await prisma.document.findMany({
       where: { patientId: id },
       orderBy: { createdAt: "desc" },
       take: 15,
       select: { id: true, filename: true, documentType: true, processingStatus: true, createdAt: true },
-    }).catch(() => []),
-    prisma.appointment.findMany({
+    });
+  } catch (err) { console.error("[ClinicPage] documents error:", err); }
+
+  // Termine
+  try {
+    appointments = await prisma.appointment.findMany({
       where: { patientId: id },
       orderBy: { startTime: "asc" },
       take: 10,
       select: { id: true, type: true, startTime: true, location: true, status: true },
-    }).catch(() => []),
-    prisma.blocker.findMany({
+    });
+  } catch (err) { console.error("[ClinicPage] appointments error:", err); }
+
+  // Blocker – robust: wenn patientCase-Filter fehlschlägt, fallback auf leer
+  try {
+    blockers = await prisma.blocker.findMany({
       where: { patientCase: { patientId: id } },
       include: { requirement: { select: { title: true } } },
       orderBy: { createdAt: "desc" },
       take: 5,
-    }).catch(() => []),
-    prisma.timelineEvent.findMany({
+    });
+  } catch (err) {
+    console.error("[ClinicPage] blockers error:", err);
+    blockers = [];
+  }
+
+  // Timeline
+  try {
+    timelineEvents = await prisma.timelineEvent.findMany({
       where: { patientCase: { patientId: id } },
       orderBy: { createdAt: "desc" },
       take: 8,
-    }).catch(() => []),
-    prisma.patientRequirement.findMany({
+    });
+  } catch (err) {
+    console.error("[ClinicPage] timelineEvents error:", err);
+    timelineEvents = [];
+  }
+
+  // Requirements – das ist der wahrscheinlichste Fehlerursprung
+  try {
+    requirements = await prisma.patientRequirement.findMany({
       where: { patientCase: { patientId: id } },
       include: {
         tasks: { select: { id: true, status: true, title: true, stepNumber: true, ownerType: true } },
         template: { select: { name: true, category: true, patientFriendlyDescription: true } },
       },
       orderBy: { priority: "desc" },
-    }).catch(() => []),
-    prisma.helpRequest.findMany({
+    });
+  } catch (err) {
+    console.error("[ClinicPage] requirements error:", err);
+    requirements = [];
+  }
+
+  // Help Requests
+  try {
+    helpRequests = await prisma.helpRequest.findMany({
       where: { patientId: id },
       orderBy: { createdAt: "desc" },
       take: 5,
-    }).catch(() => []),
-    prisma.task.findMany({
+    });
+  } catch (err) { console.error("[ClinicPage] helpRequests error:", err); }
+
+  // Tasks
+  try {
+    tasks = await prisma.task.findMany({
       where: { patientId: id },
       orderBy: { dueDate: "asc" },
       take: 10,
       select: { id: true, title: true, status: true, dueDate: true, description: true },
-    }).catch(() => []),
-    prisma.medication.findMany({
+    });
+  } catch (err) { console.error("[ClinicPage] tasks error:", err); }
+
+  // Medications
+  try {
+    medications = await prisma.medication.findMany({
       where: { patientId: id },
       orderBy: [{ substance: "asc" }, { name: "asc" }],
-    }).catch(() => []),
-  ]);
+    });
+  } catch (err) { console.error("[ClinicPage] medications error:", err); }
 
   // Coordinator Name
   let coordinatorName = "—";
-  const latestCase = patient.cases[0];
+  const latestCase = patient.cases?.[0] || null;
   if (latestCase?.coordinatorId) {
-    const coord = await prisma.user.findUnique({
-      where: { id: latestCase.coordinatorId },
-      select: { name: true },
-    }).catch(() => null);
-    if (coord?.name) coordinatorName = coord.name;
+    try {
+      const coord = await prisma.user.findUnique({
+        where: { id: latestCase.coordinatorId },
+        select: { name: true },
+      });
+      if (coord?.name) coordinatorName = coord.name;
+    } catch (err) { console.error("[ClinicPage] coordinator fetch error:", err); }
   }
 
-  const fullName = `${patient.firstName} ${patient.lastName}`;
+  const fullName = `${patient.firstName || ""} ${patient.lastName || ""}`.trim() || "Unbekannt";
   const age = patient.dateOfBirth
     ? Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
     : null;
@@ -187,14 +241,14 @@ export default async function PatientClinicDetailPage({
   /* ---------------------------------------------------------------- */
   return (
     <div className="p-4">
-    <PageHeader title={fullName} />
+      <PageHeader title={fullName} />
 
-    {/* Zurück-Button */}
-    <div className="mb-3">
-      <Link href="/dashboard/patients" className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
-        <ArrowLeft size={14} /> Zurück zur Übersicht
-      </Link>
-    </div>
+      {/* Zurück-Button */}
+      <div className="mb-3">
+        <Link href="/dashboard/patients" className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+          <ArrowLeft size={14} /> Zurück zur Übersicht
+        </Link>
+      </div>
 
       {/* PATIENTENSTAMMDATEN */}
       <div className="card mb-4 shadow-sm">
@@ -251,7 +305,7 @@ export default async function PatientClinicDetailPage({
         </div>
       </div>
 
-      {/* NEU: READINESS + LABORWERTE */}
+      {/* READINESS + LABORWERTE */}
       <div className="row mb-4">
         <div className="col-lg-6">
           <div className="card shadow-sm h-100">
@@ -263,12 +317,9 @@ export default async function PatientClinicDetailPage({
                 <span className="text-muted" style={{ fontSize: "0.85rem" }}>
                   Basierend auf abgeschlossenen Untersuchungen
                 </span>
-                <button
-                  className="btn btn-sm btn-outline-success"
-                  onClick={() => window.location.reload()}
-                >
+                <a href={`/dashboard/patients/${id}/clinic`} className="btn btn-sm btn-outline-success">
                   Neu berechnen
-                </button>
+                </a>
               </div>
               <ReadinessScoreBadge patientId={id} />
             </div>
@@ -499,16 +550,18 @@ export default async function PatientClinicDetailPage({
         <div className="card-header bg-primary text-white d-flex align-items-center gap-2">
           <Pencil size={18} /> Aktionen
         </div>
-        <div className="card-body d-flex gap-2">
-          <Link href={`/dashboard/patients/${id}`} className="btn btn-outline-primary btn-sm">
-            Bearbeiten
-          </Link>
-          <Link href={`/dashboard/patients/${id}`} className="btn btn-outline-danger btn-sm">
-            Patient löschen
-          </Link>
-          <Link href="/dashboard/patients" className="btn btn-outline-secondary btn-sm">
-            Zurück
-          </Link>
+        <div className="card-body">
+          <div className="d-flex flex-wrap gap-2">
+            <Link href={`/dashboard/patients/${id}/edit`} className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+              <Pencil size={14} /> Bearbeiten
+            </Link>
+            <Link href={`/dashboard/patients/${id}/documents/upload`} className="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1">
+              <FileUp size={14} /> Dokument hochladen
+            </Link>
+            <Link href={`/dashboard/patients/${id}/appointments/new`} className="btn btn-outline-info btn-sm d-inline-flex align-items-center gap-1">
+              <Calendar size={14} /> Termin vereinbaren
+            </Link>
+          </div>
         </div>
       </div>
     </div>
