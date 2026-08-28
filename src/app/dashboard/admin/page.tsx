@@ -19,6 +19,7 @@ export default async function AdminPage() {
         email: true,
         role: true,
         isActive: true,
+        twoFactorEnabled: true,
         lastLoginAt: true,
         createdAt: true,
       },
@@ -28,7 +29,12 @@ export default async function AdminPage() {
   ]);
 
   const usersWithStrings = users.map((u) => ({
-    ...u,
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    role: u.role,
+    isActive: u.isActive,
+    twoFactorEnabled: u.twoFactorEnabled,
     lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,
     createdAt: u.createdAt.toISOString(),
   }));
