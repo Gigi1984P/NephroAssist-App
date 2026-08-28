@@ -13,10 +13,25 @@ export default async function AdminPage() {
   const [users, organizations, roles] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        createdAt: true,
+      },
     }),
     prisma.organization.findMany(),
     prisma.role.findMany(),
   ]);
 
-  return <AdminPanel users={users} organizations={organizations} roles={roles} />;
+  const usersWithStrings = users.map((u) => ({
+    ...u,
+    lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,
+    createdAt: u.createdAt.toISOString(),
+  }));
+
+  return <AdminPanel users={usersWithStrings} organizations={organizations} roles={roles} />;
 }

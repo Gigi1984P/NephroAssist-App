@@ -34,6 +34,24 @@ export async function POST(request: Request) {
 
     console.log("[LOGIN-API] Success:", user.email, "Role:", user.role);
 
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    // Log login history
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "";
+    const ua = request.headers.get("user-agent") || "";
+    await prisma.loginHistory.create({
+      data: {
+        userId: user.id,
+        ipAddress: ip,
+        userAgent: ua,
+        success: true,
+      },
+    });
+
     // Create JWT token
     const token = await new SignJWT({
       sub: user.id,

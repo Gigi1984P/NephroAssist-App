@@ -15,6 +15,33 @@ const createUserSchema = z.object({
   roleId: z.string().optional(),
 });
 
+export async function GET(request: Request) {
+  try {
+    const session = await auth();
+    if (!session || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        createdAt: true,
+      },
+    });
+
+    return NextResponse.json({ users });
+  } catch (error) {
+    console.error("Users fetch error:", error);
+    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const session = await auth();

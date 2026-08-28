@@ -40,7 +40,36 @@ export async function PATCH(
       });
     }
 
-    return NextResponse.json({ error: "Ungültige Aktion" }, { status: 400 });
+    // Neue Aktionen
+    if (action === "deactivate") {
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: { isActive: false },
+      });
+      return NextResponse.json({ message: "Benutzer deaktiviert", user: updatedUser });
+    }
+
+    if (action === "activate") {
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: { isActive: true },
+      });
+      return NextResponse.json({ message: "Benutzer aktiviert", user: updatedUser });
+    }
+
+    // Vollständige Bearbeitung
+    const { name, email, role, organizationId } = body;
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (role !== undefined) updateData.role = role;
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json({ message: "Benutzer aktualisiert", user: updatedUser });
   } catch (error) {
     console.error("Update user error:", error);
     return NextResponse.json(
