@@ -81,16 +81,12 @@ export default function PatientClinicDetailPage({
     setError("");
 
     try {
-      // Auth check
-      const authRes = await fetch("/api/auth/session", { credentials: "include" });
-      const session = await authRes.json().catch(() => ({}));
-      if (!session?.user || !CLINIC_ROLES.includes(session.user.role)) {
+      // Load patient - Auth wird vom API-Handler geprüft
+      const patientRes = await fetch(`/api/patients/${patientId}/edit`, { credentials: "include" });
+      if (patientRes.status === 401 || patientRes.status === 403) {
         router.push("/dashboard");
         return;
       }
-
-      // Load patient
-      const patientRes = await fetch(`/api/patients/${patientId}/edit`, { credentials: "include" });
       if (!patientRes.ok) {
         if (patientRes.status === 404) setError("Patient nicht gefunden");
         else setError("Fehler beim Laden");
