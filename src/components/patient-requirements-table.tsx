@@ -37,7 +37,7 @@ export default function PatientRequirementsTable({ patientId, requirements }: Pa
   async function handleDelete(requirementId: string) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/patients/${patientId}/assign-requirement?requirementId=${requirementId}`, {
+      const res = await fetch(`/api/patients/${patientId}/assign-requirement?patientId=${patientId}&requirementId=${requirementId}`, {
         method: "DELETE",
         credentials: "include",
       });

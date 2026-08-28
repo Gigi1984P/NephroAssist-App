@@ -152,7 +152,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 /* ================================================================ */
 /*  DELETE: Einzelne Untersuchung vom Patienten entfernen           */
 /* ================================================================ */
-export async function DELETE(request: Request) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session) {
@@ -165,8 +165,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
     }
 
+    const { id: patientId } = await params;
     const { searchParams } = new URL(request.url);
-    const patientId = searchParams.get("patientId");
     const requirementId = searchParams.get("requirementId");
 
     if (!patientId || !requirementId) {
