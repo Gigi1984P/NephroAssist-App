@@ -18,6 +18,7 @@ import {
   LogOut,
   GripVertical,
   LifeBuoy,
+  Settings2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,8 +39,18 @@ const sidebarItems: SidebarItem[] = [
   { title: "Auswertungen", href: "/dashboard/reports", icon: BarChart3, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { title: "Anforderungen", href: "/dashboard/requirements", icon: ClipboardList, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { title: "Hilfeanfragen", href: "/dashboard/help-requests", icon: LifeBuoy, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
-  { title: "Audit Log", href: "/dashboard/admin/audit", icon: ClipboardList, roles: ["ADMIN"] },
-  { title: "Admin", href: "/dashboard/admin", icon: ShieldCheck, roles: ["ADMIN"] },
+  {
+    title: "Admin",
+    href: "/dashboard/admin",
+    icon: ShieldCheck,
+    roles: ["ADMIN"],
+    children: [
+      { title: "Benutzer", href: "/dashboard/admin" },
+      { title: "System-Einstellungen", href: "/dashboard/admin/settings" },
+      { title: "Audit Log", href: "/dashboard/admin/audit" },
+      { title: "Statistiken", href: "/dashboard/admin/reports" },
+    ],
+  },
 ];
 
 /* ================================================================ */

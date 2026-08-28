@@ -1,0 +1,287 @@
+{
+  "_description": "Structured FAQ content for NephroAssist patient-facing help section. Language: German. Can be imported into a CMS or database.",
+  "_language": "de",
+  "_categories": [
+    "Transplantation Grundlagen",
+    "Vor der Transplantation",
+    "Die Wartezeit",
+    "Organangebot und Operation",
+    "Nach der Transplantation",
+    "Medikamente",
+    "Leben mit Transplantation",
+    "Technische Hilfe"
+  ],
+
+  "faqItems": [
+    {
+      "id": "faq-001",
+      "category": "Transplantation Grundlagen",
+      "question": "Was ist eine Nierentransplantation?",
+      "answer": "Eine Nierentransplantation ist eine Operation, bei der Ihnen eine gesunde Niere eines Spenders eingepflanzt wird. Die neue Niere übernimmt die Aufgabe Ihrer eigenen Nieren, Abfallstoffe aus dem Blut zu filtern und auszuscheiden. Die Operation dauert in der Regel 3–5 Stunden. Nach der Operation müssen Sie lebenslang Medikamente nehmen, damit Ihr Körper die neue Niere nicht abstößt.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "CONSIDERING_TRANSPLANT",
+      "priority": 1
+    },
+    {
+      "id": "faq-002",
+      "category": "Transplantation Grundlagen",
+      "question": "Was ist der Unterschied zwischen Dialyse und Transplantation?",
+      "answer": "Dialyse ist eine maschinelle Behandlung, die Ihr Blut regelmäßig filtert — meist 3-mal pro Woche für jeweils 4–5 Stunden. Eine Transplantation ersetzt die defekte Niere durch eine funktionierende. Viele Patienten sagen, dass eine Transplantation ihnen mehr Lebensqualität und Unabhängigkeit gibt, aber sie erfordert lebenslange Medikamente und regelmäßige Kontrollen.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "CONSIDERING_TRANSPLANT",
+      "priority": 2
+    },
+    {
+      "id": "faq-003",
+      "category": "Transplantation Grundlagen",
+      "question": "Was ist der Unterschied zwischen einem Lebendspender und einem Verstorbenspender?",
+      "answer": "Ein Lebendspender ist eine lebende Person — meist ein Familienmitglied, Partner oder enger Freund — die eine Niere abgibt. Ein Verstorbenspender hat seine Organe nach dem Tod gespendet. Lebendspender-Transplantationen haben oft bessere Erfolgsaussichten und kürzere Wartezeiten, weil das Organ frisch und besser vorbereitet ist.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "CONSIDERING_TRANSPLANT",
+      "priority": 3
+    },
+    {
+      "id": "faq-004",
+      "category": "Transplantation Grundlagen",
+      "question": "Bin ich für eine Transplantation geeignet?",
+      "answer": "Nicht jeder ist für eine Transplantation geeignet. Ihr Transplantationsteam prüft Ihre allgemeine Gesundheit, Ihr Herz, Ihre Infektionsrisiken und Ihre soziale Unterstützung. Manche Erkrankungen — wie aktiver Krebs oder schwere Herzerkrankungen — können eine Transplantation vorübergehend oder dauerhaft ausschließen. Sprechen Sie mit Ihrem Nierenarzt, um Ihre persönliche Situation zu besprechen.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "CONSIDERING_TRANSPLANT",
+      "priority": 1
+    },
+    {
+      "id": "faq-005",
+      "category": "Vor der Transplantation",
+      "question": "Wie finde ich das richtige Transplantationszentrum?",
+      "answer": "Suchen Sie nach Zentren in Ihrer Region und prüfen Sie deren Erfahrung mit Nierentransplantationen. Die SRTR-Website (für die USA) oder vergleichbare nationale Register zeigen Erfolgsraten. Wichtige Fragen: Wie viele Transplantationen machen sie pro Jahr? Wie hoch ist die Erfolgsrate? Gibt es ein Betreuungsprogramm für Patienten? Ist das Zentrum gut erreichbar?",
+      "relatedRequirementIds": [],
+      "relatedPhase": "FIND_CENTER",
+      "priority": 1
+    },
+    {
+      "id": "faq-006",
+      "category": "Vor der Transplantation",
+      "question": "Welche Untersuchungen muss ich machen?",
+      "answer": "Die Evaluation umfasst typischerweise: Blutuntersuchungen (Nierenwerte, Blutbild), Herzuntersuchung (EKG, Echokardiographie), Krebsscreening je nach Alter, Infektionstests (Hepatitis, HIV, Tuberkulose), zahnärztliche Untersuchung, psychosoziales Gespräch und Röntgenaufnahmen. Jede Untersuchung schützt Sie — das Team muss sicherstellen, dass Sie die Operation und die anschließende Behandlung gut verkraften.",
+      "relatedRequirementIds": ["lab-values", "cardiac-evaluation", "dental-check", "infection-screening", "psychosocial-eval"],
+      "relatedPhase": "EVALUATION",
+      "priority": 1
+    },
+    {
+      "id": "faq-007",
+      "category": "Vor der Transplantation",
+      "question": "Warum brauche ich eine zahnärztliche Untersuchung?",
+      "answer": "Mundinfektionen, Karies oder Zahnfleischentzündungen können nach der Transplantation gefährlich werden, weil Ihr Immunsystem durch die Anti-Abstoßungs-Medikamente gehemmt ist. Eine Infektion im Mund kann sich dann leicht im ganzen Körper ausbreiten. Deshalb muss alles vorher in Ordnung gebracht werden.",
+      "relatedRequirementIds": ["dental-check"],
+      "relatedPhase": "EVALUATION",
+      "priority": 2
+    },
+    {
+      "id": "faq-008",
+      "category": "Vor der Transplantation",
+      "question": "Was ist ein psychosoziales Gespräch?",
+      "answer": "Ein Sozialarbeiter oder Psychologe spricht mit Ihnen über Ihre Lebenssituation: Familie, Wohnen, Arbeit, Unterstützung durch Angehörige und wie Sie mit Stress umgehen. Es geht nicht darum, Sie zu bewerten oder abzulehnen, sondern herauszufinden, wie das Team Sie bestmöglich unterstützen kann.",
+      "relatedRequirementIds": ["psychosocial-eval"],
+      "relatedPhase": "EVALUATION",
+      "priority": 2
+    },
+    {
+      "id": "faq-009",
+      "category": "Die Wartezeit",
+      "question": "Wie lange muss ich warten?",
+      "answer": "Die Wartezeit variiert stark — von wenigen Monaten bis zu mehreren Jahren. Sie hängt ab von Ihrer Blutgruppe, Ihrer Körpergröße, Ihrem Gesundheitszustand und der Verfügbarkeit von Spendern in Ihrer Region. Lebendspender-Transplantationen haben oft deutlich kürzere Wartezeiten. Sprechen Sie mit Ihrem Team über Ihre persönliche Prognose.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "WAITLIST",
+      "priority": 1
+    },
+    {
+      "id": "faq-010",
+      "category": "Die Wartezeit",
+      "question": "Was sollte ich während der Wartezeit tun?",
+      "answer": "Halten Sie sich gesund: Nehmen Sie Ihre Medikamente pünktlich ein, verpassen Sie keine Kontrolltermine, pflegen Sie einen gesunden Lebensstil (ausgewogene Ernährung, moderate Bewegung, keine Zigaretten), vermeiden Sie Infektionen und halten Sie Kontakt zu Ihrem Transplantationsteam. Packen Sie auch eine 'Go-Bag' für den Fall des Anrufs.",
+      "relatedRequirementIds": ["medication-plan", "quarterly-labs", "go-bag"],
+      "relatedPhase": "WAITLIST",
+      "priority": 1
+    },
+    {
+      "id": "faq-011",
+      "category": "Die Wartezeit",
+      "question": "Was passiert, wenn sich mein Gesundheitszustand verschlechtert?",
+      "answer": "Informieren Sie Ihr Transplantationsteam sofort. Eine vorübergehende Verschlechterung — wie eine Infektion oder ein Krankenhausaufenthalt — kann Ihre Position auf der Warteliste beeinflussen, aber Sie werden nicht automatisch entfernt. Ehrlichkeit ist der beste Schutz. Das Team arbeitet mit Ihnen zusammen.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "WAITLIST",
+      "priority": 2
+    },
+    {
+      "id": "faq-012",
+      "category": "Organangebot und Operation",
+      "question": "Was passiert, wenn ein Organ angeboten wird?",
+      "answer": "Das Zentrum ruft Sie an — halten Sie Ihr Telefon immer erreichbar. Sie kommen unverzüglich ins Krankenhaus. Dort werden finale Bluttests gemacht, um sicherzustellen, dass das Organ passt. Dann wird die Operation durchgeführt. Sie können jederzeit 'Nein' sagen — es gibt keine Konsequenzen für Ihre Position auf der Warteliste.",
+      "relatedRequirementIds": ["phone-reachable"],
+      "relatedPhase": "ORGAN_OFFER",
+      "priority": 1
+    },
+    {
+      "id": "faq-013",
+      "category": "Organangebot und Operation",
+      "question": "Kann ich ein Organangebot ablehnen?",
+      "answer": "Ja, absolut. Sie haben das Recht, ein Organangebot abzulehnen, ohne dass es Konsequenzen für Ihre Position auf der Warteliste hat. Manche Patienten lehnen aus persönlichen, religiösen oder gesundheitlichen Gründen ab. Sprechen Sie im Zweifel mit Ihrem Team, bevor Sie die Entscheidung treffen.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "ORGAN_OFFER",
+      "priority": 1
+    },
+    {
+      "id": "faq-014",
+      "category": "Organangebot und Operation",
+      "question": "Wie lange dauert die Operation?",
+      "answer": "Die Operation dauert typischerweise 3–5 Stunden. Sie werden vollständig in Narkose gelegt. Die neue Niere wird in den Bauchraum eingesetzt, meist ohne dass die alten Nieren entfernt werden. Nach der Operation verbringen Sie 1–2 Tage auf der Intensivstation und insgesamt 7–14 Tage im Krankenhaus.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "ORGAN_OFFER",
+      "priority": 2
+    },
+    {
+      "id": "faq-015",
+      "category": "Nach der Transplantation",
+      "question": "Wie lange dauert die Erholung?",
+      "answer": "Die ersten 6–8 Wochen sind die intensivste Phase. Vollständige Erholung kann 3–6 Monate dauern. Die ersten Tage nach der Operation verbringen Sie im Krankenhaus. Danach müssen Sie regelmäßig zur Kontrolle kommen, um sicherzustellen, dass die neue Niere funktioniert und die Medikamentendosierung stimmt.",
+      "relatedRequirementIds": ["post-transplant-first-check", "immunosuppressant-adjustment"],
+      "relatedPhase": "POST_TRANSPLANT",
+      "priority": 1
+    },
+    {
+      "id": "faq-016",
+      "category": "Nach der Transplantation",
+      "question": "Welche Anzeichen einer Abstoßungsreaktion sollte ich beobachten?",
+      "answer": "Achten Sie auf: Fieber, Schmerzen an der Operationsstelle, plötzliche Gewichtszunahme (Wassereinlagerung), verminderte Urinausscheidung, extreme Müdigkeit oder Schwellungen. Bei diesen Symptomen sollten Sie sofort ärztliche Hilfe aufsuchen. Frühzeitige Erkennung ist entscheidend.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "POST_TRANSPLANT",
+      "priority": 1
+    },
+    {
+      "id": "faq-017",
+      "category": "Medikamente",
+      "question": "Was passiert, wenn ich meine Medikamente einmal vergesse?",
+      "answer": "Nehmen Sie sie sofort ein, wenn Sie es bemerken — außer es ist fast Zeit für die nächste Dosis. In dem Fall überspringen Sie die vergessene und nehmen die nächste wie geplant. Informieren Sie Ihr Team bei wiederholtem Vergessen. Regelmäßige Einnahme ist lebenswichtig, damit Ihr Körper die neue Niere nicht abstößt.",
+      "relatedRequirementIds": ["medication-plan"],
+      "relatedPhase": "POST_TRANSPLANT",
+      "priority": 1
+    },
+    {
+      "id": "faq-018",
+      "category": "Medikamente",
+      "question": "Muss ich wirklich lebenslang Medikamente nehmen?",
+      "answer": "Ja, lebenslang. Anti-Abstoßungs-Medikamente (Immunsuppressiva) verhindern, dass Ihr Immunsystem die neue Niere als Fremdkörper erkennt und angreift. Ohne diese Medikamente würde die Niere abgestoßen werden. Die Dosis kann sich im Laufe der Jahre ändern, aber die Einnahme bleibt notwendig.",
+      "relatedRequirementIds": ["immunosuppressant-adjustment"],
+      "relatedPhase": "POST_TRANSPLANT",
+      "priority": 1
+    },
+    {
+      "id": "faq-019",
+      "category": "Leben mit Transplantation",
+      "question": "Kann ich nach der Transplantation wieder arbeiten?",
+      "answer": "Viele Patienten kehren nach einigen Monaten zur Arbeit zurück. Die Dauer hängt von Ihrem Beruf und Ihrem Heilungsverlauf ab. Körperlich schwere Arbeiten oder Arbeiten mit hohem Infektionsrisiko müssen eventuell angepasst werden. Besprechen Sie dies mit Ihrem Arzt.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "POST_TRANSPLANT",
+      "priority": 2
+    },
+    {
+      "id": "faq-020",
+      "category": "Leben mit Transplantation",
+      "question": "Darf ich nach der Transplantation reisen?",
+      "answer": "Ja, aber mit Vorsicht. In den ersten Monaten nach der Operation sollten Sie auf Reisen verzichten. Später ist Reisen möglich, aber: Nehmen Sie immer ausreichend Medikamente mit (mehr als für die geplante Zeit), wissen Sie, wo Sie im Notfall medizinische Hilfe erhalten, und vermeiden Sie Länder mit erhöhtem Infektionsrisiko oder schlechter medizinischer Versorgung.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "POST_TRANSPLANT",
+      "priority": 2
+    },
+    {
+      "id": "faq-021",
+      "category": "Leben mit Transplantation",
+      "question": "Kann ich auf der Warteliste stehen und gleichzeitig einen Lebendspender suchen?",
+      "answer": "Ja, das ist sogar empfohlen. Beide Wege schließen sich nicht aus. Ein Lebendspender kann die Wartezeit verkürzen oder umgehen. Wenn sich ein Lebendspender findet, können Sie parallel von der Warteliste transplantiert werden.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "WAITLIST",
+      "priority": 2
+    },
+    {
+      "id": "faq-022",
+      "category": "Leben mit Transplantation",
+      "question": "Was kostet eine Transplantation?",
+      "answer": "In Deutschland übernehmen die gesetzlichen Krankenkassen die Kosten für die Transplantation und die Nachsorge. Es kann dennoch Zuzahlungen für Medikamente oder Zusatzleistungen geben. Private Zusatzversicherungen können helfen. Besprechen Sie die Details mit Ihrer Versicherung und dem Sozialdienst Ihres Zentrums.",
+      "relatedRequirementIds": ["financial-clearance"],
+      "relatedPhase": "EVALUATION",
+      "priority": 2
+    },
+    {
+      "id": "faq-023",
+      "category": "Technische Hilfe",
+      "question": "Ich kann mich nicht anmelden. Was soll ich tun?",
+      "answer": "Prüfen Sie Ihre E-Mail-Adresse und Ihr Passwort auf Tippfehler. Achten Sie auf Groß- und Kleinschreibung. Wenn Sie Ihr Passwort vergessen haben, kontaktieren Sie Ihren Koordinator — wir können es aus Sicherheitsgründen nicht zurücksetzen, aber wir helfen Ihnen weiter.",
+      "relatedRequirementIds": [],
+      "relatedPhase": null,
+      "priority": 1
+    },
+    {
+      "id": "faq-024",
+      "category": "Technische Hilfe",
+      "question": "Die App zeigt falsche Daten an. Was soll ich tun?",
+      "answer": "Aktualisieren Sie die Seite (F5 auf dem Computer oder herunterziehen auf dem Handy). Wenn das Problem weiterhin besteht, wenden Sie sich an Ihren Koordinator mit einem Screenshot. Das hilft uns, das Problem schnell zu lösen.",
+      "relatedRequirementIds": [],
+      "relatedPhase": null,
+      "priority": 2
+    },
+    {
+      "id": "faq-025",
+      "category": "Technische Hilfe",
+      "question": "Wie kontaktiere ich meinen Koordinator?",
+      "answer": "Über die Chat-Funktion in der App (das Sprechblasen-Symbol unten rechts) oder telefonisch unter der Nummer, die Ihnen bei der Aufnahme mitgeteilt wurde. Für dringende Anliegen am Abend oder Wochenende gibt es eine Notfallnummer.",
+      "relatedRequirementIds": [],
+      "relatedPhase": null,
+      "priority": 1
+    },
+    {
+      "id": "faq-026",
+      "category": "Transplantation Grundlagen",
+      "question": "Wer kann mein Lebendspender sein?",
+      "answer": "Typischerweise Familienmitglieder, Partner oder enge Freunde. Der Spender muss gesund sein, volljährig und wird umfassend untersucht (Blut, Herz, Nierenfunktion). Nicht jeder ist geeignet — das ist kein persönliches Versagen. Die Entscheidung sollte freiwillig und ohne Druck erfolgen.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "CONSIDERING_TRANSPLANT",
+      "priority": 2
+    },
+    {
+      "id": "faq-027",
+      "category": "Nach der Transplantation",
+      "question": "Warum muss ich meine neue Niere regelmäßig kontrollieren lassen?",
+      "answer": "Regelmäßige Kontrollen sind lebenswichtig. Ihr Team prüft die Nierenfunktion, passt die Medikamentendosierung an, überwacht Nebenwirkungen und erkennt frühzeitig Probleme wie Abstoßungsreaktionen oder Infektionen. Diese Kontrollen können lebensrettend sein.",
+      "relatedRequirementIds": ["post-transplant-first-check", "immunosuppressant-adjustment"],
+      "relatedPhase": "POST_TRANSPLANT",
+      "priority": 1
+    },
+    {
+      "id": "faq-028",
+      "category": "Vor der Transplantation",
+      "question": "Warum muss ich vor der Transplantation geimpft werden?",
+      "answer": "Einige Impfungen müssen vor der Transplantation erfolgen, weil lebende Impfstoffe (z. B. MMR, Varizellen) nach der Transplantation nicht mehr gegeben werden dürfen — Ihr Immunsystem wäre zu geschwächt, um damit umzugehen. Tote Impfstoffe (z. B. Hepatitis B, Influenza) können auch nach der Transplantation gegeben werden. Ihr Hausarzt oder das Impfzentrum berät Sie.",
+      "relatedRequirementIds": ["vaccination-record"],
+      "relatedPhase": "EVALUATION",
+      "priority": 2
+    },
+    {
+      "id": "faq-029",
+      "category": "Die Wartezeit",
+      "question": "Wie oft muss ich während der Wartezeit zur Kontrolle?",
+      "answer": "Das hängt von Ihrem Gesundheitszustand ab. Typischerweise alle 1–3 Monate für Bluttests und Klinikbesuche. Ihr Team teilt Ihnen den genauen Rhythmus mit. Diese Termine sind wichtig, um sicherzustellen, dass Sie gesund genug für die Transplantation bleiben.",
+      "relatedRequirementIds": ["quarterly-labs"],
+      "relatedPhase": "WAITLIST",
+      "priority": 2
+    },
+    {
+      "id": "faq-030",
+      "category": "Organangebot und Operation",
+      "question": "Was passiert, wenn das Organangebot nicht klappt?",
+      "answer": "Nicht jedes Organangebot führt zur Transplantation. Manchmal passt das Organ bei genauerem Hinsehen doch nicht — zum Beispiel wegen einer unerwarteten Infektion oder schlechterem HLA-Matching als erwartet. Das ist enttäuschend, aber es schützt Ihre Gesundheit. Sie bleiben auf der Warteliste.",
+      "relatedRequirementIds": [],
+      "relatedPhase": "ORGAN_OFFER",
+      "priority": 2
+    }
+  ]
+}

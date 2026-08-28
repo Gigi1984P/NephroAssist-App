@@ -1,0 +1,391 @@
+{
+  "_description": "Structured educational modules for NephroAssist patient-facing learning content. Language: German. Each module corresponds to a phase in the transplant journey.",
+  "_language": "de",
+  "modules": [
+    {
+      "moduleId": "edu-001",
+      "phase": "CONSIDERING_TRANSPLANT",
+      "order": 1,
+      "title": "Ihre Optionen verstehen",
+      "subtitle": "Die ersten Schritte auf dem Weg zur Transplantation",
+      "estimatedReadTimeMinutes": 8,
+      "introduction": "Wenn Ihre Nieren nicht mehr ausreichend arbeiten, haben Sie zwei Hauptoptionen: Dialyse oder eine Nierentransplantation. Dies ist ein wichtiger Moment in Ihrem Leben — und es ist völlig normal, sich überfordert zu fühlen. In diesem Modul erfahren Sie, was eine Transplantation bedeutet, welche Vor- und Nachteile es gibt und wie Sie den besten Weg für sich finden.",
+      "sections": [
+        {
+          "sectionId": "edu-001-s1",
+          "title": "Was ist eine Nierentransplantation?",
+          "content": "Eine Nierentransplantation ist eine Operation, bei der Ihnen eine gesunde Niere eines Spenders eingepflanzt wird. Die neue Niere übernimmt die Aufgabe Ihrer eigenen Nieren: Abfallstoffe aus dem Blut zu filtern und auszuscheiden. Nach der Operation müssen Sie lebenslang Medikamente nehmen, damit Ihr Körper die neue Niere nicht abstößt. Die Operation dauert in der Regel 3–5 Stunden.",
+          "keyTakeaway": "Eine transplantierte Niere kann Ihnen helfen, ein aktiveres und gesünderes Leben zu führen als mit Dialyse allein.",
+          "disclaimer": "Dieser Abschnitt dient nur der Information. Sprechen Sie immer mit Ihrem Behandlungsteam, bevor Sie Entscheidungen treffen."
+        },
+        {
+          "sectionId": "edu-001-s2",
+          "title": "Transplantation vs. Dialyse",
+          "content": "Dialyse ist eine maschinelle Behandlung, die Ihr Blut regelmäßig filtert — meist 3-mal pro Woche für jeweils 4–5 Stunden. Viele Patienten leben jahrelang mit Dialyse. Eine Transplantation bietet oft mehr Freiheit und Lebensqualität, aber erfordert lebenslange Medikamente und regelmäßige Kontrollen. Manche Patienten wechseln zwischen Dialyse und Transplantation. Die Entscheidung für eine Transplantation ist kein Verrat an der Dialyse.",
+          "keyTakeaway": "Beide Optionen haben ihre Berechtigung. Sprechen Sie mit Ihrem Nierenarzt über das Für und Wider.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-001-s3",
+          "title": "Lebendspender vs. Verstorbenspender",
+          "content": "Ein Lebendspender ist eine lebende Person — meist ein Familienmitglied, Partner oder enger Freund — die eine Niere abgibt. Menschen können mit einer Niere gesund leben. Lebendspender-Transplantationen haben oft bessere Erfolgsaussichten und kürzere Wartezeiten. Ein Verstorbenspender hat seine Organe nach dem Tod gespendet. Die Wartezeit kann Monate bis Jahre dauern. Beide Wege sind wertvoll.",
+          "keyTakeaway": "Sie können gleichzeitig auf der Warteliste stehen und nach einem Lebendspender suchen.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-001-s4",
+          "title": "Ist eine Transplantation für mich geeignet?",
+          "content": "Nicht jeder ist für eine Transplantation geeignet. Ihr Transplantationsteam prüft Ihre allgemeine Gesundheit, Ihr Herz, Ihre Infektionsrisiken und Ihre soziale Unterstützung. Manche Erkrankungen — wie aktiver Krebs oder schwere Herzerkrankungen — können eine Transplantation vorübergehend oder dauerhaft ausschließen. Aber: Viele Patienten, die zunächst nicht geeignet scheinen, können durch Behandlung und Verbesserung ihrer Gesundheit später doch transplantiert werden.",
+          "keyTakeaway": "Eignung ist kein statischer Zustand — sie kann sich ändern.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-001-s5",
+          "title": "Erste Schritte: Das Gespräch mit Ihrem Arzt",
+          "content": "Der erste Schritt ist ein offenes Gespräch mit Ihrem Nierenarzt. Fragen Sie: 'Bin ich für eine Transplantation geeignet?' 'Welche Zentren empfehlen Sie?' 'Wie lange ist die typische Wartezeit?' 'Was kann ich tun, um meine Chancen zu verbessern?' Bringen Sie alle aktuellen Befunde mit. Es gibt keine dummen Fragen.",
+          "keyTakeaway": "Informieren Sie sich frühzeitig — auch wenn Sie sich noch nicht sicher sind.",
+          "disclaimer": null
+        }
+      ],
+      "quiz": [
+        {
+          "question": "Welche zwei Hauptoptionen haben Patienten mit Nierenversagen?",
+          "options": ["Dialyse und Transplantation", "Medikamente und Operation", "Dialyse und Medikamente", "Transplantation und Alternativmedizin"],
+          "correctIndex": 0
+        },
+        {
+          "question": "Was ist ein Vorteil einer Lebendspender-Transplantation?",
+          "options": ["Kürzere Wartezeit", "Keine Medikamente nötig", "Geringere Kosten", "Keine Operation nötig"],
+          "correctIndex": 0
+        }
+      ],
+      "relatedRequirementIds": [],
+      "tags": ["Grundlagen", "Entscheidung", "Dialyse"]
+    },
+    {
+      "moduleId": "edu-002",
+      "phase": "FIND_CENTER",
+      "order": 2,
+      "title": "Das richtige Zentrum finden",
+      "subtitle": "Wie Sie die beste Klinik für sich auswählen",
+      "estimatedReadTimeMinutes": 6,
+      "introduction": "Die Wahl eines Transplantationszentrums ist eine der wichtigsten Entscheidungen auf Ihrem Weg. Jedes Zentrum hat seine eigenen Schwerpunkte, Erfahrungen und Abläufe. In diesem Modul erfahren Sie, worauf Sie achten sollten und welche Fragen Sie stellen können.",
+      "sections": [
+        {
+          "sectionId": "edu-002-s1",
+          "title": "Was macht ein Transplantationszentrum aus?",
+          "content": "Ein Transplantationszentrum ist eine spezialisierte Klinik, die über Erfahrung und Genehmigung für Organtransplantationen verfügt. Es besteht aus einem multidisziplinären Team: Nierenspezialisten, Chirurgen, Koordinatoren, Pflegepersonal, Sozialarbeiter und Psychologen. Das Zentrum begleitet Sie von der ersten Evaluation bis zur Nachsorge.",
+          "keyTakeaway": "Das Zentrum ist Ihr Partner für die gesamte Reise — nicht nur für die Operation.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-002-s2",
+          "title": "Wichtige Fragen für das Erstgespräch",
+          "content": "Bereiten Sie Fragen vor. Empfohlene Fragen: Wie viele Nierentransplantationen führen Sie pro Jahr durch? Wie hoch ist Ihre Erfolgsrate bei Lebendspender-Transplantationen? Gibt es ein Unterstützungsprogramm für Patienten und Angehörige? Wie lange dauert die Wartezeit typischerweise? Was passiert, wenn ich einen Lebendspender habe? Gibt es eine Notfallnummer für den Fall des Anrufs?",
+          "keyTakeaway": "Die Qualität des Erstgesprächs sagt viel über die Betreuungsqualität aus.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-002-s3",
+          "title": "Versicherung und Kosten",
+          "content": "In Deutschland übernehmen die gesetzlichen Krankenkassen die Kosten für die Transplantation und die Nachsorge. Es kann dennoch Zuzahlungen für Medikamente oder Zusatzleistungen geben. Private Zusatzversicherungen können helfen. Klären Sie vor der Aufnahme mit der Krankenkassenberatung oder dem Sozialdienst des Zentrums alle Kostenfragen.",
+          "keyTakeaway": "Kosten sollten keine Überraschung sein — klären Sie sie frühzeitig.",
+          "disclaimer": null
+        }
+      ],
+      "quiz": [
+        {
+          "question": "Welche Frage sollten Sie im Erstgespräch unbedingt stellen?",
+          "options": ["Wie viele Transplantationen machen Sie pro Jahr?", "Welche Farbe hat die Klinik?", "Gibt es WLAN?", "Wie lange dauert die Mittagspause?"],
+          "correctIndex": 0
+        }
+      ],
+      "relatedRequirementIds": [],
+      "tags": ["Zentrum", "Erstgespräch", "Kosten"]
+    },
+    {
+      "moduleId": "edu-003",
+      "phase": "EVALUATION",
+      "order": 3,
+      "title": "Die Untersuchungen verstehen",
+      "subtitle": "Was die Evaluation bedeutet und warum jeder Schritt wichtig ist",
+      "estimatedReadTimeMinutes": 10,
+      "introduction": "Die Evaluation ist eine umfassende Prüfung Ihrer Gesundheit, um sicherzustellen, dass Sie für eine Transplantation bereit sind. Das kann sich wie eine Menge anfühlen — aber jede Untersuchung hat ihren Zweck. Wir begleiten Sie Schritt für Schritt.",
+      "sections": [
+        {
+          "sectionId": "edu-003-s1",
+          "title": "Blutuntersuchungen",
+          "content": "Blutuntersuchungen zeigen, wie gut Ihre Nieren arbeiten (Kreatinin, GFR), wie Ihr Blutbild aussieht und ob Infektionen vorliegen. Sie werden regelmäßig wiederholt. Die Ergebnisse dürfen bei der Evaluation nicht älter als 3 Monate sein. Die Abnahme ist einfach — ein kurzer Stich in die Armvene.",
+          "keyTakeaway": "Blutuntersuchungen sind das A und O der Evaluation.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-003-s2",
+          "title": "Herzuntersuchung",
+          "content": "Das Herz muss die Operation und die Narkose verkraften können. Die Untersuchung umfasst meist ein EKG (Elektrokardiogramm) und einen Ultraschall des Herzens (Echokardiographie). Beide sind schmerzlos. Bei älteren Patienten oder bestehenden Herzerkrankungen können weitere Untersuchungen nötig sein.",
+          "keyTakeaway": "Ein gesundes Herz ist Voraussetzung für eine sichere Operation.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-003-s3",
+          "title": "Zahnärztliche Untersuchung",
+          "content": "Mundinfektionen oder Karies können nach der Transplantation gefährlich werden, weil Ihr Immunsystem durch die Anti-Abstoßungs-Medikamente gehemmt ist. Deshalb muss alles vorher in Ordnung gebracht werden. Lassen Sie Karies behandeln, Zahnfleischentzündungen heilen und eine Gesundheitsbescheinigung vom Zahnarzt ausstellen.",
+          "keyTakeaway": "Ein gesunder Mund schützt Sie nach der Transplantation.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-003-s4",
+          "title": "Impfstatus prüfen",
+          "content": "Einige Impfungen müssen vor der Transplantation erfolgen, weil lebende Impfstoffe danach nicht mehr gegeben werden dürfen. Dazu gehören typischerweise MMR (Masern, Mumps, Röteln) und Varizellen (Windpocken). Tote Impfstoffe wie Hepatitis B und Influenza können auch nach der Transplantation gegeben werden. Fragen Sie Ihren Hausarzt oder das Impfzentrum.",
+          "keyTakeaway": "Impfen vor der Transplantation ist wichtiger Schutz.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-003-s5",
+          "title": "Psychosoziales Gespräch",
+          "content": "Ein Sozialarbeiter oder Psychologe spricht mit Ihnen über Ihre Lebenssituation: Familie, Wohnen, Arbeit, Unterstützung durch Angehörige und wie Sie mit Stress umgehen. Es geht nicht darum, Sie zu bewerten oder abzulehnen, sondern herauszufinden, wie das Team Sie bestmöglich unterstützen kann. Seien Sie ehrlich — das hilft allen.",
+          "keyTakeaway": "Es ist kein Test — niemand wird wegen einer 'schlechten Note' abgelehnt.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-003-s6",
+          "title": "Krebsscreening",
+          "content": "Je nach Alter und Geschlecht werden Vorsorgeuntersuchungen zur Krebsfrüherkennung empfohlen — z. B. Mammographie, Darmkrebsvorsorge oder Prostata-Screening. Eine bestehende Krebserkrankung muss vor der Transplantation stabil sein, weil die Immunsuppression nach der Operation das Krebswachstum begünstigen könnte.",
+          "keyTakeaway": "Früherkennung schützt Sie auf beiden Seiten der Transplantation.",
+          "disclaimer": null
+        }
+      ],
+      "quiz": [
+        {
+          "question": "Warum brauche ich eine zahnärztliche Untersuchung vor der Transplantation?",
+          "options": [
+            "Weil Mundinfektionen nach der Transplantation gefährlich werden können",
+            "Weil der Zahnarzt das Spenderorgan prüft",
+            "Weil es eine Voraussetzung für die Krankenkasse ist",
+            "Weil Zahnschmerzen die Operation erschweren"
+          ],
+          "correctIndex": 0
+        },
+        {
+          "question": "Wie alt dürfen Blutuntersuchungsergebnisse bei der Evaluation höchstens sein?",
+          "options": ["3 Monate", "6 Monate", "1 Jahr", "2 Jahre"],
+          "correctIndex": 0
+        }
+      ],
+      "relatedRequirementIds": ["lab-values", "cardiac-evaluation", "dental-check", "vaccination-record", "psychosocial-eval", "cancer-screening"],
+      "tags": ["Evaluation", "Untersuchungen", "Vorbereitung"]
+    },
+    {
+      "moduleId": "edu-004",
+      "phase": "WAITLIST",
+      "order": 4,
+      "title": "Die Wartezeit gestalten",
+      "subtitle": "Wie Sie die Wartezeit aktiv und gesund verbringen",
+      "estimatedReadTimeMinutes": 7,
+      "introduction": "Die Wartezeit kann eine der schwierigsten Phasen sein. Sie wissen nicht, wann der Anruf kommt — und gleichzeitig müssen Sie gesund bleiben. In diesem Modul finden Sie Strategien, um diese Zeit aktiv zu gestalten und sich bestmöglich vorzubereiten.",
+      "sections": [
+        {
+          "sectionId": "edu-004-s1",
+          "title": "Medikamente pünktlich nehmen",
+          "content": "Nehmen Sie Ihre Medikamente täglich zur gleichen Zeit ein. Stellen Sie Wecker oder Erinnerungen ein. Die NephroAssist-App kann Sie dabei unterstützen. Regelmäßige Einnahme ist entscheidend für Ihre Gesundheit während der Wartezeit.",
+          "keyTakeaway": "Pünktlichkeit bei der Medikamenteneinnahme ist lebenswichtig.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-004-s2",
+          "title": "Regelmäßige Kontrollen nicht verpassen",
+          "content": "Besuchen Sie alle vereinbarten Kontrolltermine. Bluttests, Klinikbesuche und Dialysetermine sind entscheidend für Ihre Gesundheit. Verpassen Sie keine Termine — das Team muss sicherstellen, dass Sie in bestem Zustand für die Transplantation bleiben.",
+          "keyTakeaway": "Jeder verpasste Termin kann Ihre Transplantationsbereitschaft beeinträchtigen.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-004-s3",
+          "title": "Gesunder Lebensstil",
+          "content": "Achten Sie auf ausgewogene Ernährung (wenig Salz, ausreichend Protein bei Dialyse), moderate Bewegung (Spazierengehen, Schwimmen — falls vom Arzt erlaubt), ausreichend Schlaf und Stressabbau. Rauchen Sie nicht — Rauchen verschlechtert die Transplantationsergebnisse erheblich.",
+          "keyTakeaway": "Jede gesunde Entscheidung zählt — auch in der Wartezeit.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-004-s4",
+          "title": "Infektionen vermeiden",
+          "content": "Meiden Sie Menschenansammlungen bei Grippewellen. Waschen Sie sich häufig die Hände. Lassen Sie sich gegen Influenza impfen (toter Impfstoff ist erlaubt). Bei Fieber oder Infektionssymptomen kontaktieren Sie sofort Ihr Team.",
+          "keyTakeaway": "Eine Infektion kann Ihre Transplantation verschieben.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-004-s5",
+          "title": "Die 'Go-Bag' vorbereiten",
+          "content": "Packen Sie eine Tasche für den Fall des Anrufs. Darin sollten sein: Krankenversicherungskarte, Medikamentenliste (aktuell), Kontaktdaten Ihrer Angehörigen, Handy + Ladegerät, gemütliche Kleidung für ein paar Tage, Hygieneartikel, Bücher oder Unterhaltung für die Wartezeit, Snacks und Wasser für Begleitpersonen. Bei einem Anruf muss es schnell gehen.",
+          "keyTakeaway": "Vorbereitung reduziert Stress im entscheidenden Moment.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-004-s6",
+          "title": "Emotionale Unterstützung",
+          "content": "Die Wartezeit kann Angst, Frustration oder Traurigkeit auslösen. Das ist normal. Sprechen Sie mit Ihrem Team über Unterstützungsangebote — Selbsthilfegruppen, Psychologen oder Seelsorger können helfen. Sie sind nicht allein.",
+          "keyTakeaway": "Psychische Gesundheit ist genauso wichtig wie körperliche Gesundheit.",
+          "disclaimer": null
+        }
+      ],
+      "quiz": [
+        {
+          "question": "Was sollte in Ihrer 'Go-Bag' unbedingt sein?",
+          "options": [
+            "Krankenversicherungskarte und Medikamentenliste",
+            "Lieblingsbuch und Snacks",
+            "Handy und Ladegerät",
+            "All das"
+          ],
+          "correctIndex": 3
+        },
+        {
+          "question": "Warum sollten Sie während der Wartezeit besonders auf Infektionen achten?",
+          "options": [
+            "Weil eine Infektion die Transplantation verschieben kann",
+            "Weil Infektionen die Dialyse erschweren",
+            "Weil es ärztliche Vorschrift ist",
+            "Weil es die Wartezeit verkürzt"
+          ],
+          "correctIndex": 0
+        }
+      ],
+      "relatedRequirementIds": ["medication-plan", "quarterly-labs", "phone-reachable", "go-bag"],
+      "tags": ["Wartezeit", "Lebensstil", "Vorbereitung"]
+    },
+    {
+      "moduleId": "edu-005",
+      "phase": "ORGAN_OFFER",
+      "order": 5,
+      "title": "Wenn der Anruf kommt",
+      "subtitle": "Was auf Sie zukommt und wie Sie sich vorbereiten",
+      "estimatedReadTimeMinutes": 8,
+      "introduction": "Der Anruf, auf den Sie gewartet haben. Es ist aufregend, überwältigend und manchmal beängstigend — alles gleichzeitig. In diesem Modul erfahren Sie, was auf Sie zukommt und wie Sie sich und Ihre Angehörigen vorbereiten können.",
+      "sections": [
+        {
+          "sectionId": "edu-005-s1",
+          "title": "Der Anruf",
+          "content": "Das Zentrum ruft Sie an — halten Sie Ihr Telefon immer erreichbar. Sie erhalten die Anweisung, unverzüglich ins Krankenhaus zu kommen. Bringen Sie Ihre Go-Bag, Unterlagen und eine Begleitperson mit. Essen Sie nichts mehr, falls die Operation kurzfristig ansteht.",
+          "keyTakeaway": "Halten Sie Ihr Telefon immer erreichbar — auch nachts.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-005-s2",
+          "title": "Finaler Abgleich",
+          "content": "Im Krankenhaus werden finale Bluttests gemacht, um sicherzustellen, dass das Organ passt. Das sogenannte Cross-Match muss negativ sein — das bedeutet, Ihr Immunsystem würde das Organ nicht sofort abstoßen. Nicht jedes Organangebot führt zur Transplantation. Manchmal passt das Organ doch nicht — das ist enttäuschend, aber es schützt Ihre Gesundheit.",
+          "keyTakeaway": "Nicht jedes Angebot führt zur Transplantation — das ist normal.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-005-s3",
+          "title": "Die Entscheidung",
+          "content": "Sie können jederzeit 'Nein' sagen. Es gibt keine Konsequenzen für Ihre Position auf der Warteliste, wenn Sie eine gegründete Entscheidung treffen. Gründe können persönlich, religiös oder gesundheitlich sein. Sprechen Sie mit Ihrem Team, aber die Entscheidung liegt bei Ihnen.",
+          "keyTakeaway": "Die Entscheidung ist immer Ihre.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-005-s4",
+          "title": "Die Operation",
+          "content": "Die Operation dauert typischerweise 3–5 Stunden. Sie werden vollständig in Narkose gelegt. Die neue Niere wird in den Bauchraum eingesetzt, meist ohne dass die alten Nieren entfernt werden. Nach der Operation verbringen Sie 1–2 Tage auf der Intensivstation.",
+          "keyTakeaway": "Die Operation ist nur der Anfang der Reise.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-005-s5",
+          "title": "Die Erholung",
+          "content": "Die ersten 6–8 Wochen sind die intensivste Phase. Sie verbringen 7–14 Tage im Krankenhaus, dann geht es zu Hause weiter. Sie müssen lebenslang Immunsuppressiva (Anti-Abstoßungs-Medikamente) nehmen. Die Nachsorge ist lebenslang wichtig. Regelmäßige Kontrollen, Bluttests und Medikamentenanpassungen werden zu Ihrem neuen Alltag gehören.",
+          "keyTakeaway": "Die Operation ist nur der Anfang — die Nachsorge ist lebenslang.",
+          "disclaimer": null
+        }
+      ],
+      "quiz": [
+        {
+          "question": "Können Sie ein Organangebot ablehnen?",
+          "options": [
+            "Ja, ohne Konsequenzen für die Warteliste",
+            "Ja, aber nur mit ärztlicher Begründung",
+            "Nein, das wäre ein Verstoß gegen die Wartelistenregeln",
+            "Nur einmal — beim zweiten Mal wird man entfernt"
+          ],
+          "correctIndex": 0
+        },
+        {
+          "question": "Wie lange dauert die Operation typischerweise?",
+          "options": ["3–5 Stunden", "1–2 Stunden", "6–8 Stunden", "10–12 Stunden"],
+          "correctIndex": 0
+        }
+      ],
+      "relatedRequirementIds": ["phone-reachable"],
+      "tags": ["Organangebot", "Operation", "Entscheidung"]
+    },
+    {
+      "moduleId": "edu-006",
+      "phase": "POST_TRANSPLANT",
+      "order": 6,
+      "title": "Leben mit der neuen Niere",
+      "subtitle": "Nachsorge, Medikamente und ein neuer Alltag",
+      "estimatedReadTimeMinutes": 9,
+      "introduction": "Die Operation ist geschafft — herzlichen Glückwunsch! Aber die Reise geht weiter. In diesem Modul erfahren Sie, was Sie in den ersten Wochen und Monaten erwartet, wie Sie Ihre Medikamente managen und worauf Sie achten sollten.",
+      "sections": [
+        {
+          "sectionId": "edu-006-s1",
+          "title": "Die ersten Wochen",
+          "content": "Die ersten 6–8 Wochen nach der Transplantation sind die intensivste Phase. Sie werden regelmäßig zur Kontrolle kommen müssen, um die Nierenfunktion zu prüfen und die Medikamentendosierung anzupassen. Es ist normal, sich müde, überwältigt oder emotional zu fühlen. Sprechen Sie mit Ihrem Team über alle Beschwerden — keine ist zu klein.",
+          "keyTakeaway": "Die ersten Wochen sind intensiv, aber Sie sind nicht allein.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-006-s2",
+          "title": "Immunsuppressiva verstehen",
+          "content": "Immunsuppressiva (Anti-Abstoßungs-Medikamente) verhindern, dass Ihr Immunsystem die neue Niere als Fremdkörper erkennt und angreift. Häufige Medikamente sind Tacrolimus, Ciclosporin, Mycophenolat und Steroide. Sie müssen diese lebenslang nehmen. Die Dosis wird regelmäßig anhand von Bluttests angepasst. Seien Sie pünktlich — die Spiegel müssen stabil bleiben.",
+          "keyTakeaway": "Pünktliche Einnahme ist lebenswichtig.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-006-s3",
+          "title": "Anzeichen einer Abstoßungsreaktion",
+          "content": "Achten Sie auf: Fieber, Schmerzen an der Operationsstelle, plötzliche Gewichtszunahme (Wassereinlagerung), verminderte Urinausscheidung, extreme Müdigkeit oder Schwellungen. Bei diesen Symptomen sollten Sie sofort ärztliche Hilfe aufsuchen. Frühzeitige Erkennung ist entscheidend.",
+          "keyTakeaway": "Kennen Sie die Warnsignale — und handeln Sie sofort.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-006-s4",
+          "title": "Infektionsrisiko",
+          "content": "Da Ihr Immunsystem gehemmt ist, sind Sie anfälliger für Infektionen. Vermeiden Sie Menschenansammlungen, waschen Sie sich häufig die Hände und meiden Sie rohe Lebensmittel (Sushi, rohes Fleisch, ungepasteurisierte Milchprodukte). Lassen Sie sich jährlich gegen Influenza impfen. Bei Fieber sofort ärztliche Hilfe suchen.",
+          "keyTakeaway": "Vorsicht ist besser als Nachsicht.",
+          "disclaimer": null
+        },
+        {
+          "sectionId": "edu-006-s5",
+          "title": "Lebensqualität und Aktivität",
+          "content": "Viele Patienten berichten von deutlich verbesserter Lebensqualität nach der Transplantation. Sie können wieder arbeiten, reisen und Sport treiben — allerdings mit Einschränkungen. Schwere körperliche Arbeiten und Kontaktsportarten sollten vermieden werden. Besprechen Sie Ihre individuellen Möglichkeiten mit Ihrem Team.",
+          "keyTakeaway": "Ein neues Kapitel beginnt — mit den richtigen Vorsichtsmaßnahmen.",
+          "disclaimer": null
+        }
+      ],
+      "quiz": [
+        {
+          "question": "Was ist ein Warnzeichen einer Abstoßungsreaktion?",
+          "options": [
+            "Fieber und verminderte Urinausscheidung",
+            "Bessere Laune",
+            "Mehr Energie",
+            "Gewichtsverlust"
+          ],
+          "correctIndex": 0
+        },
+        {
+          "question": "Warum sollten Sie rohe Lebensmittel nach der Transplantation meiden?",
+          "options": [
+            "Weil Ihr Immunsystem geschwächt ist und Infektionsrisiken höher sind",
+            "Weil sie die Nierenfunktion direkt schädigen",
+            "Weil sie mit Immunsuppressiva interagieren",
+            "Weil sie den Blutdruck senken"
+          ],
+          "correctIndex": 0
+        }
+      ],
+      "relatedRequirementIds": ["post-transplant-first-check", "immunosuppressant-adjustment"],
+      "tags": ["Nachsorge", "Medikamente", "Lebensqualität"]
+    }
+  ]
+}

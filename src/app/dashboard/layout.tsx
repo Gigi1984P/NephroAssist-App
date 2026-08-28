@@ -52,6 +52,7 @@ export default function DashboardLayout({
       "/dashboard/appointments": "Termine",
       "/dashboard/settings": "Einstellungen",
       "/dashboard/admin": "Admin",
+      "/dashboard/admin/settings": "System-Einstellungen",
       "/dashboard/admin/reports": "Statistiken",
       "/dashboard/admin/audit": "Audit Log",
       "/dashboard/reports": "Auswertungen",
