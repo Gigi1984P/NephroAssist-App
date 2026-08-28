@@ -212,7 +212,7 @@ export default function LoginPage() {
             }}
           >
             <CheckCircleIcon size={16} />
-            Zugangsdaten eingefügt — jetzt anmelden!
+            {t("auth.credentialsFilled", "Zugangsdaten eingefügt — jetzt anmelden!")}
           </div>
         )}
 
@@ -220,7 +220,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           {/* Email */}
           <div className="mb-3">
-            <label htmlFor="email" className="form-label fw-medium" style={{ fontSize: "0.85rem", color: "#374151", marginBottom: "0.375rem" }}>E-Mail</label>
+            <label htmlFor="email" className="form-label fw-medium" style={{ fontSize: "0.85rem", color: "#374151", marginBottom: "0.375rem" }}>{t("common.email", "E-Mail")}</label>
             <div className="position-relative">
               <div
                 className="position-absolute d-flex align-items-center justify-content-center"
@@ -238,7 +238,7 @@ export default function LoginPage() {
                 type="email"
                 id="email"
                 className="form-control"
-                placeholder="name@beispiel.de"
+                placeholder={t("auth.emailPlaceholder", "name@beispiel.de")}
                 style={{
                   paddingLeft: "42px",
                   paddingRight: "14px",
@@ -263,7 +263,7 @@ export default function LoginPage() {
 
           {/* Password */}
           <div className="mb-2">
-            <label htmlFor="password" className="form-label fw-medium" style={{ fontSize: "0.85rem", color: "#374151", marginBottom: "0.375rem" }}>Passwort</label>
+            <label htmlFor="password" className="form-label fw-medium" style={{ fontSize: "0.85rem", color: "#374151", marginBottom: "0.375rem" }}>{t("auth.password", "Passwort")}</label>
             <div className="position-relative">
               <div
                 className="position-absolute d-flex align-items-center justify-content-center"
@@ -332,10 +332,10 @@ export default function LoginPage() {
               style={{ fontSize: "0.8rem", color: "#2563eb", fontWeight: 500 }}
               onClick={(e) => {
                 e.preventDefault();
-                alert("Bitte kontaktieren Sie Ihren Administrator um das Passwort zurückzusetzen.");
+                alert(t("auth.forgotPasswordAlert", "Bitte kontaktieren Sie Ihren Administrator um das Passwort zurückzusetzen."));
               }}
             >
-              Passwort vergessen?
+              {t("auth.forgotPassword", "Passwort vergessen?")}
             </a>
           </div>
 
@@ -368,19 +368,19 @@ export default function LoginPage() {
                   role="status"
                   aria-hidden="true"
                 ></span>
-                Anmelden...
+                {t("auth.signingIn", "Anmelden...")}
               </span>
             ) : (
-              "Anmelden"
+              t("auth.login", "Anmelden")
             )}
           </button>
         </form>
 
         {/* Register */}
         <div className="text-center mt-3" style={{ fontSize: "0.875rem" }}>
-          <span className="text-muted">Noch kein Konto?{" "}</span>
+          <span className="text-muted">{t("auth.noAccount", "Noch kein Konto?")}{" "}</span>
           <a href="/register" className="text-decoration-none" style={{ color: "#2563eb", fontWeight: 500 }}>
-            Registrieren
+            {t("auth.register", "Registrieren")}
           </a>
         </div>
 
@@ -389,7 +389,7 @@ export default function LoginPage() {
           <div className="d-flex align-items-center gap-2 mb-2">
             <CheckCircleIcon size={16} />
             <span className="fw-semibold" style={{ fontSize: "0.8rem", color: "#2563eb" }}>
-              Demo-Zugangsdaten
+              {t("auth.demoAccounts", "Demo-Zugangsdaten")}
             </span>
           </div>
           <div className="d-flex flex-column gap-1">
@@ -422,12 +422,12 @@ export default function LoginPage() {
                   <span className="fw-medium">{acc.role}</span>
                   <span className="text-muted" style={{ fontSize: "0.7rem" }}>— {acc.name}</span>
                 </span>
-                <span className="text-muted" style={{ fontSize: "0.7rem" }}>Klicken</span>
+                <span className="text-muted" style={{ fontSize: "0.7rem" }}>{t("auth.clickToFill", "Klicken")}</span>
               </button>
             ))}
           </div>
           <div className="text-center mt-2" style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
-            Passwort für alle: Test1234!
+            {t("auth.passwordForAll", "Passwort für alle:")} Test1234!
           </div>
         </div>
       </div>
