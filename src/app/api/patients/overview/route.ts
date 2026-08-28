@@ -19,8 +19,19 @@ export async function GET() {
     }
 
     // Tenant isolation: restrict to user's organizations unless ADMIN
+    // Demo-Accounts: alle Patienten sehen
     let orgFilter = {};
-    if (user.role !== "ADMIN") {
+    const DEMO_EMAILS = [
+      "admin@nephroassist.de",
+      "koordinator@nephroassist.de",
+      "arzt@nephroassist.de",
+      "dialyse@beispiel.de",
+      "transplant@beispiel.de",
+      "angehorige@beispiel.de",
+    ];
+    const isDemo = DEMO_EMAILS.includes(user.email || "");
+
+    if (user.role !== "ADMIN" && !isDemo) {
       const memberships = await prisma.organizationMembership.findMany({
         where: { userId: user.id },
         select: { organizationId: true },
