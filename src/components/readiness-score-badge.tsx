@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react";
 
+import { useTranslation } from "@/components/i18n-provider";
+
 interface Props {
   patientId: string;
 }
 
 export default function ReadinessScoreBadge({ patientId }: Props) {
+  const { t } = useTranslation();
   const [score, setScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,9 +27,9 @@ export default function ReadinessScoreBadge({ patientId }: Props) {
   if (score === null) return null;
 
   let color = "#dc2626";
-  let label = "Nicht bereit";
-  if (score >= 80) { color = "#16a34a"; label = "Bereit"; }
-  else if (score >= 50) { color = "#f59e0b"; label = "Teils bereit"; }
+  let label = t("transplant.notReady", "Nicht bereit");
+  if (score >= 80) { color = "#16a34a"; label = t("transplant.ready", "Bereit"); }
+  else if (score >= 50) { color = "#f59e0b"; label = t("transplant.partiallyReady", "Teils bereit"); }
 
   return (
     <div className="d-inline-flex align-items-center gap-2">

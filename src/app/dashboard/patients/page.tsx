@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { useTranslation } from "@/components/i18n-provider";
 import { Plus, Search, ChevronLeft, ChevronRight, User, Phone, Mail, Trash2, Edit3, AlertTriangle, Users } from "lucide-react";
 
 interface Coordinator {
@@ -23,6 +24,7 @@ interface Patient {
 }
 
 export default function PatientsPage() {
+  const { t } = useTranslation();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,11 +98,11 @@ export default function PatientsPage() {
   // ─── CRUD ────────────────────────────────────────────────────────────
   const handleCreatePatient = async () => {
     if (!formFirstName.trim() || !formLastName.trim()) {
-      setMessage({ type: "error", text: "Vor- und Nachname sind Pflicht" });
+      setMessage({ type: "error", text: t("error.required", "Vor- und Nachname sind Pflicht") });
       return;
     }
     if (createUserAccount && !userEmail.trim()) {
-      setMessage({ type: "error", text: "E-Mail für User-Account ist Pflicht" });
+      setMessage({ type: "error", text: t("error.required", "E-Mail für User-Account ist Pflicht") });
       return;
     }
     setSaving(true);
@@ -124,7 +126,7 @@ export default function PatientsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        let msg = "Patient angelegt";
+        let msg = t("success.created", "Patient angelegt");
         if (data.userCreated) {
           msg += ` + Login für ${data.userEmail}`;
           setGeneratedPassword(data.password);
@@ -136,10 +138,10 @@ export default function PatientsPage() {
         closeModal();
         loadPatients();
       } else {
-        setMessage({ type: "error", text: data.error || "Fehler beim Anlegen" });
+        setMessage({ type: "error", text: data.error || t("error.generic", "Fehler beim Anlegen") });
       }
     } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler" });
+      setMessage({ type: "error", text: t("error.network", "Netzwerkfehler") });
     } finally {
       setSaving(false);
     }
@@ -148,7 +150,7 @@ export default function PatientsPage() {
   const handleEditPatient = async () => {
     if (!activePatient) return;
     if (!formFirstName.trim() || !formLastName.trim()) {
-      setMessage({ type: "error", text: "Vor- und Nachname sind Pflicht" });
+      setMessage({ type: "error", text: t("error.required", "Vor- und Nachname sind Pflicht") });
       return;
     }
     setSaving(true);
@@ -170,14 +172,14 @@ export default function PatientsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: "Patient aktualisiert" });
+        setMessage({ type: "success", text: t("success.updated", "Patient aktualisiert") });
         closeModal();
         loadPatients();
       } else {
-        setMessage({ type: "error", text: data.error || "Fehler beim Aktualisieren" });
+        setMessage({ type: "error", text: data.error || t("error.generic", "Fehler beim Aktualisieren") });
       }
     } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler" });
+      setMessage({ type: "error", text: t("error.network", "Netzwerkfehler") });
     } finally {
       setSaving(false);
     }
@@ -191,15 +193,15 @@ export default function PatientsPage() {
         credentials: "include",
       });
       if (res.ok) {
-        setMessage({ type: "success", text: "Patient gelöscht" });
+        setMessage({ type: "success", text: t("success.deleted", "Patient gelöscht") });
         closeModal();
         loadPatients();
       } else {
         const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Fehler beim Löschen" });
+        setMessage({ type: "error", text: data.error || t("error.generic", "Fehler beim Löschen") });
       }
     } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler" });
+      setMessage({ type: "error", text: t("error.network", "Netzwerkfehler") });
     } finally {
       setSaving(false);
     }
@@ -228,7 +230,7 @@ export default function PatientsPage() {
       closeModal();
       loadPatients();
     } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler bei Massenlöschung" });
+      setMessage({ type: "error", text: t("error.network", "Netzwerkfehler") });
     } finally {
       setSaving(false);
     }
@@ -257,10 +259,10 @@ export default function PatientsPage() {
         closeModal();
         loadPatients();
       } else {
-        setMessage({ type: "error", text: data.error || "Fehler bei Massenbearbeitung" });
+        setMessage({ type: "error", text: data.error || t("error.generic", "Fehler bei Massenbearbeitung") });
       }
     } catch {
-      setMessage({ type: "error", text: "Netzwerkfehler" });
+      setMessage({ type: "error", text: t("error.network", "Netzwerkfehler") });
     } finally {
       setSaving(false);
     }
@@ -370,8 +372,8 @@ export default function PatientsPage() {
   return (
     <div>
       <PageHeader
-        title="Patienten"
-        description="Übersicht aller Patienten"
+        title={t("nav.patients", "Patienten")}
+        description={t("patient.title", "Patienten")}
         action={
           <button className="btn-custom btn-primary-custom" onClick={openCreate}>
             <Plus size={16} /> Neuer Patient
@@ -396,7 +398,7 @@ export default function PatientsPage() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Name oder E-Mail suchen..."
+                  placeholder={t("patient.searchPlaceholder", "Name oder E-Mail suchen...")}
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 />
@@ -571,7 +573,7 @@ export default function PatientsPage() {
               {(modalType === "create" || modalType === "edit") && (
                 <>
                   <div className="modal-header">
-                    <h5 className="modal-title">{modalType === "create" ? "Neuer Patient" : "Patient bearbeiten"}</h5>
+                    <h5 className="modal-title">{modalType === "create" ? t("patient.createTitle", t("patient.createTitle", "Neuer Patient")) : t("patient.editTitle", "Patient bearbeiten")}</h5>
                     <button className="btn-close" onClick={closeModal} />
                   </div>
                   <div className="modal-body">
@@ -655,7 +657,7 @@ export default function PatientsPage() {
                               <input
                                 type="text"
                                 className="form-control"
-                                value={generatedPassword || "Wird automatisch generiert..."}
+                                value={generatedPassword || t("patient.passwordGenerated", "Wird automatisch generiert...")}
                                 disabled
                                 readOnly
                               />
@@ -680,7 +682,7 @@ export default function PatientsPage() {
                   <div className="modal-footer">
                     <button className="btn btn-secondary" onClick={closeModal}>Abbrechen</button>
                     <button className="btn btn-primary" onClick={modalType === "create" ? handleCreatePatient : handleEditPatient} disabled={saving}>
-                      {saving ? "Wird gespeichert..." : modalType === "create" ? "Patient anlegen" : "Speichern"}
+                      {saving ? t("general.loading", "Wird gespeichert...") : modalType === "create" ? t("patient.createTitle", "Patient anlegen") : t("nav.save", "Speichern")}
                     </button>
                   </div>
                 </>
@@ -711,7 +713,7 @@ export default function PatientsPage() {
                   <div className="modal-footer">
                     <button className="btn btn-secondary" onClick={closeModal}>Abbrechen</button>
                     <button className="btn btn-danger" onClick={() => handleDeletePatient(activePatient.id)} disabled={saving}>
-                      {saving ? "Wird gelöscht..." : "Patient löschen"}
+                      {saving ? t("general.loading", "Wird gelöscht...") : t("patient.deleteTitle", "Patient löschen")}
                     </button>
                   </div>
                 </>
@@ -742,7 +744,7 @@ export default function PatientsPage() {
                   <div className="modal-footer">
                     <button className="btn btn-secondary" onClick={closeModal}>Abbrechen</button>
                     <button className="btn btn-danger" onClick={handleBulkDelete} disabled={saving}>
-                      {saving ? "Wird gelöscht..." : `${selectedIds.size} Patienten löschen`}
+                      {saving ? t("general.loading", "Wird gelöscht...") : `${selectedIds.size} Patienten löschen`}
                     </button>
                   </div>
                 </>
@@ -801,7 +803,7 @@ export default function PatientsPage() {
                           rows={3}
                           value={bulkNote}
                           onChange={(e) => setBulkNote(e.target.value)}
-                          placeholder="z.B. Wartezeit verkürzt, Priorität erhöht..."
+                          placeholder=t("patient.notePlaceholder", "z.B. Wartezeit verkürzt, Priorität erhöht...")
                         />
                       </div>
                     </div>
@@ -809,7 +811,7 @@ export default function PatientsPage() {
                   <div className="modal-footer">
                     <button className="btn btn-secondary" onClick={closeModal}>Abbrechen</button>
                     <button className="btn btn-primary" onClick={handleBulkUpdate} disabled={saving}>
-                      {saving ? "Wird gespeichert..." : `${selectedIds.size} Patienten aktualisieren`}
+                      {saving ? t("general.loading", "Wird gespeichert...") : `${selectedIds.size} Patienten aktualisieren`}
                     </button>
                   </div>
                 </>

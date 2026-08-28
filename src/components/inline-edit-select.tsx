@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "@/components/i18n-provider";
 import { Check, X, Pencil } from "lucide-react";
 
 interface InlineEditSelectProps {
@@ -22,6 +23,7 @@ export default function InlineEditSelect({
   onUpdate,
   renderDisplay,
 }: InlineEditSelectProps) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || "");
   const [saving, setSaving] = useState(false);
@@ -57,14 +59,14 @@ export default function InlineEditSelect({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Speichern fehlgeschlagen");
+        setError(data.error || t("inline.saveFailed", "Speichern fehlgeschlagen"));
         return;
       }
 
       setIsEditing(false);
       if (onUpdate) onUpdate(field, editValue);
     } catch (e) {
-      setError("Netzwerkfehler");
+      setError(t("error.network", "Netzwerkfehler"));
     } finally {
       setSaving(false);
     }
@@ -104,7 +106,7 @@ export default function InlineEditSelect({
             className="btn btn-sm btn-success p-1"
             onClick={handleSave}
             disabled={saving}
-            title="Speichern"
+            title={t("inline.save", "Speichern")}
           >
             {saving ? (
               <span className="spinner-border spinner-border-sm" role="status" />
@@ -116,7 +118,7 @@ export default function InlineEditSelect({
             className="btn btn-sm btn-outline-secondary p-1"
             onClick={handleCancel}
             disabled={saving}
-            title="Abbrechen"
+            title={t("inline.cancel", "Abbrechen")}
           >
             <X size={14} />
           </button>
@@ -131,7 +133,7 @@ export default function InlineEditSelect({
       <span
         className="cursor-pointer flex-grow-1"
         onClick={() => setIsEditing(true)}
-        title="Klicken zum Bearbeiten"
+        title={t("inline.editTooltip", "Klicken zum Bearbeiten")}
         style={{ cursor: "pointer" }}
       >
         {renderDisplay ? renderDisplay(value) : displayValue}
@@ -139,7 +141,7 @@ export default function InlineEditSelect({
       <button
         className="btn btn-link text-decoration-none p-0"
         onClick={() => setIsEditing(true)}
-        title="Bearbeiten"
+        title={t("inline.editTooltip", "Bearbeiten")}
         style={{ fontSize: "0.75rem", color: "#2563eb", opacity: 0, transition: "opacity 0.15s" }}
         onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
         onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}

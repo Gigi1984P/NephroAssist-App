@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 
+import { useTranslation } from "@/components/i18n-provider";
+
 interface PageHeaderProps {
   title: string;
   description?: string;
@@ -14,18 +16,19 @@ interface PageHeaderProps {
 export function PageHeader({ title, description, action, breadcrumbs }: PageHeaderProps) {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
+  const { t } = useTranslation();
 
   const breadcrumbMap: Record<string, string> = {
-    dashboard: "Dashboard",
-    tasks: "Untersuchungen",
-    patients: "Patienten",
-    appointments: "Termine",
-    documents: "Dokumente",
-    calendar: "Kalender",
-    settings: "Einstellungen",
-    admin: "Admin",
-    reports: "Statistiken",
-    audit: "Audit Log",
+    dashboard: t("nav.dashboard", "Dashboard"),
+    tasks: t("req.title", "Untersuchungen"),
+    patients: t("nav.patients", "Patienten"),
+    appointments: t("appt.title", "Termine"),
+    documents: t("doc.title", "Dokumente"),
+    calendar: t("appt.title", "Termine"),
+    settings: t("nav.settings", "Einstellungen"),
+    admin: t("nav.admin", "Admin"),
+    reports: t("nav.reports", "Auswertungen"),
+    audit: t("admin.auditLog", "Audit Log"),
   };
 
   return (

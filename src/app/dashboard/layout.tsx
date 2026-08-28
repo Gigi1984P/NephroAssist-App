@@ -7,6 +7,8 @@ import { UserNav } from "@/components/user-nav";
 import { NotificationCenter } from "@/components/notification-center";
 import PatientSearch from "@/components/patient-search";
 
+import { useTranslation } from "@/components/i18n-provider";
+
 const STORAGE_KEY = "nephro-sidebar-width";
 const DEFAULT_WIDTH = 260;
 
@@ -18,6 +20,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [user, setUser] = useState<{
     name?: string | null;
@@ -47,29 +50,29 @@ export default function DashboardLayout({
   /* Track page title from pathname */
   useEffect(() => {
     const titleMap: Record<string, string> = {
-      "/dashboard": "Dashboard",
-      "/dashboard/patients": "Patienten",
-      "/dashboard/appointments": "Termine",
-      "/dashboard/settings": "Einstellungen",
-      "/dashboard/admin": "Admin",
-      "/dashboard/admin/settings": "System-Einstellungen",
-      "/dashboard/admin/reports": "Statistiken",
-      "/dashboard/admin/audit": "Audit Log",
-      "/dashboard/reports": "Auswertungen",
+      "/dashboard": t("nav.dashboard", "Dashboard"),
+      "/dashboard/patients": t("nav.patients", "Patienten"),
+      "/dashboard/appointments": t("nav.calendar", "Termine"),
+      "/dashboard/settings": t("nav.settings", "Einstellungen"),
+      "/dashboard/admin": t("nav.admin", "Admin"),
+      "/dashboard/admin/settings": t("admin.settings", "System-Einstellungen"),
+      "/dashboard/admin/reports": t("admin.statistics", "Statistiken"),
+      "/dashboard/admin/audit": t("admin.auditLog", "Audit Log"),
+      "/dashboard/reports": t("nav.reports", "Auswertungen"),
     };
     if (typeof window !== "undefined") {
-      setPageTitle(titleMap[window.location.pathname] || "Dashboard");
+      setPageTitle(titleMap[window.location.pathname] || t("nav.dashboard", "Dashboard"));
     }
-  }, []);
+  }, [t]);
 
   if (!user) {
     return (
       <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "100vh" }}>
         <div className="d-flex flex-column align-items-center gap-3">
           <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Laden...</span>
+            <span className="visually-hidden">{t("loading.title", "Laden...")}</span>
           </div>
-          <span className="text-muted" style={{ fontSize: "0.9rem" }}>Sitzung wird geladen...</span>
+          <span className="text-muted" style={{ fontSize: "0.9rem" }}>{t("loading.session", "Sitzung wird geladen...")}</span>
         </div>
       </div>
     );

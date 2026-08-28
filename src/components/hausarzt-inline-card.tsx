@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/components/i18n-provider";
 import { Stethoscope, CheckCircle } from "lucide-react";
 import InlineEditField from "@/components/inline-edit-field";
 
@@ -13,6 +14,7 @@ interface PatientGpData {
 }
 
 export default function HausarztInlineCard({ patientId }: { patientId: string }) {
+  const { t } = useTranslation();
   const [gpData, setGpData] = useState<PatientGpData | null>(null);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState("");
@@ -74,7 +76,7 @@ export default function HausarztInlineCard({ patientId }: { patientId: string })
       <div className="card-body">
         <div className="row g-3">
           <div className="col-sm-6">
-            <div className="text-muted small fw-semibold mb-1">Name</div>
+            <div className="text-muted small fw-semibold mb-1">{t("gp.name", "Name")}</div>
             <InlineEditField
               value={gpData.generalPractitionerName}
               label="Name"
@@ -85,7 +87,7 @@ export default function HausarztInlineCard({ patientId }: { patientId: string })
             />
           </div>
           <div className="col-sm-6">
-            <div className="text-muted small fw-semibold mb-1">Stadt</div>
+            <div className="text-muted small fw-semibold mb-1">{t("gp.city", "Stadt")}</div>
             <InlineEditField
               value={gpData.generalPractitionerCity}
               label="Stadt"
@@ -96,7 +98,7 @@ export default function HausarztInlineCard({ patientId }: { patientId: string })
             />
           </div>
           <div className="col-sm-6">
-            <div className="text-muted small fw-semibold mb-1">E-Mail</div>
+            <div className="text-muted small fw-semibold mb-1">{t("gp.email", "E-Mail")}</div>
             <InlineEditField
               value={gpData.generalPractitionerEmail}
               label="E-Mail"
@@ -108,7 +110,7 @@ export default function HausarztInlineCard({ patientId }: { patientId: string })
             />
           </div>
           <div className="col-sm-6">
-            <div className="text-muted small fw-semibold mb-1">Telefon</div>
+            <div className="text-muted small fw-semibold mb-1">{t("gp.phone", "Telefon")}</div>
             <InlineEditField
               value={gpData.generalPractitionerPhone}
               label="Telefon"
@@ -120,7 +122,7 @@ export default function HausarztInlineCard({ patientId }: { patientId: string })
             />
           </div>
           <div className="col-12">
-            <div className="text-muted small fw-semibold mb-1">Adresse</div>
+            <div className="text-muted small fw-semibold mb-1">{t("gp.address", "Adresse")}</div>
             <InlineEditField
               value={gpData.generalPractitionerAddress}
               label="Adresse"

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { useTranslation } from "@/components/i18n-provider";
 import { ArrowLeft, Save, User, Calendar, Mail, Phone, Stethoscope, Building2, Clock, Activity } from "lucide-react";
 
 interface PatientData {
@@ -40,6 +41,7 @@ interface TransplantProgram {
 }
 
 export default function PatientEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [id, setId] = useState("");
   const [patient, setPatient] = useState<PatientData | null>(null);
@@ -86,9 +88,9 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
       const res = await fetch(`/api/patients/${id}/edit`, { credentials: "include" });
       if (!res.ok) {
         if (res.status === 404) {
-          setError("Patient nicht gefunden");
+          setError(t("patient.notFound", "Patient nicht gefunden"));
         } else {
-          setError("Fehler beim Laden der Daten");
+          setError(t("error.generic", "Fehler beim Laden der Daten"));
         }
         setLoading(false);
         return;
@@ -116,7 +118,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
         transplantType: data.patient.transplantType || "",
       });
     } catch (e) {
-      setError("Netzwerkfehler beim Laden");
+      setError(t("error.network", "Netzwerkfehler beim Laden"));
     } finally {
       setLoading(false);
     }
@@ -142,13 +144,13 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Fehler beim Speichern");
+        setError(data.error || t("error.generic", "Fehler beim Speichern"));
       } else {
-        setSuccess("Patient erfolgreich aktualisiert");
+        setSuccess(t("success.updated", "Patient erfolgreich aktualisiert"));
         setTimeout(() => setSuccess(""), 3000);
       }
     } catch (e) {
-      setError("Netzwerkfehler beim Speichern");
+      setError(t("error.network", "Netzwerkfehler beim Speichern"));
     } finally {
       setSaving(false);
     }
@@ -269,7 +271,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.email}
                   onChange={(e) => handleChange("email", e.target.value)}
-                  placeholder="patient@beispiel.de"
+                  placeholder={t("patient.email", "patient@beispiel.de")}
                 />
               </div>
               <div className="col-md-6">
@@ -279,7 +281,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.phone}
                   onChange={(e) => handleChange("phone", e.target.value)}
-                  placeholder="+49 170 1234567"
+                  placeholder={t("patient.phone", "+49 170 1234567")}
                 />
               </div>
             </div>
@@ -361,7 +363,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerName}
                   onChange={(e) => handleChange("generalPractitionerName", e.target.value)}
-                  placeholder="Dr. Max Mustermann"
+                  placeholder=t("patient.gpName", "Dr. Max Mustermann")
                 />
               </div>
               <div className="col-md-6">
@@ -371,7 +373,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerCity}
                   onChange={(e) => handleChange("generalPractitionerCity", e.target.value)}
-                  placeholder="Berlin"
+                  placeholder=t("common.city", "Berlin")
                 />
               </div>
               <div className="col-md-6">
@@ -381,7 +383,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerEmail}
                   onChange={(e) => handleChange("generalPractitionerEmail", e.target.value)}
-                  placeholder="arzt@beispiel.de"
+                  placeholder=t("patient.gpEmail", "arzt@beispiel.de")
                 />
               </div>
               <div className="col-md-6">
@@ -391,7 +393,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerPhone}
                   onChange={(e) => handleChange("generalPractitionerPhone", e.target.value)}
-                  placeholder="+49 30 123456"
+                  placeholder=t("patient.gpPhone", "+49 30 123456")
                 />
               </div>
               <div className="col-12">
@@ -401,7 +403,7 @@ export default function PatientEditPage({ params }: { params: Promise<{ id: stri
                   className="form-control"
                   value={form.generalPractitionerAddress}
                   onChange={(e) => handleChange("generalPractitionerAddress", e.target.value)}
-                  placeholder="Musterstraße 1, 10115 Berlin"
+                  placeholder=t("patient.gpAddress", "Musterstraße 1, 10115 Berlin")
                 />
               </div>
             </div>

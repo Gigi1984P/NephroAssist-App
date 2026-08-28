@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/components/i18n-provider";
 import { User, CheckCircle } from "lucide-react";
 import InlineEditField from "@/components/inline-edit-field";
 
@@ -17,6 +18,7 @@ interface PatientData {
 }
 
 export default function PatientStammdatenCard({ patientId }: { patientId: string }) {
+  const { t } = useTranslation();
   const [patient, setPatient] = useState<PatientData | null>(null);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState("");
@@ -91,7 +93,7 @@ export default function PatientStammdatenCard({ patientId }: { patientId: string
         <div className="row g-3">
           <div className="col-md-6">
             <div className="row mb-2">
-              <div className="col-sm-4 text-muted fw-semibold">Vorname</div>
+              <div className="col-sm-4 text-muted fw-semibold">{t("patient.firstName", "Vorname")}</div>
               <div className="col-sm-8">
                 <InlineEditField
                   value={patient.firstName}
@@ -103,7 +105,7 @@ export default function PatientStammdatenCard({ patientId }: { patientId: string
               </div>
             </div>
             <div className="row mb-2">
-              <div className="col-sm-4 text-muted fw-semibold">Nachname</div>
+              <div className="col-sm-4 text-muted fw-semibold">{t("patient.lastName", "Nachname")}</div>
               <div className="col-sm-8">
                 <InlineEditField
                   value={patient.lastName}
@@ -115,7 +117,7 @@ export default function PatientStammdatenCard({ patientId }: { patientId: string
               </div>
             </div>
             <div className="row mb-2">
-              <div className="col-sm-4 text-muted fw-semibold">Geburtsdatum</div>
+              <div className="col-sm-4 text-muted fw-semibold">{t("patient.dateOfBirth", "Geburtsdatum")}</div>
               <div className="col-sm-8">
                 <InlineEditField
                   value={patient.dateOfBirth}
@@ -126,14 +128,14 @@ export default function PatientStammdatenCard({ patientId }: { patientId: string
                   onUpdate={handleUpdate}
                   renderDisplay={(v) => (
                     <span>
-                      {formatDate(v)} {v && age !== null && `(${age} Jahre)`}
+                      {formatDate(v)} {v && age !== null && `(${age} ${t("general.year", "Jahre")})`}
                     </span>
                   )}
                 />
               </div>
             </div>
             <div className="row mb-2">
-              <div className="col-sm-4 text-muted fw-semibold">E-Mail</div>
+              <div className="col-sm-4 text-muted fw-semibold">{t("patient.email", "E-Mail")}</div>
               <div className="col-sm-8">
                 <InlineEditField
                   value={patient.email}
@@ -146,7 +148,7 @@ export default function PatientStammdatenCard({ patientId }: { patientId: string
               </div>
             </div>
             <div className="row mb-2">
-              <div className="col-sm-4 text-muted fw-semibold">Telefon</div>
+              <div className="col-sm-4 text-muted fw-semibold">{t("patient.phone", "Telefon")}</div>
               <div className="col-sm-8">
                 <InlineEditField
                   value={patient.phone}
@@ -161,21 +163,21 @@ export default function PatientStammdatenCard({ patientId }: { patientId: string
           </div>
           <div className="col-md-6">
             <div className="row mb-2">
-              <div className="col-sm-4 text-muted fw-semibold">Patient-ID</div>
+              <div className="col-sm-4 text-muted fw-semibold">{t("patient.id", "Patienten-ID")}</div>
               <div className="col-sm-8">
                 <code className="text-muted">{patient.id.substring(0, 8)}...</code>
               </div>
             </div>
             <div className="row mb-2">
-              <div className="col-sm-4 text-muted fw-semibold">Erstellt</div>
+              <div className="col-sm-4 text-muted fw-semibold">{t("patient.createdAt", "Erstellt")}</div>
               <div className="col-sm-8">{formatDate(patient.createdAt)}</div>
             </div>
             <div className="row mb-2">
-              <div className="col-sm-4 text-muted fw-semibold">Aktualisiert</div>
+              <div className="col-sm-4 text-muted fw-semibold">{t("patient.updatedAt", "Aktualisiert")}</div>
               <div className="col-sm-8">{formatDate(patient.updatedAt)}</div>
             </div>
             <div className="row mb-2">
-              <div className="col-sm-4 text-muted fw-semibold">Klinik</div>
+              <div className="col-sm-4 text-muted fw-semibold">{t("patient.clinic", "Klinik")}</div>
               <div className="col-sm-8">{patient.Organization?.name || "—"}</div>
             </div>
           </div>

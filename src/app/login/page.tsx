@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Lock, Shield, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { useTranslation } from "@/components/i18n-provider";
 
 interface DemoAccount {
   email: string;
@@ -22,6 +23,7 @@ const demoAccounts: DemoAccount[] = [
 ];
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -39,10 +41,10 @@ export default function LoginPage() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("registered") === "true") {
-      setInfoMsg("Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden.");
+      setInfoMsg(t("auth.registerSuccess", "Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden."));
     }
     if (params.get("reset") === "success") {
-      setInfoMsg("Passwort erfolgreich zurückgesetzt. Sie können sich jetzt anmelden.");
+      setInfoMsg(t("auth.passwordResetSuccess", "Passwort erfolgreich zurückgesetzt. Sie können sich jetzt anmelden."));
     }
   }, []);
 
@@ -80,7 +82,7 @@ export default function LoginPage() {
         } else if (data.success) {
           window.location.href = "/dashboard";
         } else {
-          setError("Ungültige Antwort");
+          setError(t("auth.invalidResponse", "Ungültige Antwort"));
         }
       } else {
         const res = await fetch("/api/login", {
@@ -94,11 +96,11 @@ export default function LoginPage() {
         } else if (data.success) {
           window.location.href = "/dashboard";
         } else {
-          setError("Ungültige Antwort");
+          setError(t("auth.invalidResponse", "Ungültige Antwort"));
         }
       }
     } catch (err) {
-      setError(`Netzwerk: ${err instanceof Error ? err.message : "Unbekannt"}`);
+      setError(t("auth.networkError", `Netzwerk: ${err instanceof Error ? err.message : "Unbekannt"}`));
     } finally {
       setLoading(false);
     }
@@ -127,9 +129,9 @@ export default function LoginPage() {
             </div>
             <span style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", letterSpacing: "-0.01em" }}>NephroAssist</span>
           </div>
-          <h1 className="h4 fw-bold mb-1" style={{ color: "#1e293b" }}>{show2FA ? "2-Faktor-Authentifizierung" : "Anmelden"}</h1>
+          <h1 className="h4 fw-bold mb-1" style={{ color: "#1e293b" }}>{show2FA ? t("auth.twoFactor", "Zwei-Faktor-Authentifizierung") : t("auth.login", "Anmelden")}</h1>
           <p className="text-muted mb-0" style={{ fontSize: "0.9rem" }}>
-            {show2FA ? `Bitte geben Sie den Code ein, den wir an ${storedEmail} gesendet haben.` : "Melden Sie sich mit Ihren Zugangsdaten an"}
+            {show2FA ? t("auth.twoFactorSubtitle", `Bitte geben Sie den Code ein, den wir an ${storedEmail} gesendet haben.`) : t("auth.loginSubtitle", "Melden Sie sich mit Ihren Zugangsdaten an")}
           </p>
         </div>
 
@@ -148,7 +150,7 @@ export default function LoginPage() {
         )}
         {demoFill && (
           <div className="d-flex align-items-center gap-2 py-2 mb-3 px-3" style={{ borderRadius: "0.5rem", fontSize: "0.8rem", background: "#dbeafe", color: "#1e40af" }}>
-            <CheckCircle size={16} /> Zugangsdaten eingefügt — jetzt anmelden!
+            <CheckCircle size={16} /> {t("auth.credentialsFilled", "Zugangsdaten eingefügt — jetzt anmelden!")}
           </div>
         )}
 
@@ -156,16 +158,16 @@ export default function LoginPage() {
           {!show2FA ? (
             <>
               <div className="mb-3">
-                <label htmlFor="email" className="form-label fw-medium" style={{ fontSize: "0.85rem", color: "#374151" }}>E-Mail</label>
+                <label htmlFor="email" className="form-label fw-medium" style={{ fontSize: "0.85rem", color: "#374151" }}>{t("common.email", "E-Mail")}</label>
                 <div className="position-relative">
                   <div className="position-absolute d-flex align-items-center justify-content-center" style={{ left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
                     <Mail size={18} />
                   </div>
-                  <input type="email" id="email" className="form-control" placeholder="name@beispiel.de" style={{ paddingLeft: "42px", borderRadius: "0.5rem", border: "1px solid #d1d5db", fontSize: "0.9rem" }} />
+                  <input type="email" id="email" className="form-control" placeholder={t("auth.emailPlaceholder", "name@beispiel.de")} style={{ paddingLeft: "42px", borderRadius: "0.5rem", border: "1px solid #d1d5db", fontSize: "0.9rem" }} />
                 </div>
               </div>
               <div className="mb-2">
-                <label htmlFor="password" className="form-label fw-medium" style={{ fontSize: "0.85rem", color: "#374151" }}>Passwort</label>
+                <label htmlFor="password" className="form-label fw-medium" style={{ fontSize: "0.85rem", color: "#374151" }}>{t("auth.password", "Passwort")}</label>
                 <div className="position-relative">
                   <div className="position-absolute d-flex align-items-center justify-content-center" style={{ left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
                     <Lock size={18} />
@@ -177,7 +179,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="d-flex justify-content-end mb-4">
-                <Link href="/forgot-password" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb", fontWeight: 500 }}>Passwort vergessen?</Link>
+                <Link href="/forgot-password" className="text-decoration-none" style={{ fontSize: "0.8rem", color: "#2563eb", fontWeight: 500 }}>{t("auth.forgotPassword", "Passwort vergessen?")}</Link>
               </div>
             </>
           ) : (

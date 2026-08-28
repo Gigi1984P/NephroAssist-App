@@ -23,32 +23,32 @@ import {
 import { useTranslation } from "@/components/i18n-provider";
 
 interface SidebarItem {
-  title: string;
+  titleKey: string;
   href?: string;
   icon: LucideIcon;
   roles: string[];
-  children?: { title: string; href: string }[];
+  children?: { titleKey: string; href: string }[];
 }
 
 const sidebarItems: SidebarItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
-  { title: "Patienten", href: "/dashboard/patients", icon: Users, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"] },
-  { title: "Termine", href: "/dashboard/appointments", icon: Calendar, roles: ["PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
-  { title: "Meine Untersuchungen", href: "/dashboard/tasks", icon: CheckSquare, roles: ["PATIENT", "CAREGIVER"] },
-  { title: "Dokumente", href: "/dashboard/documents", icon: FileText, roles: ["PATIENT", "CAREGIVER", "ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
-  { title: "Auswertungen", href: "/dashboard/reports", icon: BarChart3, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
-  { title: "Anforderungen", href: "/dashboard/requirements", icon: ClipboardList, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
-  { title: "Hilfeanfragen", href: "/dashboard/help-requests", icon: LifeBuoy, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
+  { titleKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
+  { titleKey: "nav.patients", href: "/dashboard/patients", icon: Users, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"] },
+  { titleKey: "nav.calendar", href: "/dashboard/appointments", icon: Calendar, roles: ["PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
+  { titleKey: "nav.myExaminations", href: "/dashboard/tasks", icon: CheckSquare, roles: ["PATIENT", "CAREGIVER"] },
+  { titleKey: "nav.documents", href: "/dashboard/documents", icon: FileText, roles: ["PATIENT", "CAREGIVER", "ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
+  { titleKey: "nav.reports", href: "/dashboard/reports", icon: BarChart3, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
+  { titleKey: "nav.requirements", href: "/dashboard/requirements", icon: ClipboardList, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
+  { titleKey: "nav.helpRequests", href: "/dashboard/help-requests", icon: LifeBuoy, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
   {
-    title: "Admin",
+    titleKey: "nav.admin",
     href: "/dashboard/admin",
     icon: ShieldCheck,
     roles: ["ADMIN"],
     children: [
-      { title: "Benutzer", href: "/dashboard/admin" },
-      { title: "System-Einstellungen", href: "/dashboard/admin/settings" },
-      { title: "Audit Log", href: "/dashboard/admin/audit" },
-      { title: "Statistiken", href: "/dashboard/admin/reports" },
+      { titleKey: "admin.users", href: "/dashboard/admin" },
+      { titleKey: "admin.settings", href: "/dashboard/admin/settings" },
+      { titleKey: "admin.auditLog", href: "/dashboard/admin/audit" },
+      { titleKey: "admin.statistics", href: "/dashboard/admin/reports" },
     ],
   },
 ];
@@ -139,6 +139,7 @@ function SidebarNavItem({
 }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = React.useState(false);
+  const { t } = useTranslation();
 
   const isActive = (href?: string) => {
     if (!href) return false;
@@ -156,7 +157,7 @@ function SidebarNavItem({
           className={`sidebar-nav-item ${isActive(item.href) ? "active" : ""}`}
         >
           <Icon className="sidebar-nav-icon" />
-          <span className="flex-grow-1 text-start">{item.title}</span>
+          <span className="flex-grow-1 text-start">{t(item.titleKey, item.titleKey)}</span>
           <ChevronRight
             className="sidebar-nav-icon"
             style={{
@@ -174,7 +175,7 @@ function SidebarNavItem({
                 className={`sidebar-nav-item ${isActive(child.href) ? "active" : ""}`}
                 style={{ fontSize: "0.85rem" }}
               >
-                <span className="ps-2">{child.title}</span>
+                <span className="ps-2">{t(child.titleKey, child.titleKey)}</span>
               </Link>
             ))}
           </div>
@@ -189,13 +190,14 @@ function SidebarNavItem({
       className={`sidebar-nav-item ${isActive(item.href) ? "active" : ""}`}
     >
       <Icon className="sidebar-nav-icon" />
-      <span>{item.title}</span>
+      <span>{t(item.titleKey, item.titleKey)}</span>
     </Link>
   );
 }
 
 function SidebarContent({ role, userName, userEmail, width }: SidebarProps & { width: number }) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const filteredItems = sidebarItems.filter((item) => item.roles.includes(role));
 
@@ -223,14 +225,14 @@ function SidebarContent({ role, userName, userEmail, width }: SidebarProps & { w
           <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>
             NephroAssist
           </div>
-          <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>Transplant Platform</div>
+          <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>{t("app.subtitle", "Transplant Platform")}</div>
         </div>
       </div>
 
       {/* Navigation */}
       <div className="sidebar-nav">
         {filteredItems.map((item) => (
-          <SidebarNavItem key={item.title} item={item} role={role} />
+          <SidebarNavItem key={item.titleKey} item={item} role={role} />
         ))}
       </div>
 
@@ -242,7 +244,7 @@ function SidebarContent({ role, userName, userEmail, width }: SidebarProps & { w
           </div>
           <div className="overflow-hidden">
             <div className="text-truncate" style={{ fontSize: "0.85rem", fontWeight: 500, color: "#fff" }}>
-              {userName || "Benutzer"}
+              {userName || t("common.user", "Benutzer")}
             </div>
             <div className="text-truncate" style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
               {userEmail}
@@ -252,7 +254,7 @@ function SidebarContent({ role, userName, userEmail, width }: SidebarProps & { w
         <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "0.75rem 0" }} />
         <Link href="/dashboard/settings" className="sidebar-nav-item">
           <Settings className="sidebar-nav-icon" />
-          <span>Einstellungen</span>
+          <span>{t("nav.settings", "Einstellungen")}</span>
         </Link>
         <button
           onClick={async () => {
@@ -262,7 +264,7 @@ function SidebarContent({ role, userName, userEmail, width }: SidebarProps & { w
           className="sidebar-logout-btn"
         >
           <LogOut className="sidebar-nav-icon" />
-          <span>Abmelden</span>
+          <span>{t("nav.logout", "Abmelden")}</span>
         </button>
       </div>
     </div>
@@ -322,6 +324,7 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
+  const { t } = useTranslation();
 
   const filteredItems = sidebarItems.filter((item) => item.roles.includes(role));
 
@@ -355,7 +358,7 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
                 <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>
                   NephroAssist
                 </div>
-                <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>Transplant Platform</div>
+                <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>{t("app.subtitle", "Transplant Platform")}</div>
               </div>
             </div>
 
@@ -363,22 +366,22 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
               {filteredItems.map((item) => {
                 const Icon = item.icon;
                 const hasChildren = item.children && item.children.length > 0;
-                const isMenuOpen = openMenus[item.title];
+                const isMenuOpen = openMenus[item.titleKey];
 
                 if (hasChildren) {
                   return (
-                    <div className="mb-1" key={item.title}>
+                    <div className="mb-1" key={item.titleKey}>
                       <button
                         onClick={() =>
                           setOpenMenus((prev) => ({
                             ...prev,
-                            [item.title]: !prev[item.title],
+                            [item.titleKey]: !prev[item.titleKey],
                           }))
                         }
                         className={`sidebar-nav-item ${isActive(item.href) ? "active" : ""}`}
                       >
                         <Icon className="sidebar-nav-icon" />
-                        <span className="flex-grow-1 text-start">{item.title}</span>
+                        <span className="flex-grow-1 text-start">{t(item.titleKey, item.titleKey)}</span>
                         <ChevronRight
                           size={16}
                           style={{
@@ -397,7 +400,7 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
                               className={`sidebar-nav-item ${isActive(child.href) ? "active" : ""}`}
                               style={{ fontSize: "0.85rem" }}
                             >
-                              <span className="ps-2">{child.title}</span>
+                              <span className="ps-2">{t(child.titleKey, child.titleKey)}</span>
                             </Link>
                           ))}
                         </div>
@@ -408,13 +411,13 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
 
                 return (
                   <Link
-                    key={item.title}
+                    key={item.titleKey}
                     href={item.href || "#"}
                     onClick={() => setOpen(false)}
                     className={`sidebar-nav-item ${isActive(item.href) ? "active" : ""}`}
                   >
                     <Icon className="sidebar-nav-icon" />
-                    <span>{item.title}</span>
+                    <span>{t(item.titleKey, item.titleKey)}</span>
                   </Link>
                 );
               })}
@@ -427,7 +430,7 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
                 </div>
                 <div className="overflow-hidden">
                   <div className="text-truncate" style={{ fontSize: "0.85rem", fontWeight: 500, color: "#fff" }}>
-                    {userName || "Benutzer"}
+                    {userName || t("common.user", "Benutzer")}
                   </div>
                   <div className="text-truncate" style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
                     {userEmail}
@@ -441,7 +444,7 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
                 className="sidebar-nav-item"
               >
                 <Settings className="sidebar-nav-icon" />
-                <span>Einstellungen</span>
+                <span>{t("nav.settings", "Einstellungen")}</span>
               </Link>
               <button
                 onClick={async () => {
@@ -452,7 +455,7 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
                 className="sidebar-logout-btn"
               >
                 <LogOut className="sidebar-nav-icon" />
-                <span>Abmelden</span>
+                <span>{t("nav.logout", "Abmelden")}</span>
               </button>
             </div>
           </div>
