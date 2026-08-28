@@ -265,6 +265,101 @@ const TRANSLATIONS = [
   { key: "sidebar.systemSettings", de: "System-Einstellungen", it: "Impostazioni di Sistema", category: "sidebar" },
   { key: "sidebar.auditLog", de: "Audit Log", it: "Log di Audit", category: "sidebar" },
   { key: "sidebar.statistics", de: "Statistiken", it: "Statistiche", category: "sidebar" },
+
+  // === PATIENT PAGE ===
+  { key: "patient.searchPlaceholder", de: "Name oder E-Mail suchen...", it: "Cerca per nome o email...", category: "patient" },
+  { key: "patient.noPatients", de: "Keine Patienten gefunden", it: "Nessun paziente trovato", category: "patient" },
+  { key: "patient.noPatientsDesc", de: "Passen Sie Ihre Suche an oder fügen Sie einen Patienten hinzu.", it: "Modifica la ricerca o aggiungi un paziente.", category: "patient" },
+  { key: "patient.contact", de: "Kontakt", it: "Contatto", category: "patient" },
+  { key: "patient.actions", de: "Aktionen", it: "Azioni", category: "patient" },
+  { key: "patient.details", de: "Details", it: "Dettagli", category: "patient" },
+  { key: "patient.createTitle", de: "Neuer Patient", it: "Nuovo Paziente", category: "patient" },
+  { key: "patient.editTitle", de: "Patient bearbeiten", it: "Modifica Paziente", category: "patient" },
+  { key: "patient.deleteTitle", de: "Patient löschen", it: "Elimina Paziente", category: "patient" },
+  { key: "patient.deleteConfirm", de: "Alle zugehörigen Daten werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.", it: "Tutti i dati correlati verranno eliminati. Questa azione non può essere annullata.", category: "patient" },
+  { key: "patient.bulkDeleteTitle", de: "Massenlöschung", it: "Eliminazione di massa", category: "patient" },
+  { key: "patient.bulkUpdateTitle", de: "Patienten bearbeiten", it: "Modifica pazienti", category: "patient" },
+  { key: "patient.bulkUpdateHint", de: "Änderungen werden auf alle ausgewählten Patienten angewendet. Leere Felder werden ignoriert.", it: "Le modifiche verranno applicate a tutti i pazienti selezionati. I campi vuoti verranno ignorati.", category: "patient" },
+  { key: "patient.caseStatus", de: "Fall-Status", it: "Stato del caso", category: "patient" },
+  { key: "patient.assignCoordinator", de: "Koordinator zuweisen", it: "Assegna coordinatore", category: "patient" },
+  { key: "patient.note", de: "Notiz", it: "Nota", category: "patient" },
+  { key: "patient.notePlaceholder", de: "z.B. Wartezeit verkürzt, Priorität erhöht...", it: "es. riduzione tempo di attesa, priorità aumentata...", category: "patient" },
+  { key: "patient.createUserAccount", de: "Login für Patienten-Portal", it: "Accesso al portale paziente", category: "patient" },
+  { key: "patient.userAccountCheckbox", de: "User-Account erstellen", it: "Crea account utente", category: "patient" },
+  { key: "patient.userEmail", de: "E-Mail für Login", it: "Email per l'accesso", category: "patient" },
+  { key: "patient.passwordGenerated", de: "Wird automatisch generiert...", it: "Verrà generato automaticamente...", category: "patient" },
+  { key: "patient.userCreated", de: "User-Account erstellt!", it: "Account utente creato!", category: "patient" },
+  { key: "patient.loginCredentials", de: "E-Mail mit Zugangsdaten wurde an", it: "Email con credenziali inviata a", category: "patient" },
+  { key: "patient.assignedRequirements", de: "Untersuchungen zugewiesen", it: "Esami assegnati", category: "patient" },
+  { key: "patient.houseDoctor", de: "Hausarzt", it: "Medico di famiglia", category: "patient" },
+  { key: "patient.stammdaten", de: "Patientenstammdaten", it: "Dati anagrafici paziente", category: "patient" },
+  { key: "patient.saved", de: "Gespeichert", it: "Salvato", category: "patient" },
+
+  // === EDIT PAGE ===
+  { key: "edit.backToDetail", de: "Zurück zur Detailseite", it: "Torna ai dettagli", category: "edit" },
+  { key: "edit.personalData", de: "Persönliche Daten", it: "Dati personali", category: "edit" },
+  { key: "edit.contactData", de: "Kontaktdaten", it: "Dati di contatto", category: "edit" },
+  { key: "edit.clinicTransplant", de: "Klinik & Transplantation", it: "Clinica e trapianto", category: "edit" },
+  { key: "edit.gp", de: "Hausarzt", it: "Medico di famiglia", category: "edit" },
+  { key: "edit.save", de: "Speichern", it: "Salva", category: "edit" },
+  { key: "edit.cancel", de: "Abbrechen", it: "Annulla", category: "edit" },
+  { key: "edit.saving", de: "Speichern...", it: "Salvataggio...", category: "edit" },
+  { key: "edit.required", de: "Dieses Feld ist erforderlich", it: "Questo campo è obbligatorio", category: "edit" },
+
+  // === CASE STATUS ===
+  { key: "case.referral", de: "Überweisung", it: "Invio", category: "case" },
+  { key: "case.evaluation", de: "Evaluierung", it: "Valutazione", category: "case" },
+  { key: "case.approved", de: "Genehmigt", it: "Approvato", category: "case" },
+  { key: "case.readyForReview", de: "Zur Prüfung", it: "In revisione", category: "case" },
+  { key: "case.listed", de: "Gelistet", it: "In lista", category: "case" },
+  { key: "case.transplanted", de: "Transplantiert", it: "Trapiantato", category: "case" },
+  { key: "case.closed", de: "Geschlossen", it: "Chiuso", category: "case" },
+  { key: "case.inactive", de: "Inaktiv", it: "Inattivo", category: "case" },
+
+  // === CONSENT ===
+  { key: "consent.none", de: "— Keiner —", it: "— Nessuno —", category: "consent" },
+
+  // === INLINE EDIT ===
+  { key: "inline.save", de: "Speichern", it: "Salva", category: "inline" },
+  { key: "inline.cancel", de: "Abbrechen", it: "Annulla", category: "inline" },
+  { key: "inline.editTooltip", de: "Klicken zum Bearbeiten", it: "Clicca per modificare", category: "inline" },
+  { key: "inline.saveFailed", de: "Speichern fehlgeschlagen", it: "Salvataggio fallito", category: "inline" },
+
+  // === LANGUAGE ===
+  { key: "lang.german", de: "Deutsch", it: "Tedesco", category: "language" },
+  { key: "lang.english", de: "English", it: "Inglese", category: "language" },
+  { key: "lang.turkish", de: "Türkçe", it: "Turco", category: "language" },
+  { key: "lang.arabic", de: "العربية", it: "Arabo", category: "language" },
+  { key: "lang.italian", de: "Italiano", it: "Italiano", category: "language" },
+
+  // === GP ===
+  { key: "gp.title", de: "Hausarzt", it: "Medico di medicina generale", category: "gp" },
+  { key: "gp.name", de: "Name", it: "Nome", category: "gp" },
+  { key: "gp.city", de: "Stadt", it: "Città", category: "gp" },
+  { key: "gp.email", de: "E-Mail", it: "Email", category: "gp" },
+  { key: "gp.phone", de: "Telefon", it: "Telefono", category: "gp" },
+  { key: "gp.address", de: "Adresse", it: "Indirizzo", category: "gp" },
+
+  // === TRANSPLANT TYPES ===
+  { key: "transplant.none", de: "— Keiner —", it: "— Nessuno —", category: "transplant" },
+
+  // === GENERAL ===
+  { key: "general.loading", de: "Laden...", it: "Caricamento...", category: "general" },
+  { key: "general.error", de: "Ein Fehler ist aufgetreten", it: "Si è verificato un errore", category: "general" },
+  { key: "general.networkError", de: "Netzwerkfehler", it: "Errore di rete", category: "general" },
+  { key: "general.delete", de: "Löschen", it: "Elimina", category: "general" },
+  { key: "general.edit", de: "Bearbeiten", it: "Modifica", category: "general" },
+  { key: "general.create", de: "Erstellen", it: "Crea", category: "general" },
+  { key: "general.save", de: "Speichern", it: "Salva", category: "general" },
+  { key: "general.cancel", de: "Abbrechen", it: "Annulla", category: "general" },
+  { key: "general.search", de: "Suchen", it: "Cerca", category: "general" },
+  { key: "general.select", de: "Bitte wählen...", it: "Seleziona...", category: "general" },
+  { key: "general.none", de: "—", it: "—", category: "general" },
+  { key: "general.backToOverview", de: "Zurück zur Übersicht", it: "Torna alla panoramica", category: "general" },
+  { key: "general.year", de: "Jahre", it: "anni", category: "general" },
+
+  // === ORGANIZATION ===
+  { key: "org.none", de: "— Keine —", it: "— Nessuna —", category: "org" },
 ];
 
 /* POST /api/translations/seed */

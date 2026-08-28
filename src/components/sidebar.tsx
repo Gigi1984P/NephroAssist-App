@@ -18,9 +18,9 @@ import {
   LogOut,
   GripVertical,
   LifeBuoy,
-  Settings2,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslation } from "@/components/i18n-provider";
 
 interface SidebarItem {
   title: string;

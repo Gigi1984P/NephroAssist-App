@@ -220,6 +220,15 @@ const translations = [
   { key: "sidebar.systemSettings", de: "System-Einstellungen", it: "Impostazioni di Sistema", category: "sidebar" },
   { key: "sidebar.auditLog", de: "Audit Log", it: "Log di Audit", category: "sidebar" },
   { key: "sidebar.statistics", de: "Statistiken", it: "Statistiche", category: "sidebar" },
+  { key: "app.subtitle", de: "Transplant Platform", it: "Piattaforma di Trapianto", category: "general" },
+  { key: "nav.myExaminations", de: "Meine Untersuchungen", it: "Le Mie Esami", category: "general" },
+  { key: "nav.documents", de: "Dokumente", it: "Documenti", category: "general" },
+  { key: "nav.requirements", de: "Anforderungen", it: "Requisiti", category: "general" },
+  { key: "nav.helpRequests", de: "Hilfeanfragen", it: "Richieste di Aiuto", category: "general" },
+  { key: "nav.reports", de: "Auswertungen", it: "Report", category: "general" },
+  { key: "nav.calendar", de: "Kalender", it: "Calendario", category: "general" },
+  { key: "loading.session", de: "Sitzung wird geladen...", it: "Caricamento sessione...", category: "loading" },
+  { key: "common.user", de: "Benutzer", it: "Utente", category: "common" },
 ];
 
 async function seed() {
