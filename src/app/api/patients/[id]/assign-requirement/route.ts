@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /* ================================================================ */
 /*  POST: Einzelne oder mehrere Untersuchungen zuweisen              */
 /* ================================================================ */
-export async function POST(request: Request) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session) {
@@ -20,8 +20,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
     }
 
+    const { id: patientId } = await params;
     const body = await request.json();
-    const { patientId, templateId, templateIds } = body;
+    const { templateId, templateIds } = body;
 
     const idsToAssign: string[] = templateIds || (templateId ? [templateId] : []);
 
@@ -212,7 +213,10 @@ export async function DELETE(request: Request) {
 /* ================================================================ */
 /*  GET: Verfügbare Untersuchungen (nicht zugewiesene)              */
 /* ================================================================ */
-export async function GET(request: Request) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth();
     if (!session) {
@@ -225,8 +229,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const patientId = searchParams.get("patientId");
+    const { id: patientId } = await params;
 
     if (!patientId) {
       // Alle Templates zurückgeben
