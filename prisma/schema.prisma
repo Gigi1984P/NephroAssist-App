@@ -1239,6 +1239,7 @@ model User {
   role          UserRole  @default(PATIENT)
   isActive      Boolean   @default(true) @map("is_active")
   lastLoginAt   DateTime? @map("last_login_at")
+  twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1249,6 +1250,7 @@ model User {
   patients                 Patient[]
   loginHistories           LoginHistory[]
   emailVerificationTokens  EmailVerificationToken[]
+  twoFactorCodes             TwoFactorCode[]
   grantedShares            DataSharingPermission[]
 
   @@index([email])
@@ -1340,6 +1342,21 @@ model EmailVerificationToken {
   @@index([userId])
   @@index([token])
   @@map("email_verification_tokens")
+}
+
+model TwoFactorCode {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  code      String
+  attempts  Int      @default(0)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@map("two_factor_codes")
 }
 
 enum UserRole {

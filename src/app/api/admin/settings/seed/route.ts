@@ -232,6 +232,32 @@ const DEFAULT_CONFIGS = [
     description: "Zeitzone für Termine und Zeitstempel.",
     category: "general",
   },
+
+  // SECURITY / 2FA
+  {
+    key: "REQUIRE_2FA_FOR_ADMINS",
+    value: "false",
+    type: "boolean",
+    label: "2FA für Admins erzwingen",
+    description: "Administratoren müssen 2-Faktor-Authentifizierung nutzen.",
+    category: "security",
+  },
+  {
+    key: "REQUIRE_2FA_FOR_COORDINATORS",
+    value: "false",
+    type: "boolean",
+    label: "2FA für Koordinatoren erzwingen",
+    description: "Koordinatoren müssen 2-Faktor-Authentifizierung nutzen.",
+    category: "security",
+  },
+  {
+    key: "REQUIRE_2FA_FOR_PHYSICIANS",
+    value: "false",
+    type: "boolean",
+    label: "2FA für Ärzte erzwingen",
+    description: "Ärzte müssen 2-Faktor-Authentifizierung nutzen.",
+    category: "security",
+  },
 ];
 
 export async function POST() {

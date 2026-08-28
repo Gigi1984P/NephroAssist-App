@@ -286,3 +286,32 @@ Mit freundlichen Grüßen,
 Ihr NephroAssist-Team`,
   };
 }
+
+export function getTwoFactorEmail(
+  firstName: string,
+  code: string
+): { subject: string; html: string } {
+  return {
+    subject: "🔐 Ihr Bestätigungscode – NephroAssist",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1e40af;">🔐 Zwei-Faktor-Authentifizierung</h2>
+        <p>Hallo ${firstName},</p>
+        <p>Sie haben sich gerade bei NephroAssist angemeldet. Hier ist Ihr Bestätigungscode:</p>
+        <div style="background: #eff6ff; padding: 24px; border-radius: 8px; text-align: center; margin: 24px 0;">
+          <span style="font-size: 2.5rem; font-weight: bold; letter-spacing: 8px; color: #1e40af; font-family: monospace;">
+            ${code}
+          </span>
+        </div>
+        <p style="color: #64748b; font-size: 0.9em;">
+          ⏰ Dieser Code ist <strong>10 Minuten</strong> gültig.
+        </p>
+        <p style="color: #64748b; font-size: 0.85em;">
+          Wenn Sie sich nicht angemeldet haben, ignorieren Sie diese E-Mail.
+        </p>
+        <br>
+        <p>Mit freundlichen Grüßen,<br>Ihr NephroAssist-Team</p>
+      </div>
+    `,
+  };
+}

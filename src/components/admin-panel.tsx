@@ -18,6 +18,7 @@ interface User {
   name: string | null;
   role: UserRole;
   isActive: boolean;
+  twoFactorEnabled: boolean;
   lastLoginAt: string | null;
   createdAt: string;
 }
@@ -272,6 +273,27 @@ export function AdminPanel({ users: initialUsers, organizations, roles }: AdminP
     }
   };
 
+  // Toggle 2FA
+  const handleToggle2FA = async (user: User) => {
+    const enabled = !user.twoFactorEnabled;
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/two-factor`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, enabled }),
+      });
+      if (res.ok) {
+        setSuccess(`2FA für ${user.name || user.email} ${enabled ? "aktiviert" : "deaktiviert"}`);
+        refreshUsers();
+      } else {
+        setError("Fehler beim Ändern der 2FA-Einstellung");
+      }
+    } catch (e) {
+      console.error("Toggle 2FA error:", e);
+      setError("Netzwerkfehler");
+    }
+  };
+
   // Delete
   const handleDelete = async (userId: string) => {
     if (!confirm("Benutzer wirklich löschen?")) return;
@@ -332,7 +354,7 @@ export function AdminPanel({ users: initialUsers, organizations, roles }: AdminP
   // Stats
   const activeUsers = users.filter((u) => u.isActive).length;
   const inactiveUsers = users.filter((u) => !u.isActive).length;
-  const adminCount = users.filter((u) => u.role === "ADMIN").length;
+  const twoFactorCount = users.filter((u) => u.twoFactorEnabled).length;
 
   return (
     <div>
@@ -415,8 +437,8 @@ export function AdminPanel({ users: initialUsers, organizations, roles }: AdminP
               <ShieldCheck size={22} style={{ color: "#9333ea" }} />
             </div>
             <div>
-              <div className="h4 fw-bold mb-0" style={{ color: "#1e293b" }}>{adminCount}</div>
-              <div className="text-muted" style={{ fontSize: "0.85rem" }}>Admins</div>
+              <div className="h4 fw-bold mb-0" style={{ color: "#1e293b" }}>{twoFactorCount}</div>
+              <div className="text-muted" style={{ fontSize: "0.85rem" }}>Mit 2FA</div>
             </div>
           </div>
         </div>
@@ -545,6 +567,9 @@ export function AdminPanel({ users: initialUsers, organizations, roles }: AdminP
                           ) : (
                             <span className="badge bg-secondary" style={{ fontSize: "0.7rem" }}>Deaktiviert</span>
                           )}
+                          {user.twoFactorEnabled && (
+                            <span className="badge bg-warning text-dark ms-1" style={{ fontSize: "0.65rem" }} title="2FA aktiv">🔐</span>
+                          )}
                         </td>
                         <td style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}>
                           <Clock size={12} className="me-1 text-muted" />
@@ -560,6 +585,14 @@ export function AdminPanel({ users: initialUsers, organizations, roles }: AdminP
                             </button>
                             <button className="btn btn-sm btn-link text-decoration-none p-1" onClick={() => openLoginHistory(user.id)} title="Login-Historie">
                               <Clock size={15} />
+                            </button>
+                            <button
+                              className="btn btn-sm btn-link text-decoration-none p-1"
+                              style={{ color: user.twoFactorEnabled ? "#f59e0b" : "#94a3b8" }}
+                              onClick={() => handleToggle2FA(user)}
+                              title={user.twoFactorEnabled ? "2FA deaktivieren" : "2FA aktivieren"}
+                            >
+                              <ShieldCheck size={15} />
                             </button>
                             <button
                               className={`btn btn-sm btn-link text-decoration-none p-1 ${user.isActive ? "text-warning" : "text-success"}`}
@@ -905,8 +938,8 @@ export function AdminPanel({ users: initialUsers, organizations, roles }: AdminP
                   </div>
                   <div className="col-md-4">
                     <div className="text-center p-3 rounded" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                      <div className="h3 fw-bold text-warning">{adminCount}</div>
-                      <div className="text-muted" style={{ fontSize: "0.85rem" }}>Administratoren</div>
+                      <div className="h3 fw-bold text-warning">{twoFactorCount}</div>
+                      <div className="text-muted" style={{ fontSize: "0.85rem" }}>Mit 2FA</div>
                     </div>
                   </div>
                 </div>
