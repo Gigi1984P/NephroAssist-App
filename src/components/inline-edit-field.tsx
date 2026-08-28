@@ -1,0 +1,148 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { Check, X, Pencil } from "lucide-react";
+
+interface InlineEditFieldProps {
+  value: string;
+  label: string;
+  field: string;
+  patientId: string;
+  type?: "text" | "email" | "tel" | "date";
+  placeholder?: string;
+  onUpdate?: (field: string, value: string) => void;
+  renderDisplay?: (value: string) => React.ReactNode;
+}
+
+export default function InlineEditField({
+  value,
+  label,
+  field,
+  patientId,
+  type = "text",
+  placeholder = "",
+  onUpdate,
+  renderDisplay,
+}: InlineEditFieldProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setEditValue(value || "");
+  }, [value]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSave = async () => {
+    if (editValue === value) {
+      setIsEditing(false);
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/patients/${patientId}/edit`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ field, value: editValue }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Speichern fehlgeschlagen");
+        return;
+      }
+
+      setIsEditing(false);
+      if (onUpdate) onUpdate(field, editValue);
+    } catch (e) {
+      setError("Netzwerkfehler");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditValue(value || "");
+    setError("");
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSave();
+    if (e.key === "Escape") handleCancel();
+  };
+
+  if (isEditing) {
+    return (
+      <div className="d-flex flex-column gap-1">
+        <div className="d-flex align-items-center gap-2">
+          <input
+            ref={inputRef}
+            type={type}
+            className="form-control form-control-sm"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={saving}
+            style={{ minWidth: "200px" }}
+          />
+          <button
+            className="btn btn-sm btn-success p-1"
+            onClick={handleSave}
+            disabled={saving}
+            title="Speichern"
+          >
+            {saving ? (
+              <span className="spinner-border spinner-border-sm" role="status" />
+            ) : (
+              <Check size={14} />
+            )}
+          </button>
+          <button
+            className="btn btn-sm btn-outline-secondary p-1"
+            onClick={handleCancel}
+            disabled={saving}
+            title="Abbrechen"
+          >
+            <X size={14} />
+          </button>
+        </div>
+        {error && <span className="text-danger small">{error}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="d-flex align-items-center gap-2 group-hover-container">
+      <span
+        className="cursor-pointer flex-grow-1"
+        onClick={() => setIsEditing(true)}
+        title="Klicken zum Bearbeiten"
+        style={{ cursor: "pointer" }}
+      >
+        {renderDisplay ? renderDisplay(value) : (value || <span className="text-muted">—</span>)}
+      </span>
+      <button
+        className="btn btn-link text-decoration-none p-0 opacity-0 group-hover-visible"
+        onClick={() => setIsEditing(true)}
+        title="Bearbeiten"
+        style={{ fontSize: "0.75rem", color: "#2563eb" }}
+      >
+        <Pencil size={12} />
+      </button>
+    </div>
+  );
+}

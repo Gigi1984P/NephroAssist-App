@@ -129,3 +129,45 @@ export async function PUT(
     return NextResponse.json({ error: "Fehler beim Speichern" }, { status: 500 });
   }
 }
+
+// PATCH fuer Inline-Bearbeitung (partielles Update)
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session || !CLINIC_ROLES.includes(session.user.role)) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+    const { field, value } = body;
+
+    if (!field) {
+      return NextResponse.json({ error: "Feld erforderlich" }, { status: 400 });
+    }
+
+    const dateFields = ["dateOfBirth", "waitlistedDate"];
+    const updateData: any = {};
+    updateData[field] = dateFields.includes(field) && value ? new Date(value) : value;
+
+    const updated = await prisma.patient.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json({
+      success: true,
+      patient: {
+        ...updated,
+        dateOfBirth: updated.dateOfBirth?.toISOString().split("T")[0] || "",
+        waitlistedDate: updated.waitlistedDate?.toISOString().split("T")[0] || "",
+      },
+    });
+  } catch (error) {
+    console.error("Patient edit PATCH error:", error);
+    return NextResponse.json({ error: "Fehler beim Speichern" }, { status: 500 });
+  }
+}

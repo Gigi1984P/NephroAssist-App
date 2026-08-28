@@ -1,6 +1,7 @@
-import { notFound, redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import MedicationPlan from "@/components/medication-plan";
@@ -8,6 +9,8 @@ import InlineAssignRequirement from "@/components/inline-assign-requirement";
 import PatientRequirementsTable from "@/components/patient-requirements-table";
 import AssignTemplateSet from "@/components/assign-template-set";
 import DialysisRegime from "@/components/dialysis-regime";
+import PatientStammdatenCard from "@/components/patient-stammdaten-card";
+import HausarztInlineCard from "@/components/hausarzt-inline-card";
 import {
   ArrowLeft, Calendar, User, Stethoscope, ClipboardList, Clock, Phone, Mail,
   AlertTriangle, CheckCircle, XCircle, AlertCircle, FileText, Bell, MessageCircle,
@@ -49,121 +52,143 @@ function getCaseStatusBadge(status: string | null) {
   return { text: status || "—", variant: "secondary" };
 }
 
-export default async function PatientClinicDetailPage({
+export default function PatientClinicDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
-  if (!session) redirect("/login");
-  if (!CLINIC_ROLES.includes(session.user.role)) redirect("/dashboard");
+  const router = useRouter();
+  const [id, setId] = useState<string>("");
+  const [patient, setPatient] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [requirements, setRequirements] = useState<any[]>([]);
+  const [medications, setMedications] = useState<any[]>([]);
+  const [coordinatorName, setCoordinatorName] = useState("—");
 
-  const { id } = await params;
-
-  let patient: any = null;
-  try {
-    patient = await prisma.patient.findUnique({
-      where: { id },
-      include: {
-        user: { select: { email: true } },
-        Organization: { select: { name: true, id: true } },
-        cases: {
-          include: { program: { select: { name: true, type: true } } },
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
-      },
+  useEffect(() => {
+    params.then((p) => {
+      setId(p.id);
+      loadAllData(p.id);
     });
-  } catch (e) {
-    console.error("[ClinicPage] Patient fetch error:", e);
-  }
+  }, [params]);
 
-  if (!patient) notFound();
+  const loadAllData = async (patientId: string) => {
+    setLoading(true);
+    setError("");
 
-  // Daten mit individuellem try/catch
-  let documents: any[] = [];
-  let appointments: any[] = [];
-  let blockers: any[] = [];
-  let timelineEvents: any[] = [];
-  let requirements: any[] = [];
-  let helpRequests: any[] = [];
-  let tasks: any[] = [];
-  let medications: any[] = [];
-
-  try {
-    documents = await prisma.document.findMany({
-      where: { patientId: id }, orderBy: { createdAt: "desc" }, take: 15,
-      select: { id: true, filename: true, documentType: true, processingStatus: true, createdAt: true },
-    });
-  } catch (e) { console.error("[ClinicPage] documents error:", e); }
-
-  try {
-    appointments = await prisma.appointment.findMany({
-      where: { patientId: id }, orderBy: { startTime: "asc" }, take: 10,
-      select: { id: true, type: true, startTime: true, location: true, status: true },
-    });
-  } catch (e) { console.error("[ClinicPage] appointments error:", e); }
-
-  try {
-    blockers = await prisma.blocker.findMany({
-      where: { patientCase: { patientId: id } },
-      include: { requirement: { select: { title: true } } },
-      orderBy: { createdAt: "desc" }, take: 5,
-    });
-  } catch (e) { console.error("[ClinicPage] blockers error:", e); }
-
-  try {
-    timelineEvents = await prisma.timelineEvent.findMany({
-      where: { patientCase: { patientId: id } },
-      orderBy: { createdAt: "desc" }, take: 8,
-    });
-  } catch (e) { console.error("[ClinicPage] timelineEvents error:", e); }
-
-  try {
-    requirements = await prisma.patientRequirement.findMany({
-      where: { patientCase: { patientId: id } },
-      include: {
-        tasks: { select: { id: true, status: true, title: true, stepNumber: true, ownerType: true } },
-        template: { select: { name: true, category: true, patientFriendlyDescription: true } },
-      },
-      orderBy: { priority: "desc" },
-    });
-  } catch (e) { console.error("[ClinicPage] requirements error:", e); }
-
-  try {
-    helpRequests = await prisma.helpRequest.findMany({
-      where: { patientId: id }, orderBy: { createdAt: "desc" }, take: 5,
-    });
-  } catch (e) { console.error("[ClinicPage] helpRequests error:", e); }
-
-  try {
-    tasks = await prisma.task.findMany({
-      where: { patientId: id }, orderBy: { dueDate: "asc" }, take: 10,
-      select: { id: true, title: true, status: true, dueDate: true, description: true },
-    });
-  } catch (e) { console.error("[ClinicPage] tasks error:", e); }
-
-  try {
-    medications = await prisma.medication.findMany({
-      where: { patientId: id }, orderBy: [{ substance: "asc" }, { name: "asc" }],
-    });
-  } catch (e) { console.error("[ClinicPage] medications error:", e); }
-
-  let coordinatorName = "—";
-  const latestCase = patient.cases?.[0] || null;
-  if (latestCase?.coordinatorId) {
     try {
-      const coord = await prisma.user.findUnique({
-        where: { id: latestCase.coordinatorId }, select: { name: true },
-      });
-      if (coord?.name) coordinatorName = coord.name;
-    } catch (e) { console.error("[ClinicPage] coordinator error:", e); }
+      // Auth check
+      const authRes = await fetch("/api/auth/session", { credentials: "include" });
+      const session = await authRes.json().catch(() => ({}));
+      if (!session?.user || !CLINIC_ROLES.includes(session.user.role)) {
+        router.push("/dashboard");
+        return;
+      }
+
+      // Load patient
+      const patientRes = await fetch(`/api/patients/${patientId}/edit`, { credentials: "include" });
+      if (!patientRes.ok) {
+        if (patientRes.status === 404) setError("Patient nicht gefunden");
+        else setError("Fehler beim Laden");
+        setLoading(false);
+        return;
+      }
+      const patientData = await patientRes.json();
+      setPatient(patientData.patient);
+
+      const latestCase = patientData.patient.cases?.[0] || null;
+      if (latestCase?.coordinatorId) {
+        try {
+          // Try to load coordinator name from coordinators list
+          // Since we don't have a direct endpoint, we'll try the overview
+          const overviewRes = await fetch("/api/patients/overview", { credentials: "include" });
+          if (overviewRes.ok) {
+            const overview = await overviewRes.json();
+            const coord = overview.coordinators?.find((c: any) => c.id === latestCase.coordinatorId);
+            if (coord?.name) setCoordinatorName(coord.name);
+          }
+        } catch (e) { console.error("Coordinator load error:", e); }
+      }
+
+      // Parallel loads for other data
+      const loadDocs = async () => {
+        try {
+          const res = await fetch(`/api/patients/${patientId}/documents`, { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            setDocuments(data.documents || []);
+          }
+        } catch (e) { console.error("Docs load error:", e); }
+      };
+
+      const loadAppts = async () => {
+        try {
+          const res = await fetch(`/api/patients/${patientId}/appointments`, { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            setAppointments(data.appointments || []);
+          }
+        } catch (e) { console.error("Appts load error:", e); }
+      };
+
+      const loadReqs = async () => {
+        try {
+          const res = await fetch(`/api/patients/${patientId}/requirements`, { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            setRequirements(data.requirements || []);
+          }
+        } catch (e) { console.error("Reqs load error:", e); }
+      };
+
+      const loadMeds = async () => {
+        try {
+          const res = await fetch(`/api/patients/${patientId}/medications`, { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            setMedications(data.medications || []);
+          }
+        } catch (e) { console.error("Meds load error:", e); }
+      };
+
+      await Promise.all([loadDocs(), loadAppts(), loadReqs(), loadMeds()]);
+    } catch (e) {
+      setError("Netzwerkfehler beim Laden");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Laden...</span>
+        </div>
+        <p className="text-muted mt-2">Patientendaten werden geladen...</p>
+      </div>
+    );
   }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="alert alert-danger">{error}</div>
+        <Link href="/dashboard/patients" className="btn btn-secondary">
+          <ArrowLeft size={16} /> Zurück zur Übersicht
+        </Link>
+      </div>
+    );
+  }
+
+  if (!patient) return null;
 
   const fullName = `${patient.firstName || ""} ${patient.lastName || ""}`.trim() || "Unbekannt";
-  const age = patient.dateOfBirth
-    ? Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-    : null;
+  const latestCase = patient.cases?.[0] || null;
 
   return (
     <div className="p-4">
@@ -175,60 +200,8 @@ export default async function PatientClinicDetailPage({
         </Link>
       </div>
 
-      {/* STAMMDATEN */}
-      <div className="card mb-4 shadow-sm">
-        <div className="card-header bg-primary text-white d-flex align-items-center gap-2">
-          <User size={18} /> Patientenstammdaten
-        </div>
-        <div className="card-body">
-          <div className="row g-3">
-            <div className="col-md-6">
-              <div className="row mb-2">
-                <div className="col-sm-4 text-muted fw-semibold">Name</div>
-                <div className="col-sm-8">{fullName}</div>
-              </div>
-              <div className="row mb-2">
-                <div className="col-sm-4 text-muted fw-semibold">Geburtsdatum</div>
-                <div className="col-sm-8">{formatDate(patient.dateOfBirth)} {age !== null && `(${age} Jahre)`}</div>
-              </div>
-              <div className="row mb-2">
-                <div className="col-sm-4 text-muted fw-semibold">E-Mail</div>
-                <div className="col-sm-8">{patient.email || "—"}</div>
-              </div>
-              <div className="row mb-2">
-                <div className="col-sm-4 text-muted fw-semibold">Telefon</div>
-                <div className="col-sm-8">{patient.phone || "—"}</div>
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="row mb-2">
-                <div className="col-sm-4 text-muted fw-semibold">Patient-ID</div>
-                <div className="col-sm-8">
-                  <code className="text-muted">{patient.id.substring(0, 8)}...</code>
-                </div>
-              </div>
-              <div className="row mb-2">
-                <div className="col-sm-4 text-muted fw-semibold">Erstellt</div>
-                <div className="col-sm-8">{formatDateTime(patient.createdAt)}</div>
-              </div>
-              <div className="row mb-2">
-                <div className="col-sm-4 text-muted fw-semibold">Letzte Aktualisierung</div>
-                <div className="col-sm-8">{formatDateTime(patient.updatedAt)}</div>
-              </div>
-              <div className="row mb-2">
-                <div className="col-sm-4 text-muted fw-semibold">Klinik</div>
-                <div className="col-sm-8">{patient.Organization?.name || "—"}</div>
-              </div>
-              <div className="row mb-2">
-                <div className="col-sm-4 text-muted fw-semibold">Readiness</div>
-                <div className="col-sm-8">
-                  <ReadinessScoreBadge patientId={id} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* STAMMDATEN - INLINE BEARBEITBAR */}
+      <PatientStammdatenCard patientId={id} />
 
       {/* READINESS + LABORWERTE */}
       <div className="row mb-4">
@@ -262,7 +235,7 @@ export default async function PatientClinicDetailPage({
         </div>
       </div>
 
-      {/* AKTUELLER FALL + HAUSARZT */}
+      {/* AKTUELLER FALL + HAUSARZT - INLINE */}
       <div className="row mb-4">
         <div className="col-lg-6">
           <div className="card shadow-sm h-100">
@@ -307,31 +280,7 @@ export default async function PatientClinicDetailPage({
         </div>
 
         <div className="col-lg-6">
-          <div className="card shadow-sm h-100">
-            <div className="card-header bg-secondary text-white d-flex align-items-center gap-2">
-              <Stethoscope size={18} /> Hausarzt
-            </div>
-            <div className="card-body">
-              <div className="row g-3">
-                <div className="col-sm-6">
-                  <div className="text-muted small fw-semibold">Name</div>
-                  <div>{patient.generalPractitionerName || "—"}</div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small fw-semibold">Stadt</div>
-                  <div>{patient.generalPractitionerCity || "—"}</div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small fw-semibold">E-Mail</div>
-                  <div>{patient.generalPractitionerEmail || "—"}</div>
-                </div>
-                <div className="col-sm-6">
-                  <div className="text-muted small fw-semibold">Telefon</div>
-                  <div>{patient.generalPractitionerPhone || "—"}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <HausarztInlineCard patientId={id} />
         </div>
       </div>
 
@@ -477,7 +426,7 @@ export default async function PatientClinicDetailPage({
         <div className="card-body">
           <div className="d-flex flex-wrap gap-2">
             <Link href={`/dashboard/patients/${id}/edit`} className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
-              <Pencil size={14} /> Bearbeiten
+              <Pencil size={14} /> Vollständig bearbeiten
             </Link>
             <Link href={`/dashboard/patients/${id}/documents/upload`} className="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1">
               <FileUp size={14} /> Dokument hochladen
