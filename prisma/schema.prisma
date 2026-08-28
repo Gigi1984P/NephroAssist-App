@@ -1240,6 +1240,7 @@ model User {
   isActive      Boolean   @default(true) @map("is_active")
   lastLoginAt   DateTime? @map("last_login_at")
   twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
+  preferredLanguage String @default("de") @map("preferred_language")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

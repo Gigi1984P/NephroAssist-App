@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { PageHeader } from "@/components/page-header";
+import LanguageSwitcher from "@/components/language-switcher";
+import { useTranslation } from "@/components/i18n-provider";
 import { AlertCircle, User, Lock, Globe, Save, RotateCcw, Stethoscope } from "lucide-react";
 
 interface UserProfile {
@@ -9,6 +11,7 @@ interface UserProfile {
   email: string;
   name: string | null;
   role: string;
+  preferredLanguage?: string;
   createdAt: string;
 }
 
@@ -28,6 +31,7 @@ const LS_NAME = "nephro-settings-draft-name";
 const LS_TAB = "nephro-settings-active-tab";
 
 export default function SettingsPage() {
+  const { lang, setLang } = useTranslation();
   const [activeTab, setActiveTab] = useState<"profile" | "password" | "preferences" | "gp">(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(LS_TAB);
@@ -451,7 +455,48 @@ export default function SettingsPage() {
           )}
 
           {activeTab === "preferences" && (
-            <div className="text-muted">Präferenzen werden in einer zukünftigen Version verfügbar sein.</div>
+            <div>
+              <h5 className="fw-bold mb-3 d-flex align-items-center gap-2">
+                <Globe size={20} /> Sprache
+              </h5>
+              <p className="text-muted mb-3">
+                Wählen Sie Ihre bevorzugte Sprache aus. Diese wird in Ihrem Profil gespeichert.
+              </p>
+              <div className="mb-4">
+                <LanguageSwitcher
+                  currentLang={lang}
+                  onChange={(newLang) => {
+                    setLang(newLang);
+                    // Save to DB
+                    fetch("/api/user/profile", {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                      body: JSON.stringify({ preferredLanguage: newLang }),
+                    }).catch(console.error);
+                  }}
+                  size="md"
+                />
+              </div>
+
+              <hr className="my-4" />
+
+              <h5 className="fw-bold mb-3">Aktuelle Einstellungen</h5>
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <div className="text-muted small fw-semibold">Aktuelle Sprache</div>
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="badge bg-primary">{lang === "de" ? "🇩🇪 Deutsch" : lang === "it" ? "🇮🇹 Italiano" : lang}</span>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="text-muted small fw-semibold">Gespeicherte Sprache</div>
+                  <div>
+                    {profile?.preferredLanguage === "de" ? "🇩🇪 Deutsch" : profile?.preferredLanguage === "it" ? "🇮🇹 Italiano" : profile?.preferredLanguage || "—"}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {activeTab === "gp" && isPatient && (
