@@ -9,19 +9,18 @@ import InlineAssignRequirement from "@/components/inline-assign-requirement";
 import PatientRequirementsTable from "@/components/patient-requirements-table";
 import AssignTemplateSet from "@/components/assign-template-set";
 import DialysisRegime from "@/components/dialysis-regime";
-import PatientStammdatenCard from "@/components/patient-stammdaten-card";
-import HausarztInlineCard from "@/components/hausarzt-inline-card";
+import InlineEditField from "@/components/inline-edit-field";
+import InlineEditSelect from "@/components/inline-edit-select";
+import InlineEditTextarea from "@/components/inline-edit-textarea";
 import {
   ArrowLeft, Calendar, User, Stethoscope, ClipboardList, Clock, Phone, Mail,
   AlertTriangle, CheckCircle, XCircle, AlertCircle, FileText, Bell, MessageCircle,
-  ChevronRight, Activity, Circle, Pencil, Trash2, FileUp,
+  ChevronRight, Activity, Circle, Pencil, Trash2, FileUp, Save, Check,
 } from "lucide-react";
 import ReadinessScoreBadge from "@/components/readiness-score-badge";
 import LabValueTrend from "@/components/lab-value-trend";
 import PatientOnboardingChecklist from "@/components/patient-onboarding-checklist";
 import PatientCommentBox from "@/components/patient-comment-box";
-
-export const dynamic = "force-dynamic";
 
 const CLINIC_ROLES = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"];
 
@@ -43,6 +42,13 @@ function formatDateTime(dateStr: string | null | Date): string {
   } catch { return "—"; }
 }
 
+function calcAge(dateStr: string | null): number | null {
+  if (!dateStr) return null;
+  try {
+    return Math.floor((Date.now() - new Date(dateStr).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  } catch { return null; }
+}
+
 function getCaseStatusBadge(status: string | null) {
   const s = (status || "").toUpperCase();
   if (s === "ACTIVE") return { text: "Aktiv", variant: "success" };
@@ -60,14 +66,15 @@ export default function PatientClinicDetailPage({
   const router = useRouter();
   const [id, setId] = useState<string>("");
   const [patient, setPatient] = useState<any>(null);
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [coordinators, setCoordinators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [saveMsg, setSaveMsg] = useState("");
   const [documents, setDocuments] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
-  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
   const [requirements, setRequirements] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
-  const [coordinatorName, setCoordinatorName] = useState("—");
 
   useEffect(() => {
     params.then((p) => {
@@ -76,12 +83,23 @@ export default function PatientClinicDetailPage({
     });
   }, [params]);
 
+  const showSaveMsg = () => {
+    setSaveMsg("Gespeichert");
+    setTimeout(() => setSaveMsg(""), 2000);
+  };
+
+  const handlePatientUpdate = (field: string, value: string) => {
+    if (!patient) return;
+    setPatient({ ...patient, [field]: value });
+    showSaveMsg();
+  };
+
   const loadAllData = async (patientId: string) => {
     setLoading(true);
     setError("");
 
     try {
-      // Load patient - Auth wird vom API-Handler geprüft
+      // Load patient
       const patientRes = await fetch(`/api/patients/${patientId}/edit`, { credentials: "include" });
       if (patientRes.status === 401 || patientRes.status === 403) {
         router.push("/dashboard");
@@ -95,63 +113,42 @@ export default function PatientClinicDetailPage({
       }
       const patientData = await patientRes.json();
       setPatient(patientData.patient);
+      setOrganizations(patientData.organizations || []);
 
-      const latestCase = patientData.patient.cases?.[0] || null;
-      if (latestCase?.coordinatorId) {
-        try {
-          // Try to load coordinator name from coordinators list
-          // Since we don't have a direct endpoint, we'll try the overview
-          const overviewRes = await fetch("/api/patients/overview", { credentials: "include" });
-          if (overviewRes.ok) {
-            const overview = await overviewRes.json();
-            const coord = overview.coordinators?.find((c: any) => c.id === latestCase.coordinatorId);
-            if (coord?.name) setCoordinatorName(coord.name);
-          }
-        } catch (e) { console.error("Coordinator load error:", e); }
+      // Load overview for coordinators
+      const overviewRes = await fetch("/api/patients/overview", { credentials: "include" });
+      if (overviewRes.ok) {
+        const overview = await overviewRes.json();
+        setCoordinators(overview.coordinators || []);
       }
 
-      // Parallel loads for other data
-      const loadDocs = async () => {
-        try {
-          const res = await fetch(`/api/patients/${patientId}/documents`, { credentials: "include" });
-          if (res.ok) {
-            const data = await res.json();
-            setDocuments(data.documents || []);
-          }
-        } catch (e) { console.error("Docs load error:", e); }
-      };
-
-      const loadAppts = async () => {
-        try {
-          const res = await fetch(`/api/patients/${patientId}/appointments`, { credentials: "include" });
-          if (res.ok) {
-            const data = await res.json();
-            setAppointments(data.appointments || []);
-          }
-        } catch (e) { console.error("Appts load error:", e); }
-      };
-
-      const loadReqs = async () => {
-        try {
-          const res = await fetch(`/api/patients/${patientId}/requirements`, { credentials: "include" });
-          if (res.ok) {
-            const data = await res.json();
-            setRequirements(data.requirements || []);
-          }
-        } catch (e) { console.error("Reqs load error:", e); }
-      };
-
-      const loadMeds = async () => {
-        try {
-          const res = await fetch(`/api/patients/${patientId}/medications`, { credentials: "include" });
-          if (res.ok) {
-            const data = await res.json();
-            setMedications(data.medications || []);
-          }
-        } catch (e) { console.error("Meds load error:", e); }
-      };
-
-      await Promise.all([loadDocs(), loadAppts(), loadReqs(), loadMeds()]);
+      // Load other data
+      await Promise.all([
+        (async () => {
+          try {
+            const res = await fetch(`/api/patients/${patientId}/documents`, { credentials: "include" });
+            if (res.ok) { const d = await res.json(); setDocuments(d.documents || []); }
+          } catch (e) {}
+        })(),
+        (async () => {
+          try {
+            const res = await fetch(`/api/patients/${patientId}/appointments`, { credentials: "include" });
+            if (res.ok) { const d = await res.json(); setAppointments(d.appointments || []); }
+          } catch (e) {}
+        })(),
+        (async () => {
+          try {
+            const res = await fetch(`/api/patients/${patientId}/requirements`, { credentials: "include" });
+            if (res.ok) { const d = await res.json(); setRequirements(d.requirements || []); }
+          } catch (e) {}
+        })(),
+        (async () => {
+          try {
+            const res = await fetch(`/api/patients/${patientId}/medications`, { credentials: "include" });
+            if (res.ok) { const d = await res.json(); setMedications(d.medications || []); }
+          } catch (e) {}
+        })(),
+      ]);
     } catch (e) {
       setError("Netzwerkfehler beim Laden");
     } finally {
@@ -184,20 +181,169 @@ export default function PatientClinicDetailPage({
   if (!patient) return null;
 
   const fullName = `${patient.firstName || ""} ${patient.lastName || ""}`.trim() || "Unbekannt";
+  const age = calcAge(patient.dateOfBirth);
   const latestCase = patient.cases?.[0] || null;
+  const coordinator = coordinators.find((c: any) => c.id === latestCase?.coordinatorId);
+
+  const consentOptions = [
+    { value: "CONSENT_PENDING", label: "Ausstehend" },
+    { value: "CONSENT_GRANTED", label: "Erteilt" },
+    { value: "CONSENT_REVOKED", label: "Widerrufen" },
+  ];
+
+  const transplantOptions = [
+    { value: "", label: "— Keiner —" },
+    { value: "kidney", label: "Niere" },
+    { value: "liver", label: "Leber" },
+    { value: "heart", label: "Herz" },
+    { value: "lung", label: "Lunge" },
+    { value: "pancreas", label: "Bauchspeicheldrüse" },
+    { value: "combined", label: "Kombiniert" },
+  ];
+
+  const languageOptions = [
+    { value: "de", label: "Deutsch" },
+    { value: "en", label: "English" },
+    { value: "tr", label: "Türkçe" },
+    { value: "ar", label: "العربية" },
+    { value: "it", label: "Italiano" },
+  ];
+
+  const orgOptions = [
+    { value: "", label: "— Keine —" },
+    ...organizations.map((o: any) => ({ value: o.id, label: o.name })),
+  ];
 
   return (
     <div className="p-4">
       <PageHeader title={fullName} />
 
-      <div className="mb-3">
+      <div className="mb-3 d-flex align-items-center gap-2">
         <Link href="/dashboard/patients" className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
           <ArrowLeft size={14} /> Zurück zur Übersicht
         </Link>
+        {saveMsg && (
+          <span className="badge bg-success d-inline-flex align-items-center gap-1">
+            <Check size={12} /> {saveMsg}
+          </span>
+        )}
       </div>
 
-      {/* STAMMDATEN - INLINE BEARBEITBAR */}
-      <PatientStammdatenCard patientId={id} />
+      {/* STAMMDATEN - ALLE FELDER INLINE */}
+      <div className="card mb-4 shadow-sm">
+        <div className="card-header bg-primary text-white d-flex align-items-center gap-2">
+          <User size={18} /> Patientenstammdaten
+        </div>
+        <div className="card-body">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Vorname *</div>
+                <div className="col-sm-8">
+                  <InlineEditField value={patient.firstName} label="Vorname" field="firstName" patientId={id} onUpdate={handlePatientUpdate} />
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Nachname *</div>
+                <div className="col-sm-8">
+                  <InlineEditField value={patient.lastName} label="Nachname" field="lastName" patientId={id} onUpdate={handlePatientUpdate} />
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Geburtsdatum *</div>
+                <div className="col-sm-8">
+                  <InlineEditField
+                    value={patient.dateOfBirth}
+                    label="Geburtsdatum"
+                    field="dateOfBirth"
+                    patientId={id}
+                    type="date"
+                    onUpdate={handlePatientUpdate}
+                    renderDisplay={(v) => <span>{formatDate(v)} {v && age !== null && `(${age} Jahre)`}</span>}
+                  />
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">E-Mail</div>
+                <div className="col-sm-8">
+                  <InlineEditField value={patient.email || ""} label="E-Mail" field="email" patientId={id} type="email" onUpdate={handlePatientUpdate} />
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Telefon</div>
+                <div className="col-sm-8">
+                  <InlineEditField value={patient.phone || ""} label="Telefon" field="phone" patientId={id} type="tel" onUpdate={handlePatientUpdate} />
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Sprache</div>
+                <div className="col-sm-8">
+                  <InlineEditSelect
+                    value={patient.language || "de"}
+                    label="Sprache"
+                    field="language"
+                    patientId={id}
+                    options={languageOptions}
+                    onUpdate={handlePatientUpdate}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Patient-ID</div>
+                <div className="col-sm-8">
+                  <code className="text-muted">{patient.id.substring(0, 8)}...</code>
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Erstellt</div>
+                <div className="col-sm-8">{formatDateTime(patient.createdAt)}</div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Aktualisiert</div>
+                <div className="col-sm-8">{formatDateTime(patient.updatedAt)}</div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Organisation</div>
+                <div className="col-sm-8">
+                  <InlineEditSelect
+                    value={patient.organizationId || ""}
+                    label="Organisation"
+                    field="organizationId"
+                    patientId={id}
+                    options={orgOptions}
+                    onUpdate={handlePatientUpdate}
+                    renderDisplay={(v) => {
+                      const org = organizations.find((o: any) => o.id === v);
+                      return <span>{org?.name || "—"}</span>;
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Einwilligung</div>
+                <div className="col-sm-8">
+                  <InlineEditSelect
+                    value={patient.consentStatus || "CONSENT_PENDING"}
+                    label="Einwilligung"
+                    field="consentStatus"
+                    patientId={id}
+                    options={consentOptions}
+                    onUpdate={handlePatientUpdate}
+                  />
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Readiness</div>
+                <div className="col-sm-8">
+                  <ReadinessScoreBadge patientId={id} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* READINESS + LABORWERTE */}
       <div className="row mb-4">
@@ -231,7 +377,7 @@ export default function PatientClinicDetailPage({
         </div>
       </div>
 
-      {/* AKTUELLER FALL + HAUSARZT - INLINE */}
+      {/* AKTUELLER FALL + HAUSARZT - ALLE INLINE */}
       <div className="row mb-4">
         <div className="col-lg-6">
           <div className="card shadow-sm h-100">
@@ -253,7 +399,7 @@ export default function PatientClinicDetailPage({
                   </div>
                   <div className="col-sm-6">
                     <div className="text-muted small fw-semibold">Koordinator</div>
-                    <div>{coordinatorName}</div>
+                    <div>{coordinator?.name || "—"}</div>
                   </div>
                   <div className="col-sm-6">
                     <div className="text-muted small fw-semibold">Fall erstellt</div>
@@ -276,7 +422,121 @@ export default function PatientClinicDetailPage({
         </div>
 
         <div className="col-lg-6">
-          <HausarztInlineCard patientId={id} />
+          <div className="card shadow-sm h-100">
+            <div className="card-header bg-secondary text-white d-flex align-items-center gap-2">
+              <Stethoscope size={18} /> Hausarzt
+            </div>
+            <div className="card-body">
+              <div className="row g-3">
+                <div className="col-sm-6">
+                  <div className="text-muted small fw-semibold mb-1">Name</div>
+                  <InlineEditField
+                    value={patient.generalPractitionerName || ""}
+                    label="Name"
+                    field="generalPractitionerName"
+                    patientId={id}
+                    placeholder="Dr. Max Mustermann"
+                    onUpdate={handlePatientUpdate}
+                  />
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small fw-semibold mb-1">Stadt</div>
+                  <InlineEditField
+                    value={patient.generalPractitionerCity || ""}
+                    label="Stadt"
+                    field="generalPractitionerCity"
+                    patientId={id}
+                    placeholder="Berlin"
+                    onUpdate={handlePatientUpdate}
+                  />
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small fw-semibold mb-1">E-Mail</div>
+                  <InlineEditField
+                    value={patient.generalPractitionerEmail || ""}
+                    label="E-Mail"
+                    field="generalPractitionerEmail"
+                    patientId={id}
+                    type="email"
+                    placeholder="arzt@beispiel.de"
+                    onUpdate={handlePatientUpdate}
+                  />
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-muted small fw-semibold mb-1">Telefon</div>
+                  <InlineEditField
+                    value={patient.generalPractitionerPhone || ""}
+                    label="Telefon"
+                    field="generalPractitionerPhone"
+                    patientId={id}
+                    type="tel"
+                    placeholder="+49 30 123456"
+                    onUpdate={handlePatientUpdate}
+                  />
+                </div>
+                <div className="col-12">
+                  <div className="text-muted small fw-semibold mb-1">Adresse</div>
+                  <InlineEditTextarea
+                    value={patient.generalPractitionerAddress || ""}
+                    label="Adresse"
+                    field="generalPractitionerAddress"
+                    patientId={id}
+                    placeholder="Musterstraße 1, 10115 Berlin"
+                    rows={2}
+                    onUpdate={handlePatientUpdate}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TRANSPLANTATION - INLINE */}
+      <div className="card mb-4 shadow-sm">
+        <div className="card-header bg-success text-white d-flex align-items-center gap-2">
+          <Activity size={18} /> Transplantation
+        </div>
+        <div className="card-body">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Typ</div>
+                <div className="col-sm-8">
+                  <InlineEditSelect
+                    value={patient.transplantType || ""}
+                    label="Transplantationstyp"
+                    field="transplantType"
+                    patientId={id}
+                    options={transplantOptions}
+                    onUpdate={handlePatientUpdate}
+                  />
+                </div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Warteliste seit</div>
+                <div className="col-sm-8">
+                  <InlineEditField
+                    value={patient.waitlistedDate || ""}
+                    label="Warteliste seit"
+                    field="waitlistedDate"
+                    patientId={id}
+                    type="date"
+                    onUpdate={handlePatientUpdate}
+                    renderDisplay={(v) => <span>{formatDate(v)}</span>}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Readiness-Score</div>
+                <div className="col-sm-8">
+                  <ReadinessScoreBadge patientId={id} />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -376,30 +636,6 @@ export default function PatientClinicDetailPage({
               <Calendar size={32} className="mb-2" />
               <div>Keine Termine vorhanden</div>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* ZEITSTRAHL */}
-      <div className="card mb-4 shadow-sm">
-        <div className="card-header bg-dark text-white d-flex align-items-center gap-2">
-          <Activity size={18} /> Aktivitäten-Zeitstrahl
-        </div>
-        <div className="card-body">
-          {timelineEvents.length > 0 ? (
-            <ul className="list-group list-group-flush">
-              {timelineEvents.map((event) => (
-                <li key={event.id} className="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <div className="fw-medium">{event.eventType}</div>
-                    <div className="text-muted small">{event.description}</div>
-                  </div>
-                  <span className="text-muted small">{formatDateTime(event.createdAt)}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-center text-muted py-3">Keine Aktivitäten protokolliert</div>
           )}
         </div>
       </div>
