@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { rateLimit } from "@/lib/rate-limit";
+import { sendEmail, getVerificationEmail } from "@/lib/email";
+import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +17,14 @@ const registerSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const limit = rateLimit(request);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Zu viele Registrierungsversuche. Bitte versuchen Sie es später erneut." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+      );
+    }
+
     const body = await request.json();
     const validated = registerSchema.parse(body);
 
@@ -39,8 +50,29 @@ export async function POST(request: Request) {
       },
     });
 
+    // Generate verification token
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+      },
+    });
+
+    // Send verification email
+    const emailPayload = getVerificationEmail(validated.name, validated.email, token);
+    await sendEmail({
+      to: validated.email,
+      subject: emailPayload.subject,
+      html: emailPayload.html,
+      text: emailPayload.text,
+    });
+
     return NextResponse.json(
-      { message: "Benutzer erfolgreich erstellt", userId: user.id },
+      { message: "Benutzer erfolgreich erstellt. Bitte bestätigen Sie Ihre E-Mail-Adresse.", userId: user.id },
       { status: 201 }
     );
   } catch (error) {

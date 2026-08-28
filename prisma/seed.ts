@@ -83,6 +83,7 @@ async function main() {
       name: "Dr. Anna Admin",
       password: hashedPassword,
       role: UserRole.ADMIN,
+      emailVerified: new Date(),
     },
   });
 
@@ -94,6 +95,7 @@ async function main() {
       name: "Max Koordinator",
       password: hashedPassword,
       role: UserRole.COORDINATOR,
+      emailVerified: new Date(),
     },
   });
 
@@ -105,6 +107,7 @@ async function main() {
       name: "Dr. Petra Arzt",
       password: hashedPassword,
       role: UserRole.PHYSICIAN,
+      emailVerified: new Date(),
     },
   });
 
@@ -116,6 +119,7 @@ async function main() {
       name: "Hans Patient",
       password: hashedPassword,
       role: UserRole.PATIENT,
+      emailVerified: new Date(),
     },
   });
 
@@ -127,6 +131,7 @@ async function main() {
       name: "Lisa Dialyse",
       password: hashedPassword,
       role: UserRole.DIALYSIS_STAFF,
+      emailVerified: new Date(),
     },
   });
 
@@ -138,6 +143,7 @@ async function main() {
       name: "Dr. transplantklinik",
       password: hashedPassword,
       role: UserRole.PHYSICIAN,
+      emailVerified: new Date(),
     },
   });
 
@@ -149,6 +155,7 @@ async function main() {
       name: "Marie Pflege",
       password: hashedPassword,
       role: UserRole.CAREGIVER,
+      emailVerified: new Date(),
     },
   });
 

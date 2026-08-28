@@ -189,40 +189,40 @@ export function getPatientWelcomeEmail(
   return {
     subject: "🩺 Ihr Zugang zum Patienten-Portal",
     html: `
-      \u003cdiv style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;"\u003e
-        \u003ch2 style="color: #3b82f6;"\u003eWillkommen bei NephroAssist\u003c/h2\u003e
-        \u003cp\u003eHallo ${firstName},\u003c/p\u003e
-        \u003cp\u003e
-          ${clinicName ? `Die Klinik \u003cstrong\u003e${clinicName}\u003c/strong\u003e hat` : "Wir haben"}
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #3b82f6;">Willkommen bei NephroAssist</h2>
+        <p>Hallo ${firstName},</p>
+        <p>
+          ${clinicName ? `Die Klinik <strong>${clinicName}</strong> hat` : "Wir haben"}
           für Sie ein Patienten-Portal-Konto angelegt.
-        \u003c/p\u003e
-        \u003chr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" /\u003e
-        \u003ch3 style="color: #1e40af;"\u003eIhre Zugangsdaten\u003c/h3\u003e
-        \u003ctable style="background: #f8fafc; padding: 16px; border-radius: 8px; width: 100%;"\u003e
-          \u003ctr\u003e
-            \u003ctd style="font-weight: bold; padding: 8px 0;"\u003eE-Mail:\u003c/td\u003e
-            \u003ctd style="padding: 8px 0;"\u003e${email}\u003c/td\u003e
-          \u003c/tr\u003e
-          \u003ctr\u003e
-            \u003ctd style="font-weight: bold; padding: 8px 0;"\u003ePasswort:\u003c/td\u003e
-            \u003ctd style="padding: 8px 0; font-family: monospace; font-size: 1.1em;"\u003e${password}\u003c/td\u003e
-          \u003c/tr\u003e
-        \u003c/table\u003e
-        \u003cp style="margin-top: 20px;"\u003e
-          \u003ca href="${loginUrl}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;"\u003e
+        </p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <h3 style="color: #1e40af;">Ihre Zugangsdaten</h3>
+        <table style="background: #f8fafc; padding: 16px; border-radius: 8px; width: 100%;">
+          <tr>
+            <td style="font-weight: bold; padding: 8px 0;">E-Mail:</td>
+            <td style="padding: 8px 0;">${email}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 8px 0;">Passwort:</td>
+            <td style="padding: 8px 0; font-family: monospace; font-size: 1.1em;">${password}</td>
+          </tr>
+        </table>
+        <p style="margin-top: 20px;">
+          <a href="${loginUrl}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
             Zum Patienten-Portal →
-          \u003c/a\u003e
-        \u003c/p\u003e
-        \u003chr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" /\u003e
-        \u003cp style="font-size: 0.9em; color: #64748b;"\u003e
-          \u003cstrong\u003eHinweis:\u003c/strong\u003e Bitte ändern Sie Ihr Passwort nach dem ersten Login unter Einstellungen.
-        \u003c/p\u003e
-        \u003cp style="font-size: 0.9em; color: #64748b;"\u003e
-          Bei Fragen erreichen Sie uns unter \u003ca href="mailto:support@nephroassist.de"\u003esupport@nephroassist.de\u003c/a\u003e.
-        \u003c/p\u003e
-        \u003cbr\u003e
-        \u003cp\u003eMit freundlichen Grüßen,\u003cbr\u003eIhr NephroAssist-Team\u003c/p\u003e
-      \u003c/div\u003e
+          </a>
+        </p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p style="font-size: 0.9em; color: #64748b;">
+          <strong>Hinweis:</strong> Bitte ändern Sie Ihr Passwort nach dem ersten Login unter Einstellungen.
+        </p>
+        <p style="font-size: 0.9em; color: #64748b;">
+          Bei Fragen erreichen Sie uns unter <a href="mailto:support@nephroassist.de">support@nephroassist.de</a>.
+        </p>
+        <br>
+        <p>Mit freundlichen Grüßen,<br>Ihr NephroAssist-Team</p>
+      </div>
     `,
     text: `Willkommen bei NephroAssist!
 
@@ -237,6 +237,50 @@ Passwort: ${password}
 Login: ${loginUrl}
 
 Hinweis: Bitte ändern Sie Ihr Passwort nach dem ersten Login unter Einstellungen.
+
+Mit freundlichen Grüßen,
+Ihr NephroAssist-Team`,
+  };
+}
+
+export function getVerificationEmail(
+  firstName: string,
+  email: string,
+  token: string
+): { subject: string; html: string; text: string } {
+  const verifyUrl = `${process.env.NEXTAUTH_URL || "https://nephro-assist-app-pied.vercel.app"}/verify-email/${token}`;
+  return {
+    subject: "E-Mail bestätigen – NephroAssist",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #3b82f6;">E-Mail-Adresse bestätigen</h2>
+        <p>Hallo ${firstName || email},</p>
+        <p>danke für Ihre Registrierung bei NephroAssist. Bitte bestätigen Sie Ihre E-Mail-Adresse, um Ihr Konto zu aktivieren:</p>
+        <p style="margin-top: 20px;">
+          <a href="${verifyUrl}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            E-Mail bestätigen
+          </a>
+        </p>
+        <p style="margin-top: 20px; font-size: 0.9em; color: #64748b;">
+          Oder kopieren Sie diesen Link in Ihren Browser:<br>
+          <code style="word-break: break-all;">${verifyUrl}</code>
+        </p>
+        <p style="font-size: 0.9em; color: #64748b;">
+          Dieser Link ist <strong>24 Stunden</strong> gültig. Wenn Sie sich nicht bei NephroAssist registriert haben, können Sie diese E-Mail ignorieren.
+        </p>
+        <br>
+        <p>Mit freundlichen Grüßen,<br>Ihr NephroAssist-Team</p>
+      </div>
+    `,
+    text: `E-Mail-Adresse bestätigen
+
+Hallo ${firstName || email},
+
+danke für Ihre Registrierung bei NephroAssist. Bitte bestätigen Sie Ihre E-Mail-Adresse:
+
+${verifyUrl}
+
+Dieser Link ist 24 Stunden gültig.
 
 Mit freundlichen Grüßen,
 Ihr NephroAssist-Team`,

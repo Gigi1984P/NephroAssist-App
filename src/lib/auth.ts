@@ -6,10 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { jwtVerify, SignJWT } from "jose";
 import type { UserRole } from "@prisma/client";
 import { cookies } from "next/headers";
-
-const secret = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production"
-);
+import { SECRET_BYTES } from "@/lib/config";
 
 declare module "next-auth" {
   interface Session {
@@ -122,7 +119,7 @@ export async function auth(): Promise<{ user: { id: string; email: string; name?
     const cookieStore = await cookies();
     const token = cookieStore.get("nephro-token")?.value;
     if (token) {
-      const { payload } = await jwtVerify(token, secret, { clockTolerance: 60 });
+      const { payload } = await jwtVerify(token, SECRET_BYTES, { clockTolerance: 60 });
       if (payload.sub && payload.email) {
         return {
           user: {
@@ -156,7 +153,7 @@ export async function authFromRequest(request: Request): Promise<{ user: { id: s
     // NextAuth Session Token
     const sessionToken = cookies["next-auth.session-token"] || cookies["__session"];
     if (sessionToken) {
-      const { payload } = await jwtVerify(sessionToken, secret, { clockTolerance: 60 });
+      const { payload } = await jwtVerify(sessionToken, SECRET_BYTES, { clockTolerance: 60 });
       if (payload.sub && payload.email) {
         return {
           user: {
@@ -172,7 +169,7 @@ export async function authFromRequest(request: Request): Promise<{ user: { id: s
     // Custom nephro-token
     const token = cookies["nephro-token"];
     if (token) {
-      const { payload } = await jwtVerify(token, secret, { clockTolerance: 60 });
+      const { payload } = await jwtVerify(token, SECRET_BYTES, { clockTolerance: 60 });
       if (payload.sub && payload.email) {
         return {
           user: {
@@ -202,5 +199,5 @@ export async function createToken(user: {
   return await new SignJWT({ sub: user.id, email: user.email, name: user.name, role: user.role })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
-    .sign(secret);
+    .sign(SECRET_BYTES);
 }

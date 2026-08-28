@@ -13,6 +13,10 @@ import {
   AlertTriangle, CheckCircle, XCircle, AlertCircle, FileText, Bell, MessageCircle,
   ChevronRight, Activity, Circle, Pencil, Trash2, FileUp,
 } from "lucide-react";
+import ReadinessScoreBadge from "@/components/readiness-score-badge";
+import LabValueTrend from "@/components/lab-value-trend";
+import PatientOnboardingChecklist from "@/components/patient-onboarding-checklist";
+import PatientCommentBox from "@/components/patient-comment-box";
 
 /* ================================================================== */
 /*  SERVER COMPONENT – Patienten-Detailseite für Klinik               */
@@ -236,6 +240,47 @@ export default async function PatientClinicDetailPage({
                 <div className="col-sm-4 text-muted fw-semibold">Klinik</div>
                 <div className="col-sm-8">{patient.Organization?.name || "—"}</div>
               </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted fw-semibold">Readiness</div>
+                <div className="col-sm-8">
+                  <ReadinessScoreBadge patientId={id} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* NEU: READINESS + LABORWERTE */}
+      <div className="row mb-4">
+        <div className="col-lg-6">
+          <div className="card shadow-sm h-100">
+            <div className="card-header d-flex align-items-center gap-2" style={{ background: "#f0fdf4", color: "#166534" }}>
+              <Activity size={18} /> Transplantations-Readiness
+            </div>
+            <div className="card-body">
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <span className="text-muted" style={{ fontSize: "0.85rem" }}>
+                  Basierend auf abgeschlossenen Untersuchungen
+                </span>
+                <button
+                  className="btn btn-sm btn-outline-success"
+                  onClick={() => window.location.reload()}
+                >
+                  Neu berechnen
+                </button>
+              </div>
+              <ReadinessScoreBadge patientId={id} />
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <div className="card shadow-sm h-100">
+            <div className="card-header d-flex align-items-center gap-2" style={{ background: "#eff6ff", color: "#1e40af" }}>
+              <Activity size={18} /> Laborwerte
+            </div>
+            <div className="card-body">
+              <LabValueTrend patientId={id} />
             </div>
           </div>
         </div>
@@ -436,6 +481,16 @@ export default async function PatientClinicDetailPage({
           ) : (
             <div className="text-center text-muted py-3">Keine Aktivitäten protokolliert</div>
           )}
+        </div>
+      </div>
+
+      {/* ONBOARDING + KOMMENTARE */}
+      <div className="row mb-4">
+        <div className="col-lg-6">
+          <PatientOnboardingChecklist patientId={id} />
+        </div>
+        <div className="col-lg-6">
+          <PatientCommentBox patientId={id} />
         </div>
       </div>
 

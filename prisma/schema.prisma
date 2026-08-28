@@ -26,11 +26,15 @@ model Organization {
   settings    Json?
   status      OrganizationStatus @default(ACTIVE)
   parentOrganizationId String?   @map("parent_organization_id")
+  deletedAt            DateTime? @map("deleted_at")
+  retentionUntil       DateTime? @map("retention_until")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
+  parent            Organization?         @relation("OrganizationHierarchy", fields: [parentOrganizationId], references: [id], onDelete: SetNull)
+  children          Organization[]        @relation("OrganizationHierarchy")
   memberships       OrganizationMembership[]
   programs          TransplantProgram[]
   patients          Patient[]
@@ -46,6 +50,8 @@ model Organization {
   helpRequests      HelpRequest[]
   messages          Message[]
   Role              Role[]
+  donorShares       DataSharingPermission[] @relation("DonorShares")
+  receivedShares    DataSharingPermission[] @relation("RecipientShares")
 
   @@index([type])
   @@index([status])
@@ -130,6 +136,11 @@ model Patient {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
+  deletedAt DateTime? @map("deleted_at")
+  retentionUntil DateTime? @map("retention_until")
+  gdprConsentGrantedAt  DateTime? @map("gdpr_consent_granted_at")
+  gdprConsentRevokedAt  DateTime? @map("gdpr_consent_revoked_at")
+  gdprDataPortabilityAt DateTime? @map("gdpr_data_portability_at")
 
   // Relations
   cases           PatientCase[]
@@ -141,13 +152,28 @@ model Patient {
   helpRequests    HelpRequest[]
   medications     Medication[]
   dialysisRegimes DialysisRegime[]
+  dataSharingPermissions DataSharingPermission[]
   user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   Organization    Organization?     @relation(fields: [organizationId], references: [id])
   organizationId  String?
 
+  // ── NEW: Transplant Readiness Score ──
+  readinessScore     Int?      @map("readiness_score")    // 0-100
+  readinessScoreAt   DateTime? @map("readiness_score_at") // When last calculated
+
+  // ── NEW: Waitlist tracking ──
+  waitlistedDate     DateTime? @map("waitlisted_date")
+  transplantType     String?   @map("transplant_type")   // kidney, liver, heart, lung, pancreas
+
+  // ── NEW: Lab values, Onboarding, Comments ──
+  labValues          LabValue[]
+  onboardingSteps    PatientOnboarding[]
+  comments           PatientComment[]
+
   @@index([email])
   @@index([consentStatus])
   @@index([userId])
+  @@index([readinessScore])
   @@map("patients")
 }
 
@@ -248,6 +274,8 @@ model PatientCase {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   createdBy String?  @map("created_by")
+  deletedAt DateTime? @map("deleted_at")
+  retentionUntil DateTime? @map("retention_until")
 
   // Relations
   patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -414,6 +442,8 @@ model PatientRequirement {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  retentionUntil DateTime? @map("retention_until")
 
   // Relations
   patientCase   PatientCase               @relation(fields: [caseId], references: [id], onDelete: Cascade)
@@ -428,6 +458,7 @@ model PatientRequirement {
   @@index([status])
   @@index([dueDate])
   @@index([expiresAt])
+  @@index([listingBlocker, status])
   @@map("patient_requirements")
 }
 
@@ -466,6 +497,8 @@ model Task {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  retentionUntil DateTime? @map("retention_until")
 
   // Relations
   requirement PatientRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
@@ -503,6 +536,9 @@ model Document {
   extractedData     Json?            @map("extracted_data")
   version           Int              @default(1)
   previousVersionId String?          @map("previous_version_id")
+  kmsKeyId          String?          @map("kms_key_id")
+  deletedAt         DateTime?        @map("deleted_at")
+  retentionUntil    DateTime?        @map("retention_until")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -511,6 +547,8 @@ model Document {
   patient          Patient                   @relation(fields: [patientId], references: [id])
   organization     Organization              @relation(fields: [organizationId], references: [id])
   patientCase      PatientCase?              @relation(fields: [caseId], references: [id])
+  previousVersion  Document?                 @relation("DocumentVersions", fields: [previousVersionId], references: [id], onDelete: SetNull)
+  versions         Document[]                @relation("DocumentVersions")
   reviews          DocumentReview[]
   requirementLinks DocumentRequirementLink[]
   extractedItems   ExtractedDocumentItem[]
@@ -520,6 +558,7 @@ model Document {
   @@index([caseId])
   @@index([processingStatus])
   @@index([sha256])
+  @@index([documentDate])
   @@map("documents")
 }
 
@@ -598,6 +637,8 @@ model Appointment {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  retentionUntil DateTime? @map("retention_until")
 
   // Relations
   patient      Patient             @relation(fields: [patientId], references: [id])
@@ -628,6 +669,8 @@ model Blocker {
   resolvedBy    String?       @map("resolved_by")
 
   createdAt DateTime @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+  retentionUntil DateTime? @map("retention_until")
 
   // Relations
   patientCase PatientCase         @relation(fields: [caseId], references: [id], onDelete: Cascade)
@@ -651,6 +694,8 @@ model HelpRequest {
 
   createdAt  DateTime  @default(now()) @map("created_at")
   resolvedAt DateTime? @map("resolved_at")
+  deletedAt DateTime? @map("deleted_at")
+  retentionUntil DateTime? @map("retention_until")
 
   // Relations
   patient      Patient             @relation(fields: [patientId], references: [id])
@@ -727,6 +772,9 @@ model AuditLog {
   organizationId String  @map("organization_id")
   metadata       Json?
   ipAddress      String? @map("ip_address")
+  userAgent      String? @map("user_agent")
+  previousHash   String? @map("previous_hash")
+  rowHash        String? @map("row_hash")
 
   timestamp DateTime @default(now())
 
@@ -917,6 +965,34 @@ model AIProcessingLog {
   @@index([documentId])
   @@index([provider])
   @@map("ai_processing_logs")
+}
+
+// ============================================================
+// DATA SHARING PERMISSIONS
+// ============================================================
+
+model DataSharingPermission {
+  id                      String    @id @default(uuid())
+  patientId               String    @map("patient_id")
+  donorOrganizationId     String    @map("donor_organization_id")
+  recipientOrganizationId String    @map("recipient_organization_id")
+  resourceType            String    @map("resource_type")
+  resourceId              String    @map("resource_id")
+  grantedAt               DateTime  @default(now()) @map("granted_at")
+  expiresAt               DateTime  @map("expires_at")
+  revokedAt               DateTime? @map("revoked_at")
+  grantedBy               String    @map("granted_by")
+
+  // Relations
+  patient       Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  donorOrg      Organization  @relation("DonorShares", fields: [donorOrganizationId], references: [id], onDelete: Cascade)
+  recipientOrg  Organization  @relation("RecipientShares", fields: [recipientOrganizationId], references: [id], onDelete: Cascade)
+  grantedByUser User          @relation(fields: [grantedBy], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([recipientOrganizationId])
+  @@index([expiresAt])
+  @@map("data_sharing_permissions")
 }
 
 // ============================================================
@@ -1168,10 +1244,12 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  accounts       Account[]
-  sessions       Session[]
-  patients       Patient[]
-  loginHistories LoginHistory[]
+  accounts                 Account[]
+  sessions                 Session[]
+  patients                 Patient[]
+  loginHistories           LoginHistory[]
+  emailVerificationTokens  EmailVerificationToken[]
+  grantedShares            DataSharingPermission[]
 
   @@index([email])
   @@index([isActive])
@@ -1238,6 +1316,32 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email])
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("email_verification_tokens")
+}
+
 enum UserRole {
   ADMIN
   COORDINATOR
@@ -1263,4 +1367,102 @@ model SystemConfig {
   @@index([category])
   @@index([key])
   @@map("system_configs")
+}
+
+// ============================================================
+// MEDICAL ENHANCEMENTS (5 features)
+// ============================================================
+
+// ── 3. Lab Values ──
+model LabValue {
+  id          String   @id @default(uuid())
+  patientId   String   @map("patient_id")
+  testType    String   @map("test_type")     // eGFR, creatinine, hemoglobin, etc.
+  value       Float
+  unit        String   // e.g. "ml/min", "mg/dL", "g/dL"
+  referenceLow  Float? @map("reference_low")
+  referenceHigh Float? @map("reference_high")
+  testedAt    DateTime @map("tested_at")
+  notes       String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([testType])
+  @@index([testedAt])
+  @@map("lab_values")
+}
+
+// ── 4. Onboarding Steps ──
+model PatientOnboarding {
+  id          String            @id @default(uuid())
+  patientId   String            @map("patient_id")
+  stepKey     String            @map("step_key")   // consent, labs, hla, psych, first_appointment
+  stepLabel   String            @map("step_label") // "Einwilligung", "Laborwerte", "HLA-Typisierung", etc.
+  status      OnboardingStatus  @default(PENDING)
+  dueDate     DateTime?         @map("due_date")
+  completedAt DateTime?         @map("completed_at")
+  completedBy String?           @map("completed_by")
+  notes       String?
+  sortOrder   Int               @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([status])
+  @@index([sortOrder])
+  @@map("patient_onboarding")
+}
+
+enum OnboardingStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+// ── 5. Cross-Team Comments ──
+model PatientComment {
+  id         String   @id @default(uuid())
+  patientId  String   @map("patient_id")
+  authorId   String   @map("author_id")
+  authorName String   @map("author_name")
+  authorRole String   @map("author_role")   // ADMIN, COORDINATOR, etc.
+  content    String
+  mentions   String[] // array of userIds mentioned with @
+  isInternal Boolean  @default(true) @map("is_internal")
+  parentId   String?  @map("parent_id")      // for threaded replies
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([createdAt])
+  @@map("patient_comments")
+}
+
+// ── 2. Smart Reminders ──
+model ReminderLog {
+  id          String   @id @default(uuid())
+  patientId   String   @map("patient_id")
+  requirementId String? @map("requirement_id")
+  taskId      String?  @map("task_id")
+  reminderType String  @map("reminder_type") // t30, t14, t7, t1, overdue, escalation
+  sentAt      DateTime @default(now()) @map("sent_at")
+  channel     String   // email, sms, push
+  status      String   // sent, failed, bounced
+  recipient   String?
+
+  @@index([patientId])
+  @@index([requirementId])
+  @@index([sentAt])
+  @@map("reminder_logs")
 }

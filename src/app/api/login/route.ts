@@ -2,23 +2,29 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
-
-const secret = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production"
-);
+import { SECRET_BYTES } from "@/lib/config";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const limit = rateLimit(request);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Zu viele Anmeldeversuche. Bitte versuchen Sie es später erneut." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+      );
+    }
+
     const { email, password } = await request.json();
 
     console.log("[LOGIN-API] Attempt:", email);
 
     const user = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, email: true, name: true, role: true, password: true },
+      select: { id: true, email: true, name: true, role: true, password: true, emailVerified: true },
     });
 
     if (!user || !user.password) {
@@ -30,6 +36,14 @@ export async function POST(request: Request) {
     if (!isValid) {
       console.log("[LOGIN-API] Invalid password:", email);
       return NextResponse.json({ error: "Ungültige Anmeldedaten" }, { status: 401 });
+    }
+
+    if (!user.emailVerified) {
+      console.log("[LOGIN-API] Email not verified:", email);
+      return NextResponse.json(
+        { error: "Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse. Prüfen Sie Ihren Posteingang." },
+        { status: 403 }
+      );
     }
 
     console.log("[LOGIN-API] Success:", user.email, "Role:", user.role);
@@ -62,7 +76,7 @@ export async function POST(request: Request) {
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("7d")
-      .sign(secret);
+      .sign(SECRET_BYTES);
 
     const response = NextResponse.json({
       user: {

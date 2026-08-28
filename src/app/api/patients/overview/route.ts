@@ -18,7 +18,22 @@ export async function GET() {
       return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
     }
 
+    // Tenant isolation: restrict to user's organizations unless ADMIN
+    let orgFilter = {};
+    if (user.role !== "ADMIN") {
+      const memberships = await prisma.organizationMembership.findMany({
+        where: { userId: user.id },
+        select: { organizationId: true },
+      });
+      const orgIds = memberships.map((m) => m.organizationId);
+      if (orgIds.length === 0) {
+        return NextResponse.json({ patients: [], coordinators: [] });
+      }
+      orgFilter = { organizationId: { in: orgIds } };
+    }
+
     const patients = await prisma.patient.findMany({
+      where: orgFilter,
       select: {
         id: true,
         firstName: true,

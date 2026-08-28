@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface DemoAccount {
   email: string;
@@ -9,15 +10,17 @@ interface DemoAccount {
   name: string;
 }
 
-const demoAccounts: DemoAccount[] = [
-  { email: "admin@nephroassist.de", password: "Test1234!", role: "Admin", name: "Dr. Anna Admin" },
-  { email: "koordinator@nephroassist.de", password: "Test1234!", role: "Koordinator", name: "Max Koordinator" },
-  { email: "arzt@nephroassist.de", password: "Test1234!", role: "Arzt", name: "Dr. Petra Arzt" },
-  { email: "patient@beispiel.de", password: "Test1234!", role: "Patient", name: "Hans Patient" },
-  { email: "dialyse@beispiel.de", password: "Test1234!", role: "Dialyse", name: "Lisa Dialyse" },
-  { email: "transplant@beispiel.de", password: "Test1234!", role: "Transplant", name: "Dr. Transplantklinik" },
-  { email: "angehorige@beispiel.de", password: "Test1234!", role: "Pflege", name: "Marie Pflege" },
-];
+const demoAccounts: DemoAccount[] = process.env.NODE_ENV === "production"
+  ? []
+  : [
+      { email: "admin@nephroassist.de", password: "Test1234!", role: "Admin", name: "Dr. Anna Admin" },
+      { email: "koordinator@nephroassist.de", password: "Test1234!", role: "Koordinator", name: "Max Koordinator" },
+      { email: "arzt@nephroassist.de", password: "Test1234!", role: "Arzt", name: "Dr. Petra Arzt" },
+      { email: "patient@beispiel.de", password: "Test1234!", role: "Patient", name: "Hans Patient" },
+      { email: "dialyse@beispiel.de", password: "Test1234!", role: "Dialyse", name: "Lisa Dialyse" },
+      { email: "transplant@beispiel.de", password: "Test1234!", role: "Transplant", name: "Dr. Transplantklinik" },
+      { email: "angehorige@beispiel.de", password: "Test1234!", role: "Pflege", name: "Marie Pflege" },
+    ];
 
 /* Inline SVG Icons */
 function MailIcon({ size = 18 }: { size?: number }) {
@@ -71,6 +74,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [demoFill, setDemoFill] = useState(false);
+  const [infoMsg, setInfoMsg] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("registered") === "true") {
+      setInfoMsg("Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden.");
+    }
+    if (params.get("reset") === "success") {
+      setInfoMsg("Passwort erfolgreich zurückgesetzt. Sie können sich jetzt anmelden.");
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +209,20 @@ export default function LoginPage() {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
             </svg>
             {error}
+          </div>
+        )}
+
+        {/* Info message */}
+        {infoMsg && (
+          <div
+            className="alert alert-info d-flex align-items-center gap-2 py-2 mb-3"
+            role="alert"
+            style={{ borderRadius: "0.5rem", fontSize: "0.85rem", border: "none", background: "#dbeafe", color: "#1e40af" }}
+          >
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+            </svg>
+            {infoMsg}
           </div>
         )}
 
@@ -324,17 +353,13 @@ export default function LoginPage() {
 
           {/* Passwort vergessen */}
           <div className="d-flex justify-content-end mb-4">
-            <a
-              href="#"
+            <Link
+              href="/forgot-password"
               className="text-decoration-none"
               style={{ fontSize: "0.8rem", color: "#2563eb", fontWeight: 500 }}
-              onClick={(e) => {
-                e.preventDefault();
-                alert("Bitte kontaktieren Sie Ihren Administrator um das Passwort zurückzusetzen.");
-              }}
             >
               Passwort vergessen?
-            </a>
+            </Link>
           </div>
 
           <button
@@ -377,9 +402,16 @@ export default function LoginPage() {
         {/* Register */}
         <div className="text-center mt-3" style={{ fontSize: "0.875rem" }}>
           <span className="text-muted">Noch kein Konto?{" "}</span>
-          <a href="/register" className="text-decoration-none" style={{ color: "#2563eb", fontWeight: 500 }}>
+          <Link href="/register" className="text-decoration-none" style={{ color: "#2563eb", fontWeight: 500 }}>
             Registrieren
-          </a>
+          </Link>
+        </div>
+
+        {/* Legal */}
+        <div className="text-center mt-3" style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+          <Link href="/legal/terms-of-service" className="text-decoration-none" style={{ color: "#94a3b8" }}>AGB</Link>{" · "}
+          <Link href="/legal/privacy-policy" className="text-decoration-none" style={{ color: "#94a3b8" }}>Datenschutz</Link>{" · "}
+          <Link href="/legal/impressum" className="text-decoration-none" style={{ color: "#94a3b8" }}>Impressum</Link>
         </div>
 
         {/* Demo Accounts */}
