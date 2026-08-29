@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { useTranslation } from "@/components/i18n-provider";
 import { Calendar as CalendarIcon, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Appointment {
@@ -20,6 +21,7 @@ interface Appointment {
 }
 
 export default function AppointmentsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,11 +82,11 @@ export default function AppointmentsPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "CONFIRMED":
-        return "Bestätigt";
+        return t("status.confirmed", "Bestätigt");
       case "PLANNED":
-        return "Geplant";
+        return t("status.planned", "Geplant");
       case "CANCELLED":
-        return "Storniert";
+        return t("status.cancelled", "Storniert");
       default:
         return status;
     }
@@ -104,12 +106,12 @@ export default function AppointmentsPage() {
   return (
     <div>
       <PageHeader
-        title="Termine"
-        description="Alle anstehenden Termine im Überblick"
+        title={t("sidebar.appointments", "Termine")}
+        description={t("appointments.desc", "Alle anstehenden Termine im Überblick")}
         action={
           <button className="btn-custom btn-primary-custom">
             <Plus size={16} />
-            Neuer Termin
+            {t("appointments.new", "Neuer Termin")}
           </button>
         }
       />
@@ -124,7 +126,7 @@ export default function AppointmentsPage() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Suchen nach Typ, Patient, Ort..."
+                  placeholder={t("search.appointments", "Suchen nach Typ, Patient, Ort...")}
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -142,15 +144,15 @@ export default function AppointmentsPage() {
                   setCurrentPage(1);
                 }}
               >
-                <option value="ALL">Alle Status</option>
-                <option value="CONFIRMED">Bestätigt</option>
-                <option value="PLANNED">Geplant</option>
-                <option value="CANCELLED">Storniert</option>
+                <option value="ALL">{t("status.all", "Alle Status")}</option>
+                <option value="CONFIRMED">{t("status.confirmed", "Bestätigt")}</option>
+                <option value="PLANNED">{t("status.planned", "Geplant")}</option>
+                <option value="CANCELLED">{t("status.cancelled", "Storniert")}</option>
               </select>
             </div>
             <div className="col-md-3 text-md-end">
               <span className="text-muted" style={{ fontSize: "0.85rem" }}>
-                {filteredAppointments.length} Termine
+                {filteredAppointments.length} {t("appointments.count", "Termine")}
               </span>
             </div>
           </div>
@@ -161,21 +163,21 @@ export default function AppointmentsPage() {
       <div className="dashboard-card">
         <div className="card-body-custom p-0">
           {loading ? (
-            <div className="p-4 text-center text-muted">Laden...</div>
+            <div className="p-4 text-center text-muted">{t("loading.title", "Laden...")}</div>
           ) : filteredAppointments.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">
                 <CalendarIcon size={24} />
               </div>
-              <div className="empty-state-title">Keine Termine gefunden</div>
+              <div className="empty-state-title">{t("appointments.none", "Keine Termine gefunden")}</div>
               <div className="empty-state-desc">
                 {searchTerm || statusFilter !== "ALL"
-                  ? "Versuchen Sie andere Filtereinstellungen"
-                  : "Erstellen Sie Ihren ersten Termin"}
+                  ? t("appointments.tryFilter", "Versuchen Sie andere Filtereinstellungen")
+                  : t("appointments.createFirst", "Erstellen Sie Ihren ersten Termin")}
               </div>
               <button className="btn-custom btn-primary-custom">
                 <Plus size={16} />
-                Neuer Termin
+                {t("appointments.new", "Neuer Termin")}
               </button>
             </div>
           ) : (
@@ -183,12 +185,12 @@ export default function AppointmentsPage() {
               <table className="table-custom">
                 <thead>
                   <tr>
-                    <th>Datum</th>
-                    <th>Typ</th>
-                    <th>Patient</th>
-                    <th>Ort</th>
-                    <th>Status</th>
-                    <th className="actions">Aktionen</th>
+                    <th>{t("common.date", "Datum")}</th>
+                    <th>{t("common.type", "Typ")}</th>
+                    <th>{t("common.patient", "Patient")}</th>
+                    <th>{t("common.location", "Ort")}</th>
+                    <th>{t("common.status", "Status")}</th>
+                    <th className="actions">{t("nav.actions", "Aktionen")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -212,7 +214,7 @@ export default function AppointmentsPage() {
                           href={`/dashboard/appointments/${appointment.id}`}
                           className="btn-custom btn-outline-custom btn-sm-custom"
                         >
-                          Details
+                          {t("common.details", "Details")}
                         </Link>
                       </td>
                     </tr>
