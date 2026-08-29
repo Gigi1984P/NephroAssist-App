@@ -130,9 +130,9 @@ export default function DocumentsPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "ACCEPTED": return "Akzeptiert";
-      case "REJECTED": return "Abgelehnt";
-      case "UPLOADED": return "Hochgeladen";
+      case "ACCEPTED": return t("status.accepted", "Akzeptiert");
+      case "REJECTED": return t("status.rejected", "Abgelehnt");
+      case "UPLOADED": return t("status.uploaded", "Hochgeladen");
       default: return status;
     }
   };
@@ -148,7 +148,7 @@ export default function DocumentsPage() {
         description={t("documents.desc", "Verwalten und reviewen Sie alle hochgeladenen Dokumente")}
         action={
           <button className="btn-custom btn-primary-custom" onClick={() => setShowModal(true)}>
-            <Upload size={16} /> Hochladen
+            <Upload size={16} /> {t("documents.upload", "Hochladen")}
           </button>
         }
       />
@@ -163,7 +163,7 @@ export default function DocumentsPage() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Suchen nach Dateiname, Patient..."
+                  placeholder={t("search.documents", "Suchen nach Dateiname, Patient...")}
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 />
@@ -171,14 +171,14 @@ export default function DocumentsPage() {
             </div>
             <div className="col-md-3">
               <select className="form-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
-                <option value="ALL">Alle Status</option>
-                <option value="ACCEPTED">Akzeptiert</option>
-                <option value="REJECTED">Abgelehnt</option>
-                <option value="UPLOADED">Hochgeladen</option>
+                <option value="ALL">{t("status.all", "Alle Status")}</option>
+                <option value="ACCEPTED">{t("status.accepted", "Akzeptiert")}</option>
+                <option value="REJECTED">{t("status.rejected", "Abgelehnt")}</option>
+                <option value="UPLOADED">{t("status.uploaded", "Hochgeladen")}</option>
               </select>
             </div>
             <div className="col-md-3 text-md-end">
-              <span className="text-muted" style={{ fontSize: "0.85rem" }}>{filteredDocuments.length} Dokumente</span>
+              <span className="text-muted" style={{ fontSize: "0.85rem" }}>{filteredDocuments.length} {t("documents.count", "Dokumente")}</span>
             </div>
           </div>
         </div>
@@ -188,24 +188,24 @@ export default function DocumentsPage() {
       <div className="dashboard-card">
         <div className="card-body-custom p-0">
           {loading ? (
-            <div className="p-4 text-center text-muted">Laden...</div>
+            <div className="p-4 text-center text-muted">{t("loading.title", "Laden...")}</div>
           ) : filteredDocuments.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon"><FileText size={24} /></div>
-              <div className="empty-state-title">Keine Dokumente</div>
-              <div className="empty-state-desc">Laden Sie Ihr erstes Dokument hoch.</div>
-              <button className="btn-custom btn-primary-custom" onClick={() => setShowModal(true)}>Hochladen</button>
+              <div className="empty-state-title">{t("documents.empty", "Keine Dokumente")}</div>
+              <div className="empty-state-desc">{t("documents.uploadFirst", "Laden Sie Ihr erstes Dokument hoch.")}</div>
+              <button className="btn-custom btn-primary-custom" onClick={() => setShowModal(true)}>{t("documents.upload", "Hochladen")}</button>
             </div>
           ) : (
             <>
               <table className="table-custom">
                 <thead>
                   <tr>
-                    <th>Dateiname</th>
-                    <th>Patient</th>
-                    <th>Datum</th>
-                    <th>Status</th>
-                    <th className="actions">Aktionen</th>
+                    <th>{t("common.filename", "Dateiname")}</th>
+                    <th>{t("common.patient", "Patient")}</th>
+                    <th>{t("common.date", "Datum")}</th>
+                    <th>{t("common.status", "Status")}</th>
+                    <th className="actions">{t("nav.actions", "Aktionen")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -233,7 +233,7 @@ export default function DocumentsPage() {
                             </button>
                             {isClinic && doc.processingStatus !== "ACCEPTED" && (
                               <button className="btn-custom btn-primary-custom btn-sm-custom" onClick={() => { setReviewingDoc(doc.id); setReviewStatus("ACCEPTED"); setReviewComment(""); }}>
-                                Review
+                                {t("documents.review", "Review")}
                               </button>
                             )}
                           </div>
@@ -245,20 +245,20 @@ export default function DocumentsPage() {
                             <div className="p-3" style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
                               <div className="row g-3">
                                 <div className="col-md-4">
-                                  <label className="form-label fw-medium" style={{ fontSize: "0.8rem" }}>Entscheidung</label>
+                                  <label className="form-label fw-medium" style={{ fontSize: "0.8rem" }}>{t("documents.decision", "Entscheidung")}</label>
                                   <select className="form-select" value={reviewStatus} onChange={(e) => setReviewStatus(e.target.value as any)}>
-                                    <option value="ACCEPTED">✓ Akzeptieren</option>
-                                    <option value="REJECTED">✗ Ablehnen</option>
-                                    <option value="REQUEST_INFO">? Rückfrage</option>
+                                    <option value="ACCEPTED">{t("documents.accept", "✓ Akzeptieren")}</option>
+                                    <option value="REJECTED">{t("documents.reject", "✗ Ablehnen")}</option>
+                                    <option value="REQUEST_INFO">{t("documents.requestInfo", "? Rückfrage")}</option>
                                   </select>
                                 </div>
                                 <div className="col-md-8">
-                                  <label className="form-label fw-medium" style={{ fontSize: "0.8rem" }}>Kommentar (optional)</label>
-                                  <input type="text" className="form-control" placeholder="z.B. Bitte bessere Qualität hochladen..." value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} />
+                                  <label className="form-label fw-medium" style={{ fontSize: "0.8rem" }}>{t("documents.commentOptional", "Kommentar (optional)")}</label>
+                                  <input type="text" className="form-control" placeholder={t("documents.commentPlaceholder", "z.B. Bitte bessere Qualität hochladen...")} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} />
                                 </div>
                               </div>
                               <div className="d-flex gap-2 mt-3">
-                                <button className="btn btn-outline-secondary btn-sm" onClick={() => setReviewingDoc(null)}>Abbrechen</button>
+                                <button className="btn btn-outline-secondary btn-sm" onClick={() => setReviewingDoc(null)}>{t("nav.cancel", "Abbrechen")}</button>
                                 <button className="btn btn-primary btn-sm" onClick={() => handleReview(doc.id)}>
                                   {reviewStatus === "ACCEPTED" && <><CheckCircle size={14} className="me-1" /></>}
                                   {reviewStatus === "REJECTED" && <><XCircle size={14} className="me-1" /></>}
@@ -307,7 +307,7 @@ export default function DocumentsPage() {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Dokument hochladen</h5>
+                <h5 className="modal-title">{t("documents.uploadTitle", "Dokument hochladen")}</h5>
                 <button className="btn-close" onClick={() => { setShowModal(false); setSelectedFile(null); }} />
               </div>
               <div className="modal-body">
@@ -326,9 +326,9 @@ export default function DocumentsPage() {
                   ) : (
                     <>
                       <Upload size={40} className="text-muted mb-2" />
-                      <p className="text-muted mb-1">Datei hierher ziehen oder</p>
+                      <p className="text-muted mb-1">{t("documents.dropFile", "Datei hierher ziehen oder")}</p>
                       <label className="cursor-pointer">
-                        <span className="text-primary text-decoration-underline">Datei auswählen</span>
+                        <span className="text-primary text-decoration-underline">{t("documents.selectFile", "Datei auswählen")}</span>
                         <input type="file" className="d-none" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
                       </label>
                     </>
