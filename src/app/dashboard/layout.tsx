@@ -6,6 +6,7 @@ import { Sidebar, MobileSidebar } from "@/components/sidebar";
 import { UserNav } from "@/components/user-nav";
 import { NotificationCenter } from "@/components/notification-center";
 import PatientSearch from "@/components/patient-search";
+import LanguageSwitcher from "@/components/language-switcher";
 
 import { useTranslation } from "@/components/i18n-provider";
 
@@ -20,7 +21,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, lang, setLang } = useTranslation();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [user, setUser] = useState<{
     name?: string | null;
@@ -99,6 +100,23 @@ export default function DashboardLayout({
               {CLINIC_ROLES.includes(user.role) && <PatientSearch />}
 
               <NotificationCenter />
+              <div style={{ width: "1px", height: "24px", background: "#e2e8f0" }} />
+              <div className="d-flex align-items-center gap-2">
+                <LanguageSwitcher
+                  currentLang={lang}
+                  onChange={(newLang) => {
+                    setLang(newLang);
+                    // Save to DB
+                    fetch("/api/user/profile", {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                      body: JSON.stringify({ preferredLanguage: newLang }),
+                    }).catch(console.error);
+                  }}
+                  size="sm"
+                />
+              </div>
               <div style={{ width: "1px", height: "24px", background: "#e2e8f0" }} />
               <UserNav user={user} />
             </div>
