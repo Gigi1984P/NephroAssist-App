@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { useTranslation } from "@/components/i18n-provider";
 import {
   Upload, FileText, X, Search, ChevronLeft, ChevronRight,
   Download, CheckCircle, XCircle, HelpCircle,
@@ -25,6 +26,7 @@ interface Document {
 }
 
 export default function DocumentsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
