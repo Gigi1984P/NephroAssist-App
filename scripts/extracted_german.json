@@ -1,0 +1,369 @@
+{
+  "components/hausarzt-inline-card.tsx": [
+    "Musterstraße 1, 10115 Berlin"
+  ],
+  "components/patient-search.tsx": [
+    "Keine Patienten gefunden"
+  ],
+  "components/document-upload.tsx": [
+    "Datei auswählen",
+    "Laden Sie ein medizinisches Dokument hoch (PDF, JPG, PNG, max. 10 MB)",
+    "Typ auswählen",
+    "Datei hierher ziehen oder"
+  ],
+  "components/patient-requirements-table.tsx": [
+    "Keine offenen Untersuchungen vorhanden",
+    "✓ Alle erledigt",
+    "Wirklich löschen?",
+    "Löschen bestätigen",
+    "Fällig"
+  ],
+  "components/medication-plan.tsx": [
+    "Löschen",
+    "Medikament hinzufügen",
+    "Noch keine Medikamente eingetragen"
+  ],
+  "components/inline-assign-requirement.tsx": [
+    "Alle verfügbaren Untersuchungen sind bereits zugewiesen.",
+    "Lade verfügbare Untersuchungen...",
+    "Untersuchung hinzufügen"
+  ],
+  "components/admin-panel.tsx": [
+    "Alle Status",
+    "Mit 2FA",
+    "(initialUsers);\n  const [loading, setLoading] = useState(false);\n\n  // Such- und Filter-States\n  const [search, setSearch] = useState(\"\");\n  const [roleFilter, setRoleFilter] = useState(\"ALL\");\n  const [statusFilter, setStatusFilter] = useState(\"ALL\");\n\n  // Pagination\n  const [page, setPage] = useState(1);\n  const perPage = 10;\n\n  // Modals\n  const [showCreateModal, setShowCreateModal] = useState(false);\n  const [showEditModal, setShowEditModal] = useState(false);\n  const [showLoginHistoryModal, setShowLoginHistoryModal] = useState(false);\n  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);\n  const [showStatsModal, setShowStatsModal] = useState(false);\n  const [editingUser, setEditingUser] = useState",
+    "Passwort zurücksetzen",
+    "Passwort wurde zurückgesetzt.",
+    "Schließen",
+    "Keine Login-Historie verfügbar.",
+    "Möchten Sie das Passwort für diesen Benutzer zurücksetzen? Ein temporäres Passwort wird generiert.",
+    "Keine Rollen",
+    "Keine Organisationen",
+    "Bitte notieren und sicher übermitteln.",
+    "Angehöriger",
+    "Temporäres Passwort",
+    "Bitte wählen...",
+    "Keine Benutzer gefunden.",
+    "Löschen",
+    "Alle Rollen"
+  ],
+  "components/notification-center.tsx": [
+    "Keine Benachrichtigungen",
+    "Alle gelesen"
+  ],
+  "components/patient-comment-box.tsx": [
+    "Noch keine Kommentare. Schreiben Sie den ersten!"
+  ],
+  "components/dialysis-regime.tsx": [
+    "Medikamente während Dialyse",
+    "Dialysator-Größe",
+    "Zusätzliche Informationen...",
+    "Bitte wählen...",
+    "Medikamente während/bei der Dialyse",
+    "Überwachung während Dialyse",
+    "Gefäßzugang",
+    "Gerät-Einstellungen",
+    "Häufigkeit",
+    "Überwachung"
+  ],
+  "app/register/page.tsx": [
+    "Rolle auswählen",
+    "Datenschutzerklärung",
+    "Großbuchstabe (A–Z)",
+    "Angehöriger",
+    "Wir haben Ihnen eine Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihren Posteingang und bestätigen Sie Ihre E-Mail-Adresse.",
+    "Erstellen Sie ein neues Konto",
+    "Passwortstärke"
+  ],
+  "app/dashboard/_components/patient-dashboard-client.tsx": [
+    "Sie sind auf dem Laufenden.",
+    "Keine kürzlich erledigten Anforderungen",
+    "Keine dringenden Aufgaben",
+    "Hier ist ein Überblick über Ihre aktuellen Aktivitäten.",
+    "Sobald Termine vereinbart sind, erscheinen sie hier.",
+    "Keine anstehenden Termine",
+    "Keine Anforderungen warten auf andere.",
+    "Alle ansehen →",
+    "Keine ablaufenden Anforderungen",
+    "Läuft bald ab"
+  ],
+  "app/dashboard/_components/coordinator-queue-client.tsx": [
+    "Keine Patienten benötigen aktuell eine Aktion.",
+    "Keine offenen Help Requests",
+    "Nächste Beste Aktionen",
+    "Keine Reviews ausstehend",
+    "Keine aktiven Blocker",
+    "Nächster Schritt:",
+    "Keine aktiven Fälle mit offenen Aktionen.",
+    "Nächste Aktion",
+    "Überfällig:",
+    "— keine Aktivität in 14 Tagen oder überfällige Anforderungen.",
+    "Öffnen",
+    "Fällig"
+  ],
+  "app/dashboard/examinations/templates/page.tsx": [
+    "Keine Templates",
+    "Noch keine Versionen.",
+    "Template wirklich löschen?",
+    "Gültigkeit (Monate)",
+    "Template veröffentlichen",
+    "Änderungen (optional)",
+    "Patient auswählen...",
+    "Löschen",
+    "z.B. Neue Anforderung hinzugefügt, Workflow angepasst...",
+    "Kategorie wählen...",
+    "Erstellen Sie die erste Vorlage.",
+    "Erinnerung vor (Monate)",
+    "Veröffentlichen",
+    "Sie veröffentlichen"
+  ],
+  "app/dashboard/settings/page.tsx": [
+    "Wählen Sie Ihre bevorzugte Sprache aus. Diese wird in Ihrem Profil gespeichert.",
+    "✓ Gespeichert — Überweisungsanfragen möglich",
+    "z.B. Friedrichstraße 123, 10117 Berlin",
+    "E-Mail-Adresse kann nicht geändert werden.",
+    "Passwort ändern",
+    "Nur für Patienten verfügbar",
+    "Passwörter stimmen nicht überein",
+    "Ungespeicherte Änderungen",
+    "Passwort bestätigen",
+    "Präferenzen",
+    "Wird für automatische Überweisungsanfragen benötigt.",
+    "Hinterlegen Sie hier die Daten Ihres Hausarztes. Diese werden für Überweisungsanfragen verwendet.",
+    "Sie haben ungespeicherte Änderungen. Möchten Sie diese verwerfen?"
+  ],
+  "app/dashboard/requirements/page.tsx": [
+    "Möchten Sie das TemplateSet",
+    "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "(undefined);\n  const [tSaving, setTSaving] = useState(false);\n\n  // TemplateSet Form (neu mit Textfeldern statt Checkboxen)\n  const [sName, setSName] = useState(\"\");\n  const [sDesc, setSDesc] = useState(\"\");\n  const [sItems, setSItems] = useState",
+    "Zahnärztlich",
+    "Keine Versionshistorie verfügbar.",
+    "Blockiert bei Fehlen",
+    "Schließen",
+    "Gültigkeit (Monate)",
+    "Gewählte Untersuchung:",
+    "Untersuchung löschen",
+    "Löschen",
+    "Erstellen Sie Sets mit Untersuchungen als Freitext.",
+    "Keine TemplateSets",
+    "Möchten Sie die Untersuchung",
+    "wirklich löschen?",
+    "Untersuchung auswählen",
+    "TemplateSet löschen",
+    "Keine Untersuchungen",
+    "Fälligkeitsdatum",
+    "Gültigkeit",
+    "Bitte wählen...",
+    "Weitere Untersuchung hinzufügen"
+  ],
+  "app/dashboard/tasks/page.tsx": [
+    "Keine Untersuchungen gefunden."
+  ],
+  "app/dashboard/tasks/new/page.tsx": [
+    "Herz-Kreislauf Clearance (6 Schritte: Überweisung → Verordnung → Termin → Bericht → Upload → Prüfung)",
+    "Titel der Untersuchung *",
+    "Der Workflow bestimmt die Schritte, die der Patient nacheinander durchlaufen muss.",
+    "Patient auswählen...",
+    "Aus vordefinierten Templates wählen",
+    "Dental Clearance (6 Schritte: Überweisung → Verordnung → Termin → Bericht → Upload → Prüfung)",
+    "Art der Untersuchung",
+    "Template auswählen *"
+  ],
+  "app/dashboard/tasks/[id]/page.tsx": [
+    "Untersuchung wird geladen...",
+    "Die angeforderte Untersuchung existiert nicht oder Sie haben keine Berechtigung.",
+    "Untersuchung nicht gefunden",
+    "← Zurück zu Untersuchungen",
+    "Keine Workflow-Schritte",
+    "Wird aktualisiert...",
+    "Zurück zu Untersuchungen",
+    "Wird gesendet...",
+    "Arzt stellt nicht aus",
+    "Verstehe nicht",
+    "z.B. Dr. Müller",
+    "Als erledigt markieren",
+    "Diese Untersuchung hat noch keine definierten Schritte.",
+    "Wird hochgeladen...",
+    "Fehlende Überweisung"
+  ],
+  "app/dashboard/calendar/page.tsx": [
+    "Zurück"
+  ],
+  "app/dashboard/reports/page.tsx": [
+    "Patienten bei denen alle Anforderungen den Status ACCEPTED, WAIVED oder NOT_APPLICABLE haben.",
+    "Alle Untersuchungen fertig:",
+    "Abgeschlossene Fälle",
+    "Alle Untersuchungen fertig",
+    "Gesamtanzahl noch nicht abgeschlossener Anforderungen aller Patienten.",
+    "Durchschnittliche Zeit von Patienten-Erstellung bis zum Zeitpunkt an dem alle Untersuchungen abgeschlossen wurden.",
+    "Alle der Klinik zugeordneten Patienten.",
+    "Anteil der Patienten mit allen abgeschlossenen Untersuchungen in Prozent."
+  ],
+  "app/dashboard/documents/page.tsx": [
+    "Alle Status",
+    "Keine Dokumente",
+    "Datei hierher ziehen oder",
+    "Datei auswählen",
+    "? Rückfrage",
+    "z.B. Bitte bessere Qualität hochladen..."
+  ],
+  "app/dashboard/appointments/page.tsx": [
+    "Alle Status",
+    "Bestätigt",
+    "Keine Termine gefunden"
+  ],
+  "app/dashboard/blockers/page.tsx": [
+    "Keine aktiven Blocker",
+    "Patient auswählen...",
+    "Gelöst",
+    "Beschreiben Sie das Problem...",
+    "Alles läuft reibungslos!"
+  ],
+  "app/dashboard/admin/settings/page.tsx": [
+    ", um die Standard-Einstellungen zu initialisieren.",
+    "Keine Einstellungen vorhanden. Klicke auf"
+  ],
+  "app/dashboard/admin/reports/page.tsx": [
+    "Letzte Aktivitäten",
+    "Neueste Audit-Log-Einträge",
+    "Patienten nach Einwilligung",
+    "Verteilung der Consent-Status",
+    "Fälle pro Monat",
+    "Fälle gesamt",
+    "Fälle nach Status",
+    "Verteilung der Fall-Status",
+    "Übersicht über Patienten, Fälle und Untersuchungen."
+  ],
+  "app/dashboard/admin/audit/page.tsx": [
+    "Prüfung",
+    "Entität",
+    "Ändern",
+    "Status-Änderung",
+    "Alle Aktionen",
+    "Alle Entitäten",
+    "Filter zurücksetzen",
+    "Keine Einträge gefunden.",
+    "Löschen"
+  ],
+  "app/dashboard/patients/page.tsx": [
+    "Möchten Sie",
+    "Das System generiert automatisch ein sicheres Passwort.",
+    "E-Mail für Login *",
+    "Notiz (wird als Timeline-Eintrag gespeichert)",
+    "wirklich löschen?",
+    "Passen Sie Ihre Suche an oder fügen Sie einen Patienten hinzu.",
+    "Keine Patienten gefunden",
+    "— Nicht ändern —",
+    "Zur Prüfung",
+    "Massenlöschung",
+    "Änderungen werden auf alle ausgewählten Patienten angewendet. Leere Felder werden ignoriert.",
+    "Überweisung",
+    "Alle zugehörigen Daten werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+    "Ausgewählte löschen",
+    "Patient löschen",
+    "Löschen",
+    "Login für Patienten-Portal"
+  ],
+  "app/dashboard/patients/[id]/page.tsx": [
+    "Keine aktiven Blocker.",
+    "Keine Ereignisse.",
+    "Keine Termine.",
+    "Nächste Termine",
+    "Zurück",
+    "Keine Dokumente.",
+    "Alle"
+  ],
+  "app/dashboard/patients/[id]/timeline/page.tsx": [
+    "Die Timeline wird automatisch bei Status-Änderungen befüllt.",
+    "Keine Ereignisse"
+  ],
+  "app/dashboard/patients/[id]/edit/page.tsx": [
+    "-- Keine --",
+    "Zurück zur Detailseite",
+    "Türkçe",
+    "Bauchspeicheldrüse",
+    "Zurück zur Übersicht",
+    "Patientendaten werden geladen...",
+    "Persönliche Daten"
+  ],
+  "app/dashboard/patients/[id]/clinic/page.tsx": [
+    "Musterstraße 1, 10115 Berlin"
+  ],
+  "app/dashboard/help-requests/page.tsx": [
+    "Keine Hilfeanfragen gefunden."
+  ],
+  "app/forgot-password/page.tsx": [
+    "Geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen Link zum Zurücksetzen."
+  ],
+  "app/legal/privacy-policy/page.tsx": [
+    "2. Zwecke der Datenverarbeitung",
+    "Die Verarbeitung erfolgt auf Grundlage folgender Rechtsgrundlagen:",
+    "Daten werden nur an die für die Behandlung zuständigen Mitarbeiter der jeweiligen\n          Klinik weitergegeben. Externe Dienstleister (z. B. Hosting, E-Mail-Versand) werden\n          nur unter Vertrag zur Auftragsverarbeitung gemäß Art. 28 DSGVO eingesetzt.",
+    "Datenschutzerklärung",
+    "Sicherstellung der Authentifizierung und Autorisierung",
+    "Verantwortlich für die Datenverarbeitung auf dieser Plattform ist:",
+    "Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung)",
+    "Patienten-Onboarding und Koordination von Transplantationsprozessen",
+    "Erfüllung rechtlicher Aufbewahrungspflichten",
+    "Musterstraße 1",
+    "Personenbezogene Daten werden nur so lange gespeichert, wie dies für den jeweiligen\n          Zweck erforderlich ist oder gesetzliche Aufbewahrungsfristen dies vorsehen.\n          Anmeldedaten werden gelöscht, sobald das Konto geschlossen wird, sofern keine\n          gesetzlichen Aufbewahrungspflichten entgegenstehen.",
+    "Bereitstellung und Betrieb der NephroAssist-Plattform",
+    "Diese Datenschutzerklärung kann sich ändern. Die jeweils aktuelle Version ist auf\n        dieser Seite einsehbar.",
+    "Benachrichtigungen zu Terminen, Aufgaben und Untersuchungen",
+    "9. Sicherheitsmaßnahmen",
+    "Wir setzen angemessene technische und organisatorische Maßnahmen ein, um Ihre\n          Daten vor Verlust, Missbrauch und unbefugtem Zugriff zu schützen. Dazu gehören\n          Verschlüsselung im Transit und bei der Speicherung, Zugriffskontrollen sowie\n          regelmäßige Sicherheitsüberprüfungen.",
+    "Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehöde über die\n          Verarbeitung Ihrer personenbezogenen Daten zu beschweren.",
+    "Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)",
+    "Recht auf Löschung (Art. 17 DSGVO)",
+    "Recht auf Datenübertragbarkeit (Art. 20 DSGVO)",
+    "5. Datenübermittlung in Drittländer",
+    "Wir verarbeiten personenbezogene Daten ausschließlich für folgende Zwecke:",
+    "Eine Übermittlung personenbezogener Daten in Länder außerhalb des EWR erfolgt nur,\n          soweit dies erforderlich ist und angemessene Garantien im Sinne des Art. 44 ff. DSGVO\n          (z. B. Standardvertragsklauseln) vorliegen.",
+    "4. Empfänger von Daten"
+  ],
+  "app/legal/terms-of-service/page.tsx": [
+    "Der Anbieter stellt dem Nutzer – vorbehaltlich einer gültigen Vereinbarung –\n          eine cloudbasierte Softwarelösung zur Verfügung, die folgende Funktionen umfasst:",
+    "Allgemeine Geschäftsbedingungen (AGB)",
+    "7. Änderungen der AGB",
+    "5. Haftungsausschluss und Gewährleistung",
+    "Patienten-Onboarding und Statusverfolgung",
+    "6. Vertragslaufzeit und Kündigung",
+    "Die Plattform dient der Unterstützung, nicht der Ersetzung ärztlicher Entscheidungen.\n          Der Anbieter haftet nicht für medizinische Fehlentscheidungen, die auf der Nutzung\n          der Software beruhen. Eine Haftung für leichte Fahrlässigkeit ist auf\n          vertragswesentliche Pflichten begrenzt.",
+    "Änderungen dieser AGB werden dem Nutzer mindestens 30 Tage vor Inkrafttreten\n          schriftlich oder per E-Mail mitgeteilt. Stimmt der Nutzer den geänderten\n          Bedingungen nicht zu, kann er den Vertrag fristgerecht kündigen.",
+    "Diese Allgemeinen Geschäftsbedingungen gelten für die Nutzung der Software NephroAssist\n          (nachfolgend „Plattform\"), betrieben von der NephroAssist GmbH (nachfolgend „Anbieter\").\n          Die Plattform unterstützt medizinische Einrichtungen bei der Koordination von\n          Nierentransplantationsprozessen.",
+    "4. Datenschutz und Datensicherheit",
+    "Der Anbieter verpflichtet sich, die geltenden datenschutzrechtlichen Bestimmungen\n          (DSGVO, BDSG) einzuhalten. Gesundheitsdaten werden gemäß den Anforderungen an\n          besondere Kategorien personenbezogener Daten (Art. 9 DSGVO) verarbeitet.\n          Eine Übermittlung von Daten außerhalb des EWR erfolgt nur auf Grundlage\n          angemessener Garantien.",
+    "Soweit einzelne Bestimmungen dieser AGB ganz oder teilweise unwirksam sind,\n          bleibt der Rest des Vertrages wirksam. Es gilt das Recht der Bundesrepublik Deutschland\n          unter Ausschluss des UN-Kaufrechts. Gerichtsstand ist der Sitz des Anbieters,\n          sofern der Nutzer Kaufmann ist.",
+    "Termin- und Aufgabenmanagement",
+    "Der Verauf läuft auf unbestimmte Zeit, sofern nicht eine feste Laufzeit vereinbart wurde.\n          Beide Parteien können den Vertrag mit einer Frist von 30 Tagen zum Monatsende kündigen.\n          Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt.",
+    "Verwaltung von Untersuchungsanforderungen und Dokumenten",
+    "Die Nutzung der Plattform ist nur nach erfolgreicher Registrierung und\n          Bestätigung der E-Mail-Adresse möglich. Jeder Nutzer ist für die Sicherheit\n          seiner Zugangsdaten selbst verantwortlich. Die Weitergabe von Zugangsdaten an\n          Dritte ist untersagt.",
+    "Kommunikation zwischen Patienten und Klinikpersonal"
+  ],
+  "app/legal/impressum/page.tsx": [
+    "Musterstraße 1",
+    "Wir sind nicht verpflichtet und nicht bereit, an einem Streitbeilegungsverfahren vor\n          einer Verbraucherschlichtungsstelle teilzunehmen.",
+    "Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:",
+    "Haftung für Inhalte",
+    "Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen\n          Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir\n          als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte\n          fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine\n          rechtswidrige Tätigkeit hinweisen.",
+    "Angaben gemäß § 5 TMG",
+    "Dieses Impressum dient als Platzhalter. Die Angaben können vom Betreiber jederzeit\n        aktualisiert werden.",
+    "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS)\n          bereit:",
+    "Geschäftsführer: Max Mustermann",
+    "Vertreten durch"
+  ],
+  "app/reset-password/[token]/page.tsx": [
+    "Passwort bestätigen",
+    "Geben Sie Ihr neues Passwort ein."
+  ],
+  "app/passport/[token]/page.tsx": [
+    "Verifizierte Zusammenfassung für externe Ärzte",
+    "Gültig bis",
+    "Dieser Link ist nur für autorisierte Personen bestimmt."
+  ],
+  "app/upload/[token]/page.tsx": [
+    "Datei auswählen",
+    "Wird hochgeladen...",
+    "Laden Sie hier Ihr Dokument für das Transplantationszentrum hoch."
+  ]
+}

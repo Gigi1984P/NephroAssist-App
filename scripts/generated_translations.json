@@ -1,0 +1,987 @@
+[
+  {
+    "key": "0.benutzer",
+    "de": "0 Benutzer",
+    "it": "0 utenti"
+  },
+  {
+    "key": "4.empfänger.von.daten",
+    "de": "4. Empfänger von Daten",
+    "it": "4. Empfänger von Daten"
+  },
+  {
+    "key": "5.datenübermittlung.in.drittländer",
+    "de": "5. Datenübermittlung in Drittländer",
+    "it": "5. Datenübermittlung in Drittländer"
+  },
+  {
+    "key": "5.haftungsausschluss.und.gewährleistung",
+    "de": "5. Haftungsausschluss und Gewährleistung",
+    "it": "5. Haftungsausschluss und Gewährleistung"
+  },
+  {
+    "key": "6.vertragslaufzeit.und.kündigung",
+    "de": "6. Vertragslaufzeit und Kündigung",
+    "it": "6. Vertragslaufzeit und Kündigung"
+  },
+  {
+    "key": "7.änderungen.der.agb",
+    "de": "7. Änderungen der AGB",
+    "it": "7. Änderungen der AGB"
+  },
+  {
+    "key": "9.sicherheitsmaßnahmen",
+    "de": "9. Sicherheitsmaßnahmen",
+    "it": "9. Sicherheitsmaßnahmen"
+  },
+  {
+    "key": "rückfrage",
+    "de": "? Rückfrage",
+    "it": "? Rückfrage"
+  },
+  {
+    "key": "abbrechen",
+    "de": "Abbrechen",
+    "it": "Annulla"
+  },
+  {
+    "key": "abgeschlossen",
+    "de": "Abgeschlossen",
+    "it": "Completato"
+  },
+  {
+    "key": "abgeschlossene.fälle",
+    "de": "Abgeschlossene Fälle",
+    "it": "Casi completati"
+  },
+  {
+    "key": "aktionen",
+    "de": "Aktionen",
+    "it": "Azioni"
+  },
+  {
+    "key": "aktiv",
+    "de": "Aktiv",
+    "it": "Attivo"
+  },
+  {
+    "key": "aktive.benutzer",
+    "de": "Aktive Benutzer",
+    "it": "Utenti attivi"
+  },
+  {
+    "key": "aktive.blocker",
+    "de": "Aktive Blocker",
+    "it": "Blocchi attivi"
+  },
+  {
+    "key": "alle.aktionen",
+    "de": "Alle Aktionen",
+    "it": "Tutte le azioni"
+  },
+  {
+    "key": "alle.entitäten",
+    "de": "Alle Entitäten",
+    "it": "Tutte le entità"
+  },
+  {
+    "key": "alle.status",
+    "de": "Alle Status",
+    "it": "Tutti gli stati"
+  },
+  {
+    "key": "alle.untersuchungen.fertig",
+    "de": "Alle Untersuchungen fertig",
+    "it": "Tutti gli esami completati"
+  },
+  {
+    "key": "alle.untersuchungen.fertig",
+    "de": "Alle Untersuchungen fertig:",
+    "it": "Tutti gli esami completati:"
+  },
+  {
+    "key": "alle.der.klinik.zugeordneten.patienten",
+    "de": "Alle der Klinik zugeordneten Patienten.",
+    "it": "Tutti i pazienti assegnati alla clinica."
+  },
+  {
+    "key": "alle.verfügbaren.untersuchungen.sind.bereits.zugewiesen",
+    "de": "Alle verfügbaren Untersuchungen sind bereits zugewiesen.",
+    "it": "Tutti gli esami disponibili sono già assegnati."
+  },
+  {
+    "key": "alles.läuft.reibungslos",
+    "de": "Alles läuft reibungslos!",
+    "it": "Tutto procede senza intoppi!"
+  },
+  {
+    "key": "allgemeine.geschäftsbedingungen.agb",
+    "de": "Allgemeine Geschäftsbedingungen (AGB)",
+    "it": "Allgemeine Geschäftsbedingungen (AGB)"
+  },
+  {
+    "key": "angaben.gemäß.5.tmg",
+    "de": "Angaben gemäß § 5 TMG",
+    "it": "Informazioni ai sensi del § 5 TMG"
+  },
+  {
+    "key": "angehöriger",
+    "de": "Angehöriger",
+    "it": "Caregiver"
+  },
+  {
+    "key": "anteil.der.patienten.mit.allen.abgeschlossenen.untersuchunge",
+    "de": "Anteil der Patienten mit allen abgeschlossenen Untersuchungen in Prozent.",
+    "it": "Percentuale di pazienti con tutti gli esami completati."
+  },
+  {
+    "key": "art.6.abs.1.lit.b.dsgvo.vertragserfüllung",
+    "de": "Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung)",
+    "it": "Art. 6 par. 1 lett. b GDPR (esecuzione del contratto)"
+  },
+  {
+    "key": "benachrichtigungen.zu.terminen.aufgaben.und.untersuchungen",
+    "de": "Benachrichtigungen zu Terminen, Aufgaben und Untersuchungen",
+    "it": "Notifiche per appuntamenti, compiti ed esami"
+  },
+  {
+    "key": "benutzer.bearbeiten",
+    "de": "Benutzer bearbeiten",
+    "it": "Modifica utente"
+  },
+  {
+    "key": "benutzer.erstellen",
+    "de": "Benutzer erstellen",
+    "it": "Crea utente"
+  },
+  {
+    "key": "benutzer.gesamt",
+    "de": "Benutzer gesamt",
+    "it": "Benutzer gesamt"
+  },
+  {
+    "key": "bestätigt",
+    "de": "Bestätigt",
+    "it": "Confermato"
+  },
+  {
+    "key": "bitte.notieren.und.sicher.übermitteln",
+    "de": "Bitte notieren und sicher übermitteln.",
+    "it": "Annotare e trasmettere in modo sicuro."
+  },
+  {
+    "key": "bitte.wählen",
+    "de": "Bitte wählen...",
+    "it": "Bitte wählen..."
+  },
+  {
+    "key": "blocker",
+    "de": "Blocker",
+    "it": "Blocker"
+  },
+  {
+    "key": "datei.auswählen",
+    "de": "Datei auswählen",
+    "it": "Seleziona file"
+  },
+  {
+    "key": "datenschutzerklärung",
+    "de": "Datenschutzerklärung",
+    "it": "Informativa sulla privacy"
+  },
+  {
+    "key": "deaktivierte.benutzer",
+    "de": "Deaktivierte Benutzer",
+    "it": "Deaktivierte Benutzer"
+  },
+  {
+    "key": "dental.clearance.6.schritte.überweisung.verordnung.termin.be",
+    "de": "Dental Clearance (6 Schritte: Überweisung → Verordnung → Termin → Bericht → Upload → Prüfung)",
+    "it": "Dental Clearance (6 passaggi: Invio → Prescrizione → Appuntamento → Referto → Caricamento → Verifica)"
+  },
+  {
+    "key": "details",
+    "de": "Details",
+    "it": "Details"
+  },
+  {
+    "key": "dialysatorgröße",
+    "de": "Dialysator-Größe",
+    "it": "Dialysator-Größe"
+  },
+  {
+    "key": "diese.aktion.kann.nicht.rückgängig.gemacht.werden",
+    "de": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "it": "Diese Aktion kann nicht rückgängig gemacht werden."
+  },
+  {
+    "key": "dieser.link.ist.nur.für.autorisierte.personen.bestimmt",
+    "de": "Dieser Link ist nur für autorisierte Personen bestimmt.",
+    "it": "Dieser Link ist nur für autorisierte Personen bestimmt."
+  },
+  {
+    "key": "durchschnittliche.anzahl.hochgeladener.dokumente.pro.patient",
+    "de": "Durchschnittliche Anzahl hochgeladener Dokumente pro Patient.",
+    "it": "Durchschnittliche Anzahl hochgeladener Dokumente pro Patient."
+  },
+  {
+    "key": "durchschnittliche.zeit.von.patientenerstellung.bis.zum.zeitp",
+    "de": "Durchschnittliche Zeit von Patienten-Erstellung bis zum Zeitpunkt an dem alle Untersuchungen abgeschlossen wurden.",
+    "it": "Durchschnittliche Zeit von Patienten-Erstellung bis zum Zeitpunkt an dem alle Untersuchungen abgeschlossen wurden."
+  },
+  {
+    "key": "email",
+    "de": "E-Mail",
+    "it": "Email"
+  },
+  {
+    "key": "email",
+    "de": "E-Mail *",
+    "it": "E-Mail *"
+  },
+  {
+    "key": "email",
+    "de": "E-Mail:",
+    "it": "E-Mail:"
+  },
+  {
+    "key": "einstellungen.laden",
+    "de": "Einstellungen laden...",
+    "it": "Einstellungen laden..."
+  },
+  {
+    "key": "entität",
+    "de": "Entität",
+    "it": "Entità"
+  },
+  {
+    "key": "erfolgreich",
+    "de": "Erfolgreich",
+    "it": "Erfolgreich"
+  },
+  {
+    "key": "erfüllung.rechtlicher.aufbewahrungspflichten",
+    "de": "Erfüllung rechtlicher Aufbewahrungspflichten",
+    "it": "Erfüllung rechtlicher Aufbewahrungspflichten"
+  },
+  {
+    "key": "erstellen",
+    "de": "Erstellen",
+    "it": "Crea"
+  },
+  {
+    "key": "erstellen.sie.sets.mit.untersuchungen.als.freitext",
+    "de": "Erstellen Sie Sets mit Untersuchungen als Freitext.",
+    "it": "Erstellen Sie Sets mit Untersuchungen als Freitext."
+  },
+  {
+    "key": "erstellen.sie.die.erste.vorlage",
+    "de": "Erstellen Sie die erste Vorlage.",
+    "it": "Erstellen Sie die erste Vorlage."
+  },
+  {
+    "key": "fehlende.überweisung",
+    "de": "Fehlende Überweisung",
+    "it": "Fehlende Überweisung"
+  },
+  {
+    "key": "fehler",
+    "de": "Fehler",
+    "it": "Errore"
+  },
+  {
+    "key": "fälle.gesamt",
+    "de": "Fälle gesamt",
+    "it": "Fälle gesamt"
+  },
+  {
+    "key": "fälle.nach.status",
+    "de": "Fälle nach Status",
+    "it": "Fälle nach Status"
+  },
+  {
+    "key": "fälle.pro.monat",
+    "de": "Fälle pro Monat",
+    "it": "Fälle pro Monat"
+  },
+  {
+    "key": "fällig",
+    "de": "Fällig",
+    "it": "Fällig"
+  },
+  {
+    "key": "fälligkeitsdatum",
+    "de": "Fälligkeitsdatum",
+    "it": "Fälligkeitsdatum"
+  },
+  {
+    "key": "gefäßzugang",
+    "de": "Gefäßzugang",
+    "it": "Gefäßzugang"
+  },
+  {
+    "key": "gesamtanzahl.noch.nicht.abgeschlossener.anforderungen.aller.",
+    "de": "Gesamtanzahl noch nicht abgeschlossener Anforderungen aller Patienten.",
+    "it": "Gesamtanzahl noch nicht abgeschlossener Anforderungen aller Patienten."
+  },
+  {
+    "key": "geschäftsführer.max.mustermann",
+    "de": "Geschäftsführer: Max Mustermann",
+    "it": "Geschäftsführer: Max Mustermann"
+  },
+  {
+    "key": "gewählte.untersuchung",
+    "de": "Gewählte Untersuchung:",
+    "it": "Gewählte Untersuchung:"
+  },
+  {
+    "key": "großbuchstabe.az",
+    "de": "Großbuchstabe (A–Z)",
+    "it": "Großbuchstabe (A–Z)"
+  },
+  {
+    "key": "gültig.bis",
+    "de": "Gültig bis",
+    "it": "Gültig bis"
+  },
+  {
+    "key": "gültigkeit",
+    "de": "Gültigkeit",
+    "it": "Validità"
+  },
+  {
+    "key": "gültigkeit.monate",
+    "de": "Gültigkeit (Monate)",
+    "it": "Gültigkeit (Monate)"
+  },
+  {
+    "key": "haftung.für.inhalte",
+    "de": "Haftung für Inhalte",
+    "it": "Haftung für Inhalte"
+  },
+  {
+    "key": "herzkreislauf.clearance.6.schritte.überweisung.verordnung.te",
+    "de": "Herz-Kreislauf Clearance (6 Schritte: Überweisung → Verordnung → Termin → Bericht → Upload → Prüfung)",
+    "it": "Herz-Kreislauf Clearance (6 Schritte: Überweisung → Verordnung → Termin → Bericht → Upload → Prüfung)"
+  },
+  {
+    "key": "hier.ist.ein.überblick.über.ihre.aktuellen.aktivitäten",
+    "de": "Hier ist ein Überblick über Ihre aktuellen Aktivitäten.",
+    "it": "Hier ist ein Überblick über Ihre aktuellen Aktivitäten."
+  },
+  {
+    "key": "hochladen",
+    "de": "Hochladen",
+    "it": "Carica"
+  },
+  {
+    "key": "häufigkeit",
+    "de": "Häufigkeit",
+    "it": "Frequenza"
+  },
+  {
+    "key": "ipadresse",
+    "de": "IP-Adresse",
+    "it": "IP-Adresse"
+  },
+  {
+    "key": "kategorie.wählen",
+    "de": "Kategorie wählen...",
+    "it": "Kategorie wählen..."
+  },
+  {
+    "key": "keine.anforderungen.warten.auf.andere",
+    "de": "Keine Anforderungen warten auf andere.",
+    "it": "Keine Anforderungen warten auf andere."
+  },
+  {
+    "key": "keine.benachrichtigungen",
+    "de": "Keine Benachrichtigungen",
+    "it": "Keine Benachrichtigungen"
+  },
+  {
+    "key": "keine.benutzer.gefunden",
+    "de": "Keine Benutzer gefunden.",
+    "it": "Keine Benutzer gefunden."
+  },
+  {
+    "key": "keine.dokumente",
+    "de": "Keine Dokumente",
+    "it": "Nessun documento"
+  },
+  {
+    "key": "keine.dokumente",
+    "de": "Keine Dokumente.",
+    "it": "Keine Dokumente."
+  },
+  {
+    "key": "keine.einträge.gefunden",
+    "de": "Keine Einträge gefunden.",
+    "it": "Keine Einträge gefunden."
+  },
+  {
+    "key": "keine.ereignisse",
+    "de": "Keine Ereignisse",
+    "it": "Keine Ereignisse"
+  },
+  {
+    "key": "keine.ereignisse",
+    "de": "Keine Ereignisse.",
+    "it": "Keine Ereignisse."
+  },
+  {
+    "key": "keine.hilfeanfragen.gefunden",
+    "de": "Keine Hilfeanfragen gefunden.",
+    "it": "Keine Hilfeanfragen gefunden."
+  },
+  {
+    "key": "keine.loginhistorie.verfügbar",
+    "de": "Keine Login-Historie verfügbar.",
+    "it": "Keine Login-Historie verfügbar."
+  },
+  {
+    "key": "keine.organisationen",
+    "de": "Keine Organisationen",
+    "it": "Keine Organisationen"
+  },
+  {
+    "key": "keine.patienten.benötigen.aktuell.eine.aktion",
+    "de": "Keine Patienten benötigen aktuell eine Aktion.",
+    "it": "Keine Patienten benötigen aktuell eine Aktion."
+  },
+  {
+    "key": "keine.reviews.ausstehend",
+    "de": "Keine Reviews ausstehend",
+    "it": "Keine Reviews ausstehend"
+  },
+  {
+    "key": "keine.rollen",
+    "de": "Keine Rollen",
+    "it": "Keine Rollen"
+  },
+  {
+    "key": "keine.templatesets",
+    "de": "Keine TemplateSets",
+    "it": "Keine TemplateSets"
+  },
+  {
+    "key": "keine.templates",
+    "de": "Keine Templates",
+    "it": "Keine Templates"
+  },
+  {
+    "key": "keine.termine.gefunden",
+    "de": "Keine Termine gefunden",
+    "it": "Keine Termine gefunden"
+  },
+  {
+    "key": "keine.termine",
+    "de": "Keine Termine.",
+    "it": "Keine Termine."
+  },
+  {
+    "key": "keine.untersuchungen",
+    "de": "Keine Untersuchungen",
+    "it": "Nessun esame"
+  },
+  {
+    "key": "keine.untersuchungen.gefunden",
+    "de": "Keine Untersuchungen gefunden.",
+    "it": "Keine Untersuchungen gefunden."
+  },
+  {
+    "key": "keine.versionshistorie.verfügbar",
+    "de": "Keine Versionshistorie verfügbar.",
+    "it": "Keine Versionshistorie verfügbar."
+  },
+  {
+    "key": "keine.workflowschritte",
+    "de": "Keine Workflow-Schritte",
+    "it": "Keine Workflow-Schritte"
+  },
+  {
+    "key": "keine.ablaufenden.anforderungen",
+    "de": "Keine ablaufenden Anforderungen",
+    "it": "Keine ablaufenden Anforderungen"
+  },
+  {
+    "key": "keine.aktiven.blocker",
+    "de": "Keine aktiven Blocker",
+    "it": "Keine aktiven Blocker"
+  },
+  {
+    "key": "keine.aktiven.blocker",
+    "de": "Keine aktiven Blocker.",
+    "it": "Keine aktiven Blocker."
+  },
+  {
+    "key": "keine.anstehenden.termine",
+    "de": "Keine anstehenden Termine",
+    "it": "Keine anstehenden Termine"
+  },
+  {
+    "key": "keine.dringenden.aufgaben",
+    "de": "Keine dringenden Aufgaben",
+    "it": "Keine dringenden Aufgaben"
+  },
+  {
+    "key": "keine.kürzlich.erledigten.anforderungen",
+    "de": "Keine kürzlich erledigten Anforderungen",
+    "it": "Keine kürzlich erledigten Anforderungen"
+  },
+  {
+    "key": "keine.offenen.help.requests",
+    "de": "Keine offenen Help Requests",
+    "it": "Keine offenen Help Requests"
+  },
+  {
+    "key": "keine.offenen.untersuchungen.vorhanden",
+    "de": "Keine offenen Untersuchungen vorhanden",
+    "it": "Keine offenen Untersuchungen vorhanden"
+  },
+  {
+    "key": "kommunikation.zwischen.patienten.und.klinikpersonal",
+    "de": "Kommunikation zwischen Patienten und Klinikpersonal",
+    "it": "Kommunikation zwischen Patienten und Klinikpersonal"
+  },
+  {
+    "key": "lade.verfügbare.untersuchungen",
+    "de": "Lade verfügbare Untersuchungen...",
+    "it": "Lade verfügbare Untersuchungen..."
+  },
+  {
+    "key": "letzte.aktivitäten",
+    "de": "Letzte Aktivitäten",
+    "it": "Letzte Aktivitäten"
+  },
+  {
+    "key": "letzte.dokumente",
+    "de": "Letzte Dokumente",
+    "it": "Letzte Dokumente"
+  },
+  {
+    "key": "listing.blocker",
+    "de": "Listing Blocker",
+    "it": "Listing Blocker"
+  },
+  {
+    "key": "listingblocker",
+    "de": "Listing-Blocker",
+    "it": "Listing-Blocker"
+  },
+  {
+    "key": "löschen",
+    "de": "Löschen",
+    "it": "Elimina"
+  },
+  {
+    "key": "löschen.bestätigen",
+    "de": "Löschen bestätigen",
+    "it": "Löschen bestätigen"
+  },
+  {
+    "key": "medikamente.während.dialyse",
+    "de": "Medikamente während Dialyse",
+    "it": "Medikamente während Dialyse"
+  },
+  {
+    "key": "medikamente.währendbei.der.dialyse",
+    "de": "Medikamente während/bei der Dialyse",
+    "it": "Medikamente während/bei der Dialyse"
+  },
+  {
+    "key": "möchten.sie.das.passwort.für.diesen.benutzer.zurücksetzen.ei",
+    "de": "Möchten Sie das Passwort für diesen Benutzer zurücksetzen? Ein temporäres Passwort wird generiert.",
+    "it": "Möchten Sie das Passwort für diesen Benutzer zurücksetzen? Ein temporäres Passwort wird generiert."
+  },
+  {
+    "key": "möchten.sie.das.templateset",
+    "de": "Möchten Sie das TemplateSet",
+    "it": "Möchten Sie das TemplateSet"
+  },
+  {
+    "key": "möchten.sie.die.untersuchung",
+    "de": "Möchten Sie die Untersuchung",
+    "it": "Möchten Sie die Untersuchung"
+  },
+  {
+    "key": "name",
+    "de": "Name",
+    "it": "Nome"
+  },
+  {
+    "key": "name",
+    "de": "Name *",
+    "it": "Name *"
+  },
+  {
+    "key": "name.oder.email.suchen",
+    "de": "Name oder E-Mail suchen...",
+    "it": "Name oder E-Mail suchen..."
+  },
+  {
+    "key": "name",
+    "de": "Name:",
+    "it": "Name:"
+  },
+  {
+    "key": "neuer.blocker",
+    "de": "Neuer Blocker",
+    "it": "Neuer Blocker"
+  },
+  {
+    "key": "neues.passwort",
+    "de": "Neues Passwort",
+    "it": "Neues Passwort"
+  },
+  {
+    "key": "neueste.auditlogeinträge",
+    "de": "Neueste Audit-Log-Einträge",
+    "it": "Neueste Audit-Log-Einträge"
+  },
+  {
+    "key": "nächste.aktion",
+    "de": "Nächste Aktion",
+    "it": "Nächste Aktion"
+  },
+  {
+    "key": "nächste.beste.aktionen",
+    "de": "Nächste Beste Aktionen",
+    "it": "Nächste Beste Aktionen"
+  },
+  {
+    "key": "nächste.termine",
+    "de": "Nächste Termine",
+    "it": "Nächste Termine"
+  },
+  {
+    "key": "nächster.schritt",
+    "de": "Nächster Schritt:",
+    "it": "Nächster Schritt:"
+  },
+  {
+    "key": "offene.untersuchungen",
+    "de": "Offene Untersuchungen",
+    "it": "Offene Untersuchungen"
+  },
+  {
+    "key": "offene.untersuchungen",
+    "de": "Offene Untersuchungen:",
+    "it": "Offene Untersuchungen:"
+  },
+  {
+    "key": "passwort",
+    "de": "Passwort",
+    "it": "Password"
+  },
+  {
+    "key": "passwort",
+    "de": "Passwort *",
+    "it": "Passwort *"
+  },
+  {
+    "key": "passwort.vergessen",
+    "de": "Passwort vergessen",
+    "it": "Passwort vergessen"
+  },
+  {
+    "key": "passwort.wurde.zurückgesetzt",
+    "de": "Passwort wurde zurückgesetzt.",
+    "it": "Passwort wurde zurückgesetzt."
+  },
+  {
+    "key": "passwort.zurücksetzen",
+    "de": "Passwort zurücksetzen",
+    "it": "Reimposta password"
+  },
+  {
+    "key": "passwortstärke",
+    "de": "Passwortstärke",
+    "it": "Passwortstärke"
+  },
+  {
+    "key": "patient.auswählen",
+    "de": "Patient auswählen...",
+    "it": "Patient auswählen..."
+  },
+  {
+    "key": "patienten.bei.denen.alle.anforderungen.den.status.accepted.w",
+    "de": "Patienten bei denen alle Anforderungen den Status ACCEPTED, WAIVED oder NOT_APPLICABLE haben.",
+    "it": "Patienten bei denen alle Anforderungen den Status ACCEPTED, WAIVED oder NOT_APPLICABLE haben."
+  },
+  {
+    "key": "patienten.gesamt",
+    "de": "Patienten gesamt",
+    "it": "Patienten gesamt"
+  },
+  {
+    "key": "patienten.im.system",
+    "de": "Patienten im System",
+    "it": "Patienten im System"
+  },
+  {
+    "key": "patienten.im.system",
+    "de": "Patienten im System:",
+    "it": "Patienten im System:"
+  },
+  {
+    "key": "patienten.nach.einwilligung",
+    "de": "Patienten nach Einwilligung",
+    "it": "Patienten nach Einwilligung"
+  },
+  {
+    "key": "patientenonboarding.und.koordination.von.transplantationspro",
+    "de": "Patienten-Onboarding und Koordination von Transplantationsprozessen",
+    "it": "Patienten-Onboarding und Koordination von Transplantationsprozessen"
+  },
+  {
+    "key": "patientenonboarding.und.statusverfolgung",
+    "de": "Patienten-Onboarding und Statusverfolgung",
+    "it": "Patienten-Onboarding und Statusverfolgung"
+  },
+  {
+    "key": "prüfung",
+    "de": "Prüfung",
+    "it": "Verifica"
+  },
+  {
+    "key": "recht.auf.datenübertragbarkeit.art.20.dsgvo",
+    "de": "Recht auf Datenübertragbarkeit (Art. 20 DSGVO)",
+    "it": "Recht auf Datenübertragbarkeit (Art. 20 DSGVO)"
+  },
+  {
+    "key": "recht.auf.einschränkung.der.verarbeitung.art.18.dsgvo",
+    "de": "Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)",
+    "it": "Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)"
+  },
+  {
+    "key": "recht.auf.löschung.art.17.dsgvo",
+    "de": "Recht auf Löschung (Art. 17 DSGVO)",
+    "it": "Recht auf Löschung (Art. 17 DSGVO)"
+  },
+  {
+    "key": "registrieren",
+    "de": "Registrieren",
+    "it": "Registrati"
+  },
+  {
+    "key": "rolle.auswählen",
+    "de": "Rolle auswählen",
+    "it": "Rolle auswählen"
+  },
+  {
+    "key": "schließen",
+    "de": "Schließen",
+    "it": "Schließen"
+  },
+  {
+    "key": "sie.veröffentlichen",
+    "de": "Sie veröffentlichen",
+    "it": "Sie veröffentlichen"
+  },
+  {
+    "key": "sobald.termine.vereinbart.sind.erscheinen.sie.hier",
+    "de": "Sobald Termine vereinbart sind, erscheinen sie hier.",
+    "it": "Sobald Termine vereinbart sind, erscheinen sie hier."
+  },
+  {
+    "key": "status",
+    "de": "Status",
+    "it": "Stato"
+  },
+  {
+    "key": "statusänderung",
+    "de": "Status-Änderung",
+    "it": "Status-Änderung"
+  },
+  {
+    "key": "status",
+    "de": "Status:",
+    "it": "Status:"
+  },
+  {
+    "key": "stuck.patienten",
+    "de": "Stuck Patienten",
+    "it": "Stuck Patienten"
+  },
+  {
+    "key": "suchen.nach.dateiname.patient",
+    "de": "Suchen nach Dateiname, Patient...",
+    "it": "Suchen nach Dateiname, Patient..."
+  },
+  {
+    "key": "suchen.nach.typ.patient.ort",
+    "de": "Suchen nach Typ, Patient, Ort...",
+    "it": "Suchen nach Typ, Patient, Ort..."
+  },
+  {
+    "key": "telefon",
+    "de": "Telefon:",
+    "it": "Telefon:"
+  },
+  {
+    "key": "template.auswählen",
+    "de": "Template auswählen *",
+    "it": "Template auswählen *"
+  },
+  {
+    "key": "template.veröffentlichen",
+    "de": "Template veröffentlichen",
+    "it": "Template veröffentlichen"
+  },
+  {
+    "key": "template.wirklich.löschen",
+    "de": "Template wirklich löschen?",
+    "it": "Template wirklich löschen?"
+  },
+  {
+    "key": "templateset.löschen",
+    "de": "TemplateSet löschen",
+    "it": "TemplateSet löschen"
+  },
+  {
+    "key": "temporäres.passwort",
+    "de": "Temporäres Passwort",
+    "it": "Temporäres Passwort"
+  },
+  {
+    "key": "typ.auswählen",
+    "de": "Typ auswählen",
+    "it": "Typ auswählen"
+  },
+  {
+    "key": "umsatzsteueridentifikationsnummer.gemäß.27.a.umsatzsteuerges",
+    "de": "Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:",
+    "it": "Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:"
+  },
+  {
+    "key": "untersuchung.auswählen",
+    "de": "Untersuchung auswählen",
+    "it": "Untersuchung auswählen"
+  },
+  {
+    "key": "untersuchung.löschen",
+    "de": "Untersuchung löschen",
+    "it": "Untersuchung löschen"
+  },
+  {
+    "key": "untersuchungen",
+    "de": "Untersuchungen",
+    "it": "Esami"
+  },
+  {
+    "key": "untersuchungen.jeweils.in.textfelder.reinschreiben",
+    "de": "Untersuchungen (jeweils in Textfelder reinschreiben)",
+    "it": "Untersuchungen (jeweils in Textfelder reinschreiben)"
+  },
+  {
+    "key": "verifizierte.zusammenfassung.für.externe.ärzte",
+    "de": "Verifizierte Zusammenfassung für externe Ärzte",
+    "it": "Verifizierte Zusammenfassung für externe Ärzte"
+  },
+  {
+    "key": "verteilung.der.consentstatus",
+    "de": "Verteilung der Consent-Status",
+    "it": "Verteilung der Consent-Status"
+  },
+  {
+    "key": "verteilung.der.fallstatus",
+    "de": "Verteilung der Fall-Status",
+    "it": "Verteilung der Fall-Status"
+  },
+  {
+    "key": "verwaltung.von.untersuchungsanforderungen.und.dokumenten",
+    "de": "Verwaltung von Untersuchungsanforderungen und Dokumenten",
+    "it": "Verwaltung von Untersuchungsanforderungen und Dokumenten"
+  },
+  {
+    "key": "veröffentlichen",
+    "de": "Veröffentlichen",
+    "it": "Veröffentlichen"
+  },
+  {
+    "key": "weitere.untersuchung.hinzufügen",
+    "de": "Weitere Untersuchung hinzufügen",
+    "it": "Weitere Untersuchung hinzufügen"
+  },
+  {
+    "key": "wirklich.löschen",
+    "de": "Wirklich löschen?",
+    "it": "Wirklich löschen?"
+  },
+  {
+    "key": "zahnärztlich",
+    "de": "Zahnärztlich",
+    "it": "Odontoiatrico"
+  },
+  {
+    "key": "zusätzliche.informationen",
+    "de": "Zusätzliche Informationen...",
+    "it": "Zusätzliche Informationen..."
+  },
+  {
+    "key": "wirklich.löschen",
+    "de": "wirklich löschen?",
+    "it": "wirklich löschen?"
+  },
+  {
+    "key": "zb.bitte.bessere.qualität.hochladen",
+    "de": "z.B. Bitte bessere Qualität hochladen...",
+    "it": "z.B. Bitte bessere Qualität hochladen..."
+  },
+  {
+    "key": "zb.dr.müller",
+    "de": "z.B. Dr. Müller",
+    "it": "z.B. Dr. Müller"
+  },
+  {
+    "key": "zb.neue.anforderung.hinzugefügt.workflow.angepasst",
+    "de": "z.B. Neue Anforderung hinzugefügt, Workflow angepasst...",
+    "it": "z.B. Neue Anforderung hinzugefügt, Workflow angepasst..."
+  },
+  {
+    "key": "ändern",
+    "de": "Ändern",
+    "it": "Modifica"
+  },
+  {
+    "key": "änderungen.optional",
+    "de": "Änderungen (optional)",
+    "it": "Änderungen (optional)"
+  },
+  {
+    "key": "ø.dokumente.patient",
+    "de": "Ø Dokumente / Patient",
+    "it": "Ø Dokumente / Patient"
+  },
+  {
+    "key": "ø.dokumente.patient",
+    "de": "Ø Dokumente / Patient:",
+    "it": "Ø Dokumente / Patient:"
+  },
+  {
+    "key": "ø.untersuchungen.patient",
+    "de": "Ø Untersuchungen / Patient",
+    "it": "Ø Untersuchungen / Patient"
+  },
+  {
+    "key": "überfällig",
+    "de": "Überfällig:",
+    "it": "Überfällig:"
+  },
+  {
+    "key": "übersicht.über.patienten.fälle.und.untersuchungen",
+    "de": "Übersicht über Patienten, Fälle und Untersuchungen.",
+    "it": "Übersicht über Patienten, Fälle und Untersuchungen."
+  },
+  {
+    "key": "überwachung",
+    "de": "Überwachung",
+    "it": "Überwachung"
+  },
+  {
+    "key": "überwachung.während.dialyse",
+    "de": "Überwachung während Dialyse",
+    "it": "Überwachung während Dialyse"
+  }
+]

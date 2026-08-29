@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Settings, LogOut, ChevronDown } from "lucide-react";
+import { useTranslation } from "@/components/i18n-provider";
 
 interface UserNavProps {
   user: {
@@ -15,6 +16,7 @@ interface UserNavProps {
 
 export function UserNav({ user }: UserNavProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const initials = user.name
@@ -78,7 +80,7 @@ export function UserNav({ user }: UserNavProps) {
           >
             <div className="p-3 border-bottom">
               <div className="fw-semibold" style={{ fontSize: "0.875rem" }}>
-                {user.name || "Benutzer"}
+                {user.name || t("common.user", "Benutzer")}
               </div>
               <div className="text-muted" style={{ fontSize: "0.75rem" }}>
                 {user.email}
@@ -104,7 +106,7 @@ export function UserNav({ user }: UserNavProps) {
                 }}
               >
                 <Settings size={16} />
-                Einstellungen
+                {t("nav.settings", "Einstellungen")}
               </Link>
               <hr className="my-1 mx-3" style={{ borderColor: "#f1f5f9" }} />
               <button
@@ -128,7 +130,7 @@ export function UserNav({ user }: UserNavProps) {
                 }}
               >
                 <LogOut size={16} />
-                Abmelden
+                {t("auth.logout", "Abmelden")}
               </button>
             </div>
           </div>
