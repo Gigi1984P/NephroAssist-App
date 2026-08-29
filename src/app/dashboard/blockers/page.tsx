@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { useTranslation } from "@/components/i18n-provider";
 import { Activity, AlertTriangle, CheckCircle, Clock, Plus, X } from "lucide-react";
 
 interface Blocker {
@@ -36,6 +37,7 @@ const blockerTypeLabels: Record<string, string> = {
 };
 
 export default function BlockersPage() {
+  const { t } = useTranslation();
   const [blockers, setBlockers] = useState<Blocker[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -128,11 +130,11 @@ export default function BlockersPage() {
   return (
     <div>
       <PageHeader
-        title="Blocker"
-        description="Aktive Hindernisse und Probleme im Überblick"
+        title={t("nav.blockers", "Blocker")}
+        description={t("blockers.desc", "Aktive Hindernisse und Probleme im Überblick")}
         action={
           <button className="btn-custom btn-primary-custom" onClick={openModal}>
-            <Plus size={16} /> Neuer Blocker
+            <Plus size={16} /> {t("blockers.new", "Neuer Blocker")}
           </button>
         }
       />
@@ -140,25 +142,25 @@ export default function BlockersPage() {
       <div className="dashboard-card">
         <div className="card-body-custom p-0">
           {loading ? (
-            <div className="p-4 text-center text-muted">Laden...</div>
+            <div className="p-4 text-center text-muted">{t("loading.title", "Laden...")}</div>
           ) : blockers.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">
                 <CheckCircle size={24} />
               </div>
-              <div className="empty-state-title">Keine aktiven Blocker</div>
-              <div className="empty-state-desc">Alles läuft reibungslos!</div>
+              <div className="empty-state-title">{t("blockers.none", "Keine aktiven Blocker")}</div>
+              <div className="empty-state-desc">{t("blockers.allGood", "Alles läuft reibungslos!")}</div>
             </div>
           ) : (
             <table className="table-custom">
               <thead>
                 <tr>
-                  <th>Typ</th>
-                  <th>Beschreibung</th>
-                  <th>Patient</th>
-                  <th>Anforderung</th>
-                  <th>Erstellt</th>
-                  <th className="actions">Aktionen</th>
+                  <th>{t("common.type", "Typ")}</th>
+                  <th>{t("common.description", "Beschreibung")}</th>
+                  <th>{t("common.patient", "Patient")}</th>
+                  <th>{t("common.requirement", "Anforderung")}</th>
+                  <th>{t("common.created", "Erstellt")}</th>
+                  <th className="actions">{t("nav.actions", "Aktionen")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,7 +184,7 @@ export default function BlockersPage() {
                         className="btn-custom btn-outline-custom btn-sm-custom"
                         onClick={() => resolveBlocker(blocker.id)}
                       >
-                        <CheckCircle size={14} /> Gelöst
+                        <CheckCircle size={14} /> {t("blockers.resolved", "Gelöst")}
                       </button>
                     </td>
                   </tr>
@@ -201,7 +203,7 @@ export default function BlockersPage() {
         >
           <div className="bg-white rounded shadow-sm" style={{ width: "100%", maxWidth: "480px", margin: "1rem" }}>
             <div className="d-flex justify-content-between align-items-center p-3 border-bottom">
-              <span className="fw-semibold">Neuer Blocker</span>
+              <span className="fw-semibold">{t("blockers.newTitle", "Neuer Blocker")}</span>
               <button className="btn btn-link text-decoration-none p-0" onClick={() => setShowModal(false)}>
                 <X size={20} />
               </button>
@@ -213,14 +215,14 @@ export default function BlockersPage() {
               )}
 
               <div className="mb-3">
-                <label className="form-label">Patient</label>
+                <label className="form-label">{t("common.patient", "Patient")}</label>
                 <select
                   className="form-select"
                   value={form.patientId}
                   onChange={(e) => setForm({ ...form, patientId: e.target.value })}
                   required
                 >
-                  <option value="">Patient auswählen...</option>
+                  <option value="">{t("blockers.selectPatient", "Patient auswählen...")}</option>
                   {patients.map((p) => (
                     <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
                   ))}
@@ -228,7 +230,7 @@ export default function BlockersPage() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Typ</label>
+                <label className="form-label">{t("common.type", "Typ")}</label>
                 <select
                   className="form-select"
                   value={form.type}
@@ -241,23 +243,23 @@ export default function BlockersPage() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Beschreibung</label>
+                <label className="form-label">{t("common.description", "Beschreibung")}</label>
                 <textarea
                   className="form-control"
                   rows={3}
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Beschreiben Sie das Problem..."
+                  placeholder={t("blockers.descPlaceholder", "Beschreiben Sie das Problem...")}
                   required
                 />
               </div>
 
               <div className="d-flex gap-2 justify-content-end">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Abbrechen
+                  {t("nav.cancel", "Abbrechen")}
                 </button>
                 <button type="submit" className="btn-custom btn-primary-custom" disabled={formLoading}>
-                  {formLoading ? "Wird erstellt..." : "Blocker erstellen"}
+                  {formLoading ? t("blockers.creating", "Wird erstellt...") : t("blockers.create", "Blocker erstellen")}
                 </button>
               </div>
             </form>
