@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { useTranslation } from "@/components/i18n-provider";
 import { Plus, Search, ChevronLeft, ChevronRight, Stethoscope, ArrowRight, CheckCircle, Clock, AlertTriangle, XCircle, Activity, Calendar, FileText } from "lucide-react";
 
 interface ReqItem {
@@ -39,27 +40,28 @@ function fmtDate(d: string | null): string {
   return new Date(d).toLocaleDateString("de-DE");
 }
 
-const STATUS_META: Record<
+  const STATUS_META: Record<
   string,
-  { label: string; color: string; bg: string; icon: React.ReactNode }
+  { labelKey: string; labelFallback: string; color: string; bg: string; icon: React.ReactNode }
 > = {
-  NOT_STARTED: { label: "Nicht gestartet", color: "#64748b", bg: "#f1f5f9", icon: <Clock size={14} /> },
-  ACTION_REQUIRED: { label: "Aktion nötig", color: "#f97316", bg: "#fff7ed", icon: <AlertTriangle size={14} /> },
-  IN_PROGRESS: { label: "In Bearbeitung", color: "#3b82f6", bg: "#eff6ff", icon: <Activity size={14} /> },
-  WAITING_FOR_APPOINTMENT: { label: "Warte auf Termin", color: "#f59e0b", bg: "#fffbeb", icon: <Calendar size={14} /> },
-  WAITING_FOR_DOCUMENT: { label: "Warte auf Dokument", color: "#f59e0b", bg: "#fffbeb", icon: <FileText size={14} /> },
-  DOCUMENT_UPLOADED: { label: "Dokument hochgeladen", color: "#3b82f6", bg: "#eff6ff", icon: <FileText size={14} /> },
-  UNDER_REVIEW: { label: "In Prüfung", color: "#8b5cf6", bg: "#faf5ff", icon: <Activity size={14} /> },
-  ACCEPTED: { label: "Akzeptiert", color: "#10b981", bg: "#f0fdf4", icon: <CheckCircle size={14} /> },
-  REJECTED: { label: "Abgelehnt", color: "#ef4444", bg: "#fef2f2", icon: <XCircle size={14} /> },
-  BLOCKED: { label: "Blockiert", color: "#dc2626", bg: "#fef2f2", icon: <AlertTriangle size={14} /> },
-  EXPIRED: { label: "Abgelaufen", color: "#dc2626", bg: "#fef2f2", icon: <Clock size={14} /> },
-  RENEWAL_REQUIRED: { label: "Erneuerung nötig", color: "#f59e0b", bg: "#fffbeb", icon: <Clock size={14} /> },
-  WAIVED: { label: "Entfallen", color: "#94a3b8", bg: "#f8fafc", icon: <CheckCircle size={14} /> },
-  NOT_APPLICABLE: { label: "N/A", color: "#94a3b8", bg: "#f8fafc", icon: <CheckCircle size={14} /> },
+  NOT_STARTED: { labelKey: "status.notStarted", labelFallback: "Nicht gestartet", color: "#64748b", bg: "#f1f5f9", icon: <Clock size={14} /> },
+  ACTION_REQUIRED: { labelKey: "status.actionRequired", labelFallback: "Aktion nötig", color: "#f97316", bg: "#fff7ed", icon: <AlertTriangle size={14} /> },
+  IN_PROGRESS: { labelKey: "status.inProgress", labelFallback: "In Bearbeitung", color: "#3b82f6", bg: "#eff6ff", icon: <Activity size={14} /> },
+  WAITING_FOR_APPOINTMENT: { labelKey: "status.waitingAppointment", labelFallback: "Warte auf Termin", color: "#f59e0b", bg: "#fffbeb", icon: <Calendar size={14} /> },
+  WAITING_FOR_DOCUMENT: { labelKey: "status.waitingDocument", labelFallback: "Warte auf Dokument", color: "#f59e0b", bg: "#fffbeb", icon: <FileText size={14} /> },
+  DOCUMENT_UPLOADED: { labelKey: "status.documentUploaded", labelFallback: "Dokument hochgeladen", color: "#3b82f6", bg: "#eff6ff", icon: <FileText size={14} /> },
+  UNDER_REVIEW: { labelKey: "status.underReview", labelFallback: "In Prüfung", color: "#8b5cf6", bg: "#faf5ff", icon: <Activity size={14} /> },
+  ACCEPTED: { labelKey: "status.accepted", labelFallback: "Akzeptiert", color: "#10b981", bg: "#f0fdf4", icon: <CheckCircle size={14} /> },
+  REJECTED: { labelKey: "status.rejected", labelFallback: "Abgelehnt", color: "#ef4444", bg: "#fef2f2", icon: <XCircle size={14} /> },
+  BLOCKED: { labelKey: "status.blocked", labelFallback: "Blockiert", color: "#dc2626", bg: "#fef2f2", icon: <AlertTriangle size={14} /> },
+  EXPIRED: { labelKey: "status.expired", labelFallback: "Abgelaufen", color: "#dc2626", bg: "#fef2f2", icon: <Clock size={14} /> },
+  RENEWAL_REQUIRED: { labelKey: "status.renewalRequired", labelFallback: "Erneuerung nötig", color: "#f59e0b", bg: "#fffbeb", icon: <Clock size={14} /> },
+  WAIVED: { labelKey: "status.waived", labelFallback: "Entfallen", color: "#94a3b8", bg: "#f8fafc", icon: <CheckCircle size={14} /> },
+  NOT_APPLICABLE: { labelKey: "status.notApplicable", labelFallback: "N/A", color: "#94a3b8", bg: "#f8fafc", icon: <CheckCircle size={14} /> },
 };
 
 export default function TasksPage() {
+  const { t } = useTranslation();
   const [requirements, setRequirements] = useState<ReqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -113,13 +115,13 @@ export default function TasksPage() {
   return (
     <div>
       <PageHeader
-        title="Untersuchungen"
-        description={isPatient ? "Deine zugewiesenen Untersuchungen" : "Übersicht aller Patientenuntersuchungen"}
+        title={t("sidebar.requirements", "Untersuchungen")}
+        description={isPatient ? t("req.patientDesc", "Deine zugewiesenen Untersuchungen") : t("req.clinicDesc", "Übersicht aller Patientenuntersuchungen")}
         action={
           canCreate && (
             <Link href="/dashboard/tasks/new" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2">
               <Plus size={16} />
-              <span>Neue Untersuchung</span>
+              <span>{t("req.new", "Neue Untersuchung")}</span>
             </Link>
           )
         }
@@ -132,7 +134,7 @@ export default function TasksPage() {
             <input
               type="text"
               className="form-control form-control-sm border-0 bg-transparent"
-              placeholder="Untersuchung suchen..."
+              placeholder={t("search.requirements", "Untersuchung suchen...")}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
@@ -145,24 +147,24 @@ export default function TasksPage() {
           <table className="table-custom">
             <thead>
               <tr>
-                <th>Untersuchung</th>
+                <th>{t("req.title", "Untersuchung")}</th>
                 <th style={{ width: "1%" }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={2} className="text-center text-muted py-4">Laden...</td>
+                  <td colSpan={2} className="text-center text-muted py-4">{t("loading.title", "Laden...")}</td>
                 </tr>
               ) : pageItems.length === 0 ? (
                 <tr>
                   <td colSpan={2}>
                     <div className="empty-state">
                       <Stethoscope size={40} className="text-muted mb-2" />
-                      <p>Keine Untersuchungen gefunden.</p>
+                      <p>{t("req.none", "Keine Untersuchungen gefunden.")}</p>
                       {canCreate && (
                         <Link href="/dashboard/tasks/new" className="btn btn-primary btn-sm mt-2">
-                          Neue Untersuchung erstellen
+                          {t("req.createNew", "Neue Untersuchung erstellen")}
                         </Link>
                       )}
                     </div>
@@ -206,7 +208,7 @@ export default function TasksPage() {
                             }}
                           >
                             {meta.icon}
-                            {meta.label}
+                            {t(meta.labelKey, meta.labelFallback)}
                           </span>
                           <Link
                             href={`/dashboard/tasks/${req.id}`}
