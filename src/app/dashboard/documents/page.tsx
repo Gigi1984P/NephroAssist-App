@@ -144,8 +144,8 @@ export default function DocumentsPage() {
   return (
     <div>
       <PageHeader
-        title="Dokumente"
-        description="Verwalten und reviewen Sie alle hochgeladenen Dokumente"
+        title={t("sidebar.documents", "Dokumente")}
+        description={t("documents.desc", "Verwalten und reviewen Sie alle hochgeladenen Dokumente")}
         action={
           <button className="btn-custom btn-primary-custom" onClick={() => setShowModal(true)}>
             <Upload size={16} /> Hochladen
