@@ -24,3 +24,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+// Vercel cache purge trigger 1788002607
