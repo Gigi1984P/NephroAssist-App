@@ -17,6 +17,7 @@ interface Notification {
 }
 
 export function NotificationCenter() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -138,11 +139,11 @@ export function NotificationCenter() {
           }}
         >
           <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-            <span className="fw-medium">Benachrichtigungen</span>
+            <span className="fw-medium">{t("notifications.title", "Benachrichtigungen")}</span>
             {unreadCount > 0 && (
               <button className="btn btn-sm btn-link text-decoration-none" onClick={markAllAsRead}>
                 <Check size={14} className="me-1" />
-                Alle gelesen
+                {t("notifications.allRead", "Alle gelesen")}
               </button>
             )}
           </div>
@@ -150,7 +151,7 @@ export function NotificationCenter() {
           {notifications.length === 0 ? (
             <div className="text-center py-4 text-muted">
               <Bell size={24} className="mb-2 opacity-50" />
-              <p className="mb-0 small">Keine Benachrichtigungen</p>
+              <p className="mb-0 small">{t("notifications.none", "Keine Benachrichtigungen")}</p>
             </div>
           ) : (
             notifications.map((n) => {
