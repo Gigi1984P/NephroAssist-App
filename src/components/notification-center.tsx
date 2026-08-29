@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Bell, Check, X } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/components/i18n-provider";
 
 interface Notification {
   id: string;
