@@ -34,4 +34,14 @@
 - [x] i18n: 34 neue Legal-Translation-Keys zum Seed hinzugefügt (de + it)
 - [x] PROJECT-STATE.md erstellt
 - [x] TODOS.md erstellt
-- [x] Build-Verifikation
+- [x] **Calendar**: Custom Month/Week/Day Views mit Appointment-Dots, Navigation, Detail-Modal
+- [x] **Calendar**: GET /api/appointments hinzugefügt (mit Auth + Org-Filter)
+- [x] **Email Client**: SMTP-basierte E-Mail-Komponente (Inbox, Sent, Drafts, Compose)
+- [x] **Email Client**: DB Schema EmailMessage + EmailAttachment + EmailStatus
+- [x] **Email Client**: API Routes (/api/email, /api/email/send, /api/email/sent, /api/email/[id])
+- [x] **Email Client**: Sidebar-Navigation mit Mail-Icon
+- [x] **Security P1**: Rate Limiting auf /api/auth/forgot-password
+- [x] **Security P1**: Zod-Input-Validation auf forgot-password
+- [x] **Security P1**: SameSite=Strict für nephro-token Cookie
+- [x] **Security P1**: Middleware erweitert (Admin-Gate, Security Headers, erweiterter Matcher)
+- [x] Build sauber, Git commit + push

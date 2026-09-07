@@ -2,20 +2,37 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { randomUUID } from "crypto";
+import { rateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const forgotSchema = z.object({
+  email: z.string().email("Ungültige E-Mail-Adresse"),
+});
+
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
-
-    if (!email || typeof email !== "string") {
+    // Rate limit by IP
+    const limit = rateLimit(request);
+    if (!limit.allowed) {
       return NextResponse.json(
-        { error: "E-Mail-Adresse ist erforderlich" },
+        { error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+      );
+    }
+
+    const body = await request.json();
+    const validated = forgotSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: validated.error.errors[0].message },
         { status: 400 }
       );
     }
+
+    const { email } = validated.data;
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {

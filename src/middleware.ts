@@ -7,39 +7,78 @@ function getToken(req: NextRequest): string | undefined {
   return req.cookies.get("nephro-token")?.value;
 }
 
+// Paths that require admin role
+const ADMIN_PATHS = ["/dashboard/admin"];
+
+// Public paths (no auth required)
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/legal", "/passport", "/upload"];
+
 export async function middleware(req: NextRequest) {
   const { nextUrl } = req;
   const token = getToken(req);
 
   let isLoggedIn = false;
+  let userRole: string | null = null;
+
   if (token) {
     try {
-      await jwtVerify(token, SECRET_BYTES, { clockTolerance: 60 });
+      const { payload } = await jwtVerify(token, SECRET_BYTES, { clockTolerance: 60 });
       isLoggedIn = true;
+      userRole = payload.role as string | null;
     } catch {
       isLoggedIn = false;
     }
   }
 
-  const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
-  const isOnAuth = nextUrl.pathname.startsWith("/login") || nextUrl.pathname.startsWith("/register");
+  const pathname = nextUrl.pathname;
 
-  if (isOnDashboard) {
+  // Check if path is public
+  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+
+  // Dashboard / protected paths
+  const isProtected = pathname.startsWith("/dashboard") || pathname === "/";
+
+  if (isProtected) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL("/login", nextUrl));
     }
-    return NextResponse.next();
-  }
 
-  if (isOnAuth) {
-    if (isLoggedIn) {
+    // Admin role check
+    const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
+    if (isAdminPath && userRole !== "ADMIN") {
       return NextResponse.redirect(new URL("/dashboard", nextUrl));
     }
+
+    // Add security headers
+    const response = NextResponse.next();
+    response.headers.set("X-Frame-Options", "DENY");
+    response.headers.set("X-Content-Type-Options", "nosniff");
+    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    response.headers.set("X-XSS-Protection", "1; mode=block");
+    return response;
   }
 
-  return NextResponse.next();
+  // Auth pages: redirect logged-in users away
+  if (isPublic && isLoggedIn && (pathname === "/login" || pathname === "/register")) {
+    return NextResponse.redirect(new URL("/dashboard", nextUrl));
+  }
+
+  // Add security headers to all responses
+  const response = NextResponse.next();
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  return response;
 }
 
 export const config = {
-  matcher: ["/", "/dashboard/:path*", "/login", "/register"],
+  matcher: [
+    "/",
+    "/dashboard/:path*",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password/:path*",
+    "/verify-email/:path*",
+  ],
 };

@@ -5,6 +5,64 @@ import { logAuditEvent } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
+/* ================================================================ */
+/*  GET: List appointments                                           */
+/* ================================================================ */
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const { user } = session;
+    const isPatientOrCaregiver = user.role === "PATIENT" || user.role === "CAREGIVER";
+    const isClinic = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "DIALYSIS_STAFF"].includes(user.role);
+
+    if (!isPatientOrCaregiver && !isClinic) {
+      return NextResponse.json({ error: "Zugriff verweigert" }, { status: 403 });
+    }
+
+    const where: any = {};
+
+    if (isPatientOrCaregiver) {
+      // Find patient's own appointments
+      const patient = await prisma.patient.findFirst({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (patient) {
+        where.patientId = patient.id;
+      }
+    } else {
+      // Clinic: filter by organization
+      const membership = await prisma.organizationMembership.findFirst({
+        where: { userId: user.id },
+        select: { organizationId: true },
+      });
+      if (membership) {
+        where.organizationId = membership.organizationId;
+      }
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where,
+      orderBy: { startTime: "asc" },
+      include: {
+        patient: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+      take: 500,
+    });
+
+    return NextResponse.json({ appointments });
+  } catch (error) {
+    console.error("Appointments GET error:", error);
+    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const session = await auth();

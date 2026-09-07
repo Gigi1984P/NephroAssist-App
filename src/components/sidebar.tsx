@@ -18,6 +18,7 @@ import {
   LogOut,
   GripVertical,
   LifeBuoy,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "@/components/i18n-provider";
@@ -39,6 +40,7 @@ const sidebarItems: SidebarItem[] = [
   { titleKey: "nav.reports", href: "/dashboard/reports", icon: BarChart3, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { titleKey: "nav.requirements", href: "/dashboard/requirements", icon: ClipboardList, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { titleKey: "nav.helpRequests", href: "/dashboard/help-requests", icon: LifeBuoy, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
+  { titleKey: "nav.email", href: "/dashboard/email", icon: Mail, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   {
     titleKey: "nav.admin",
     href: "/dashboard/admin",
