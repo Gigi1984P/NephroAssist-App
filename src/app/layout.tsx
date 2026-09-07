@@ -5,6 +5,7 @@ import { ToastProvider } from "@/components/toast-provider";
 import { NProgressWrapper } from "@/components/nprogress-wrapper";
 import { I18nProvider } from "@/components/i18n-provider";
 import CsrfProvider from "@/components/csrf-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,8 +20,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="de">
+    <html lang="de" suppressHydrationWarning>
       <head>
+        {/* FOUC prevention: set theme before React hydrates */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var theme = localStorage.getItem('nephro-theme') || 'system';
+                var resolved = theme === 'system'
+                  ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                  : theme;
+                document.documentElement.setAttribute('data-theme', resolved);
+              })();
+            `,
+          }}
+        />
         <link
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
           rel="stylesheet"
@@ -37,8 +52,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <I18nProvider>
           <CsrfProvider>
-            <NProgressWrapper />
-            <ToastProvider>{children}</ToastProvider>
+            <ThemeProvider>
+              <NProgressWrapper />
+              <ToastProvider>{children}</ToastProvider>
+            </ThemeProvider>
           </CsrfProvider>
         </I18nProvider>
       </body>

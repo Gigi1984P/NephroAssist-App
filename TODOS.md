@@ -5,7 +5,6 @@
 - [ ] Performance: Bundle-Analyse und Code-Splitting
 
 ## Nächste Schritte
-- [ ] Jest-Unit-Tests für Utils & API-Routes
 - [ ] Dokumentation: API-Endpunkte dokumentieren
 - [ ] Dokumentation: Deployment-Guide
 - [ ] WhatsApp/SMS-Integration für Reminder
@@ -15,7 +14,6 @@
 - [ ] Export-Funktion (PDF-Report für Patienten)
 - [ ] Interoperabilität: HL7 FHIR-Integration
 - [ ] Terminbuchung extern (Patienten können selbst buchen)
-- [ ] Dark Mode
 
 ## Erledigt (letzte Session)
 - [x] **Calendar**: Custom Month/Week/Day Views mit Appointment-Dots, Navigation, Detail-Modal
@@ -43,4 +41,8 @@
 - [x] **Playwright E2E**: Auth flow (login valid/invalid, redirect unauth)
 - [x] **Playwright E2E**: Dashboard navigation (sidebar, patients, calendar, email)
 - [x] **Playwright E2E**: data-testid attributes auf login, sidebar, patients, calendar, email
+- [x] **Jest Unit Tests**: 26 passing Tests (utils, rate-limit, appointments API)
+- [x] **Dark Mode**: ThemeProvider mit localStorage-Persistenz + System-Erkennung
+- [x] **Dark Mode**: FOUC Prevention Script, CSS Overrides (Cards, Tables, Modals, Inputs)
+- [x] **Dark Mode**: ThemeToggle in Sidebar (Light/Dark/System)
 - [x] Build sauber, Git commit + push

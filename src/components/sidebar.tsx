@@ -22,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "@/components/i18n-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface SidebarItem {
   titleKey: string;
@@ -441,6 +442,11 @@ export function MobileSidebar({ role, userName, userEmail }: SidebarProps) {
                     {userEmail}
                   </div>
                 </div>
+              </div>
+              <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "0.75rem 0" }} />
+              <div className="d-flex align-items-center justify-content-between mb-2 px-2">
+                <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>{t("settings.theme", "Design")}</span>
+                <ThemeToggle />
               </div>
               <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "0.75rem 0" }} />
               <Link
