@@ -1,44 +1,29 @@
-# Prisma Seed - wird nur für DB-Seeding verwendet
-prisma/seed.ts
-
-# Test-Dateien
-__tests__/
-*.test.ts
-*.test.tsx
-
-# Dokumentation
+# Dokumentation (nicht im Build benötigt)
 docs/
 *.md
 
-# Development
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Tests
+__tests__/
+__mocks__/
+coverage/
 
-# IDE
+# Playwright
+tests/
+playwright-report/
+test-results/
+
+# Dev-Tools
 .vscode/
 .idea/
+*.log
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+# Git
+.git/
+.gitignore
 
-# Docker
-docker-compose.yml
-Dockerfile
-.dockerignore
-
-# Temporäre Dateien
-tmp/
-temp/
-
-# Backups
-backups/
-
-# Uploads (lokal)
-uploads/
+# CI/CD (falls vorhanden)
+.github/

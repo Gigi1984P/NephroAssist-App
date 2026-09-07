@@ -5,7 +5,6 @@
 - [ ] Performance: Bundle-Analyse und Code-Splitting
 
 ## Nächste Schritte
-- [ ] Dokumentation: Deployment-Guide
 - [ ] WhatsApp/SMS-Integration für Reminder
 - [ ] Video-Chat-Integration (z.B. Jitsi)
 - [ ] AI-Dokumenten-Klassifizierung (OCR + GPT)
@@ -48,4 +47,6 @@
 - [x] **Performance**: PERFORMANCE.md mit Bundle-Analyse und Optimierungs-Roadmap
 - [x] **API-Doku**: 91 Endpunkte in 16 Markdown-Dateien dokumentiert
 - [x] **API-Doku**: OpenAPI 3.0 Spec (docs/openapi.yaml)
+- [x] **Deployment-Guide**: Vercel-Deployment, DB-Setup, Env-Vars, Cron-Jobs, Troubleshooting
+- [x] **Deployment-Guide**: .vercelignore für schnellere Builds
 - [x] Build sauber, Git commit + push
