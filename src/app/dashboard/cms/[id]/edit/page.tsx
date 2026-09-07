@@ -4,13 +4,18 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/components/i18n-provider";
-import { TipTapEditor } from "@/components/tiptap-editor";
+import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save } from "lucide-react";
+
+const TipTapEditor = dynamic(() => import("@/components/tiptap-editor").then(mod => ({ default: mod.TipTapEditor })), {
+  ssr: false,
+  loading: () => <div className="p-4 text-muted">Editor wird geladen...</div>,
+});
 
 export default function CmsEditPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
