@@ -1,0 +1,504 @@
+openapi: 3.0.3
+info:
+  title: NephroAssist API
+  description: |
+    API für die NephroAssist Transplantationsplattform.
+    Authentifizierung via Cookie (nephro-token) oder NextAuth Session.
+    Alle state-changing Requests benötigen einen CSRF-Token im Header.
+  version: "1.0.0"
+  contact:
+    name: NephroAssist Support
+    email: support@nephroassist.de
+
+servers:
+  - url: https://www.nephroassist.com/api
+    description: Production
+  - url: http://localhost:3000/api
+    description: Local Development
+
+security:
+  - NephroToken: []
+  - SessionCookie: []
+
+paths:
+  # === AUTH ===
+  /login:
+    post:
+      summary: Benutzer-Anmeldung
+      description: Authentifiziert einen Benutzer und setzt das nephro-token Cookie.
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@nephroassist.de
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: Test1234!
+      responses:
+        "200":
+          description: Erfolgreich angemeldet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      email: { type: string }
+                      name: { type: string }
+                      role: { type: string }
+        "401":
+          description: Ungültige Anmeldedaten
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Rate Limit überschritten
+          headers:
+            Retry-After:
+              schema: { type: integer }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /logout:
+    post:
+      summary: Abmeldung
+      tags: [Auth]
+      responses:
+        "200":
+          description: Erfolgreich abgemeldet
+
+  /auth/register:
+    post:
+      summary: Benutzer-Registrierung
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, firstName, lastName]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                firstName: { type: string }
+                lastName: { type: string }
+                role: { type: string, enum: [PATIENT, CAREGIVER, ADMIN, COORDINATOR, PHYSICIAN, NURSE, DIALYSIS_STAFF] }
+      responses:
+        "201":
+          description: Benutzer erstellt
+        "400":
+          description: Validierungsfehler
+        "409":
+          description: E-Mail bereits vergeben
+
+  /auth/forgot-password:
+    post:
+      summary: Passwort vergessen
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Reset-Link gesendet (oder E-Mail nicht gefunden)
+
+  /reset-password/{token}:
+    post:
+      summary: Passwort zurücksetzen
+      tags: [Auth]
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string, minLength: 8 }
+      responses:
+        "200":
+          description: Passwort zurückgesetzt
+        "400":
+          description: Ungültiger Token
+
+  # === PATIENTS ===
+  /patients/overview:
+    get:
+      summary: Patienten-Übersicht
+      description: Liste aller Patienten (gefiltert nach Rolle/Organisation).
+      tags: [Patients]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Patientenliste
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  patients:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Patient"
+                  total: { type: integer }
+
+  /patients/{id}:
+    get:
+      summary: Patienten-Details
+      tags: [Patients]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Patientendetails
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "404":
+          description: Patient nicht gefunden
+
+  /patients:
+    post:
+      summary: Patient erstellen
+      tags: [Patients]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatientCreate"
+      responses:
+        "201":
+          description: Patient erstellt
+        "400":
+          description: Validierungsfehler
+        "409":
+          description: E-Mail bereits vergeben
+
+  # === APPOINTMENTS ===
+  /appointments:
+    get:
+      summary: Termine auflisten
+      tags: [Appointments]
+      responses:
+        "200":
+          description: Terminliste
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  appointments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Appointment"
+    post:
+      summary: Termin erstellen
+      tags: [Appointments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentCreate"
+      responses:
+        "200":
+          description: Termin erstellt
+        "400":
+          description: Validierungsfehler
+
+  # === TASKS ===
+  /tasks:
+    get:
+      summary: Tasks auflisten
+      tags: [Tasks]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: patientId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Taskliste
+    post:
+      summary: Task erstellen
+      tags: [Tasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+      responses:
+        "201":
+          description: Task erstellt
+
+  /tasks/{id}:
+    get:
+      summary: Task-Details
+      tags: [Tasks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Taskdetails
+
+  # === EMAIL ===
+  /email:
+    get:
+      summary: E-Mails auflisten
+      tags: [Email]
+      parameters:
+        - name: folder
+          in: query
+          schema:
+            type: string
+            enum: [inbox, sent, drafts]
+      responses:
+        "200":
+          description: E-Mail-Liste
+    post:
+      summary: E-Mail als Entwurf speichern
+      tags: [Email]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to: { type: string, format: email }
+                subject: { type: string }
+                body: { type: string }
+      responses:
+        "201":
+          description: Entwurf gespeichert
+
+  /email/send:
+    post:
+      summary: E-Mail senden
+      tags: [Email]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to, subject, body]
+              properties:
+                to: { type: string, format: email }
+                subject: { type: string }
+                body: { type: string }
+                patientId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: E-Mail gesendet
+        "500":
+          description: SMTP-Fehler
+
+  # === CMS ===
+  /cms/pages:
+    get:
+      summary: CMS-Seiten auflisten
+      tags: [CMS]
+      parameters:
+        - name: slug
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: CMS-Seiten
+    post:
+      summary: CMS-Seite erstellen
+      tags: [CMS]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CmsPageCreate"
+      responses:
+        "201":
+          description: CMS-Seite erstellt
+        "403":
+          description: Keine ADMIN-Berechtigung
+
+  /cms/pages/{id}:
+    put:
+      summary: CMS-Seite aktualisieren
+      tags: [CMS]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CmsPageCreate"
+      responses:
+        "200":
+          description: Aktualisiert
+        "403":
+          description: Keine ADMIN-Berechtigung
+    delete:
+      summary: CMS-Seite löschen
+      tags: [CMS]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204":
+          description: Gelöscht
+
+components:
+  securitySchemes:
+    NephroToken:
+      type: apiKey
+      in: cookie
+      name: nephro-token
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        retryAfter:
+          type: integer
+
+    Patient:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        dateOfBirth: { type: string, format: date }
+        phone: { type: string }
+        status: { type: string }
+        organizationId: { type: string, format: uuid }
+
+    PatientCreate:
+      type: object
+      required: [firstName, lastName, email, dateOfBirth]
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        dateOfBirth: { type: string, format: date }
+        phone: { type: string }
+        gpName: { type: string }
+        gpPhone: { type: string }
+        createUserAccount: { type: boolean }
+        userEmail: { type: string, format: email }
+
+    Appointment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        startTime: { type: string, format: date-time }
+        endTime: { type: string, format: date-time }
+        location: { type: string }
+        status: { type: string, enum: [PLANNED, CONFIRMED, CANCELLED, COMPLETED] }
+        patient:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            firstName: { type: string }
+            lastName: { type: string }
+
+    AppointmentCreate:
+      type: object
+      required: [patientId, type, startTime]
+      properties:
+        patientId: { type: string, format: uuid }
+        type: { type: string }
+        location: { type: string }
+        startTime: { type: string, format: date-time }
+        endTime: { type: string, format: date-time }
+        notes: { type: string }
+
+    TaskCreate:
+      type: object
+      required: [title, patientId]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        patientId: { type: string, format: uuid }
+        priority: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+        dueDate: { type: string, format: date-time }
+        requirementId: { type: string, format: uuid }
+
+    CmsPageCreate:
+      type: object
+      required: [slug, title, content]
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 100
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        content: { type: string }
+        published: { type: boolean }
+        organizationId: { type: string, format: uuid }

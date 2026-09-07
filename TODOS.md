@@ -5,7 +5,6 @@
 - [ ] Performance: Bundle-Analyse und Code-Splitting
 
 ## Nächste Schritte
-- [ ] Dokumentation: API-Endpunkte dokumentieren
 - [ ] Dokumentation: Deployment-Guide
 - [ ] WhatsApp/SMS-Integration für Reminder
 - [ ] Video-Chat-Integration (z.B. Jitsi)
@@ -45,4 +44,8 @@
 - [x] **Dark Mode**: ThemeProvider mit localStorage-Persistenz + System-Erkennung
 - [x] **Dark Mode**: FOUC Prevention Script, CSS Overrides (Cards, Tables, Modals, Inputs)
 - [x] **Dark Mode**: ThemeToggle in Sidebar (Light/Dark/System)
+- [x] **Performance**: Lazy Loading für TipTap Editor, optimizePackageImports für lucide/radix
+- [x] **Performance**: PERFORMANCE.md mit Bundle-Analyse und Optimierungs-Roadmap
+- [x] **API-Doku**: 91 Endpunkte in 16 Markdown-Dateien dokumentiert
+- [x] **API-Doku**: OpenAPI 3.0 Spec (docs/openapi.yaml)
 - [x] Build sauber, Git commit + push
