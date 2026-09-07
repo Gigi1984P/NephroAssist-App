@@ -182,6 +182,7 @@ export default function EmailPage() {
             {(["inbox", "sent", "drafts"] as EmailFolder[]).map((f) => (
               <button
                 key={f}
+                data-testid={`email-folder-${f}`}
                 className={`btn ${folder === f ? "btn-primary" : "btn-outline-secondary"}`}
                 onClick={() => setFolder(f)}
               >

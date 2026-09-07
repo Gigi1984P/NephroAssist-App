@@ -156,6 +156,7 @@ function SidebarNavItem({
     return (
       <div className="mb-1">
         <button
+          data-testid={`sidebar-nav-${item.titleKey.replace(/\./g, '-')}`}
           onClick={() => setIsOpen((prev) => !prev)}
           className={`sidebar-nav-item ${isActive(item.href) ? "active" : ""}`}
         >
@@ -190,6 +191,7 @@ function SidebarNavItem({
   return (
     <Link
       href={item.href || "#"}
+      data-testid={`sidebar-nav-${item.titleKey.replace(/\./g, '-')}`}
       className={`sidebar-nav-item ${isActive(item.href) ? "active" : ""}`}
     >
       <Icon className="sidebar-nav-icon" />

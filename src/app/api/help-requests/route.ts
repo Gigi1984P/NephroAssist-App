@@ -1,10 +1,27 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
 const CLINIC_ROLES = ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"];
+
+const helpRequestSchema = z.object({
+  type: z.enum([
+    "I_DONT_UNDERSTAND",
+    "NO_APPOINTMENT",
+    "MISSING_PRESCRIPTION",
+    "DOCTOR_WONT_ISSUE",
+    "TRANSPORT",
+    "LANGUAGE",
+    "ORGANIZATIONAL",
+    "OTHER",
+  ], { message: "Ungültiger Hilfetyp" }),
+  description: z.string().min(1, "Beschreibung ist Pflicht").max(2000, "Beschreibung zu lang"),
+  requirementId: z.string().uuid().optional().nullable(),
+  caseId: z.string().uuid("caseId ist Pflicht"),
+});
 
 export async function GET() {
   try {
@@ -69,11 +86,7 @@ export async function POST(request: Request) {
 
     const { user } = session;
     const body = await request.json();
-    const { type, description, requirementId, caseId } = body;
-
-    if (!type || !description) {
-      return NextResponse.json({ error: "Typ und Beschreibung erforderlich" }, { status: 400 });
-    }
+    const validated = helpRequestSchema.parse(body);
 
     let patientId: string | null = null;
 
@@ -114,11 +127,11 @@ export async function POST(request: Request) {
     const helpRequest = await prisma.helpRequest.create({
       data: {
         patientId,
-        caseId: caseId || null,
-        requirementId: requirementId || null,
+        caseId: validated.caseId,
+        requirementId: validated.requirementId,
         organizationId: patient.organizationId,
-        type,
-        description,
+        type: validated.type as any,
+        description: validated.description,
         status: "OPEN",
       },
     });
@@ -131,7 +144,7 @@ export async function POST(request: Request) {
           organizationId: patient.organizationId,
           type: "HELP_REQUEST",
           title: "Neue Hilfeanfrage",
-          message: `Patient hat Hilfe angefordert: ${type}`,
+          message: `Patient hat Hilfe angefordert: ${validated.type}`,
           entityType: "HELP_REQUEST",
           entityId: helpRequest.id,
         },
@@ -140,6 +153,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ helpRequest });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+    }
     console.error("Help request create error:", error);
     return NextResponse.json({ error: "Fehler beim Erstellen" }, { status: 500 });
   }

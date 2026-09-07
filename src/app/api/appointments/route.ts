@@ -2,8 +2,19 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAuditEvent } from "@/lib/audit";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const createAppointmentSchema = z.object({
+  patientId: z.string().uuid("Patient-ID muss eine gültige UUID sein"),
+  type: z.string().min(1, "Typ erforderlich").max(100, "Typ zu lang"),
+  provider: z.string().max(200).optional().nullable(),
+  location: z.string().max(200).optional().nullable(),
+  startTime: z.string().datetime("Ungültiges Datumsformat"),
+  notes: z.string().max(2000).optional().nullable(),
+  relatedRequirementId: z.string().uuid().optional().nullable(),
+});
 
 /* ================================================================ */
 /*  GET: List appointments                                           */
@@ -72,19 +83,8 @@ export async function POST(request: Request) {
 
     const { user } = session;
     const body = await request.json();
-    const {
-      patientId,
-      type,
-      provider,
-      location,
-      startTime,
-      notes,
-      relatedRequirementId,
-    } = body;
 
-    if (!patientId || !startTime) {
-      return NextResponse.json({ error: "Patient und Startzeit sind Pflicht" }, { status: 400 });
-    }
+    const validated = createAppointmentSchema.parse(body);
 
     // Prüfen: User ist entweder Patient selbst oder Klinik
     const isPatientOrCaregiver = user.role === "PATIENT" || user.role === "CAREGIVER";
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     // Case finden
     const patientCase = await prisma.patientCase.findFirst({
       where: {
-        patientId,
+        patientId: validated.patientId,
         status: { notIn: ["CLOSED", "INACTIVE"] },
       },
       select: { id: true, organizationId: true },
@@ -109,16 +109,16 @@ export async function POST(request: Request) {
 
     const appointment = await prisma.appointment.create({
       data: {
-        patientId,
+        patientId: validated.patientId,
         caseId: patientCase.id,
         organizationId: patientCase.organizationId,
-        type: type || "Untersuchung",
-        provider: provider || null,
-        location: location || null,
-        startTime: new Date(startTime),
+        type: validated.type || "Untersuchung",
+        provider: validated.provider || null,
+        location: validated.location || null,
+        startTime: new Date(validated.startTime),
         status: "PLANNED",
-        notes: notes || null,
-        relatedRequirementId: relatedRequirementId || null,
+        notes: validated.notes || null,
+        relatedRequirementId: validated.relatedRequirementId || null,
       },
     });
 
@@ -129,11 +129,14 @@ export async function POST(request: Request) {
       entityType: "APPOINTMENT",
       entityId: appointment.id,
       organizationId: patientCase.organizationId,
-      metadata: { patientId, startTime, type },
+      metadata: { patientId: validated.patientId, startTime: validated.startTime, type: validated.type },
     });
 
     return NextResponse.json({ appointment });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+    }
     console.error("Appointment create error:", error);
     return NextResponse.json({ error: "Fehler beim Erstellen" }, { status: 500 });
   }

@@ -375,7 +375,7 @@ export default function PatientsPage() {
         title={t("nav.patients", "Patienten")}
         description={t("patient.title", "Patienten")}
         action={
-          <button className="btn-custom btn-primary-custom" onClick={openCreate}>
+          <button data-testid="patients-new-btn" className="btn-custom btn-primary-custom" onClick={openCreate}>
             <Plus size={16} /> Neuer Patient
           </button>
         }
@@ -396,6 +396,7 @@ export default function PatientsPage() {
               <div className="search-bar">
                 <Search size={16} className="search-bar-icon" />
                 <input
+                  data-testid="patients-search"
                   type="text"
                   className="form-control"
                   placeholder={t("patient.searchPlaceholder", "Name oder E-Mail suchen...")}
@@ -447,7 +448,7 @@ export default function PatientsPage() {
             </div>
           ) : (
             <>
-              <table className="table-custom">
+              <table data-testid="patients-table" className="table-custom">
                 <thead>
                   <tr>
                     <th style={{ width: 40 }}>
@@ -469,7 +470,7 @@ export default function PatientsPage() {
                     const initials = (patient.firstName?.charAt(0) || "") + (patient.lastName?.charAt(0) || "");
                     const isSelected = selectedIds.has(patient.id);
                     return (
-                      <tr key={patient.id} className={isSelected ? "table-active" : ""}>
+                      <tr key={patient.id} data-testid={`patient-row-${patient.id}`} className={isSelected ? "table-active" : ""}>
                         <td>
                           <input
                             type="checkbox"

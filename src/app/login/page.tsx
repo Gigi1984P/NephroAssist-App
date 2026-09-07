@@ -137,7 +137,7 @@ export default function LoginPage() {
 
         {/* Messages */}
         {error && (
-          <div className="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" style={{ borderRadius: "0.5rem", fontSize: "0.85rem", border: "none", background: "#fee2e2", color: "#991b1b" }}>
+          <div data-testid="login-error" className="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" style={{ borderRadius: "0.5rem", fontSize: "0.85rem", border: "none", background: "#fee2e2", color: "#991b1b" }}>
             <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" /></svg>
             {error}
           </div>
@@ -197,7 +197,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <button type="submit" disabled={loading || (show2FA && twoFactorCode.length !== 6)} className="btn btn-primary w-100 fw-medium" style={{ borderRadius: "0.5rem", padding: "0.75rem", fontSize: "0.95rem", background: "linear-gradient(135deg, #2563eb, #1d4ed8)", border: "none", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}>
+          <button type="submit" data-testid="login-submit" disabled={loading || (show2FA && twoFactorCode.length !== 6)} className="btn btn-primary w-100 fw-medium" style={{ borderRadius: "0.5rem", padding: "0.75rem", fontSize: "0.95rem", background: "linear-gradient(135deg, #2563eb, #1d4ed8)", border: "none", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}>
             {loading ? (
               <span className="d-flex align-items-center justify-content-center gap-2"><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>{show2FA ? t("auth.verifying", "Verifizieren...") : t("auth.signingIn", "Anmelden...")}</span>
             ) : (

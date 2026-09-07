@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, sanitizeHtml } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     const result = await sendEmail({
       to,
       subject,
-      html: htmlBody || emailBody || "",
+      html: sanitizeHtml(htmlBody || emailBody || ""),
       text: emailBody || undefined,
     });
 

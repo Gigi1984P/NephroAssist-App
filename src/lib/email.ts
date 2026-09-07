@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import { prisma } from "./prisma";
+import DOMPurify from "isomorphic-dompurify";
 
 let resend: Resend | null = null;
 
@@ -14,6 +15,24 @@ export interface EmailPayload {
   subject: string;
   html: string;
   text?: string;
+}
+
+/** Escape HTML entities for safe interpolation into HTML email templates */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/** Sanitize user-provided HTML content before sending as email */
+export function sanitizeHtml(dirty: string): string {
+  return DOMPurify.sanitize(dirty, {
+    ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li"],
+    ALLOWED_ATTR: ["href", "title"],
+  });
 }
 
 async function getEmailConfig(): Promise<Record<string, string | null>> {

@@ -4,8 +4,22 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail, getPatientWelcomeEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const createPatientSchema = z.object({
+  firstName: z.string().min(1, "Vorname ist Pflicht").max(100, "Vorname zu lang"),
+  lastName: z.string().min(1, "Nachname ist Pflicht").max(100, "Nachname zu lang"),
+  dateOfBirth: z.string().datetime().optional().nullable(),
+  email: z.string().email("Ungültige E-Mail-Adresse").optional().nullable(),
+  phone: z.string().max(50).optional().nullable(),
+  gpName: z.string().max(200).optional().nullable(),
+  gpEmail: z.string().email("Ungültige E-Mail des Hausarzts").optional().nullable(),
+  gpPhone: z.string().max(50).optional().nullable(),
+  createUserAccount: z.boolean().optional(),
+  userEmail: z.string().email().optional().nullable(),
+});
 
 function generatePassword(length = 10): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
@@ -34,6 +48,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    const validated = createPatientSchema.parse(body);
     const {
       firstName,
       lastName,
@@ -45,7 +60,7 @@ export async function POST(request: Request) {
       gpPhone,
       createUserAccount,
       userEmail,
-    } = body;
+    } = validated;
 
     if (!firstName?.trim() || !lastName?.trim()) {
       return NextResponse.json({ error: "Vor- und Nachname sind Pflicht" }, { status: 400 });
@@ -226,6 +241,9 @@ export async function POST(request: Request) {
       assignedRequirements,
     }, { status: 201 });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+    }
     console.error("Patient create error:", error);
     return NextResponse.json({ error: "Fehler beim Anlegen" }, { status: 500 });
   }
