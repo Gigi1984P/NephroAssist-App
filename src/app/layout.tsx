@@ -4,6 +4,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/toast-provider";
 import { NProgressWrapper } from "@/components/nprogress-wrapper";
 import { I18nProvider } from "@/components/i18n-provider";
+import CsrfProvider from "@/components/csrf-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,8 +36,10 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <I18nProvider>
-          <NProgressWrapper />
-          <ToastProvider>{children}</ToastProvider>
+          <CsrfProvider>
+            <NProgressWrapper />
+            <ToastProvider>{children}</ToastProvider>
+          </CsrfProvider>
         </I18nProvider>
       </body>
     </html>

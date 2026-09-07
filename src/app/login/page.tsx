@@ -163,7 +163,7 @@ export default function LoginPage() {
                   <div className="position-absolute d-flex align-items-center justify-content-center" style={{ left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
                     <Mail size={18} />
                   </div>
-                  <input type="email" id="email" className="form-control" placeholder={t("auth.emailPlaceholder", "name@beispiel.de")} style={{ paddingLeft: "42px", borderRadius: "0.5rem", border: "1px solid #d1d5db", fontSize: "0.9rem" }} />
+                  <input type="email" id="email" data-testid="login-email" className="form-control" placeholder={t("auth.emailPlaceholder", "name@beispiel.de")} style={{ paddingLeft: "42px", borderRadius: "0.5rem", border: "1px solid #d1d5db", fontSize: "0.9rem" }} />
                 </div>
               </div>
               <div className="mb-2">
@@ -172,7 +172,7 @@ export default function LoginPage() {
                   <div className="position-absolute d-flex align-items-center justify-content-center" style={{ left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
                     <Lock size={18} />
                   </div>
-                  <input type={showPassword ? "text" : "password"} id="password" className="form-control" placeholder="••••••••" style={{ paddingLeft: "42px", paddingRight: "44px", borderRadius: "0.5rem", border: "1px solid #d1d5db", fontSize: "0.9rem" }} />
+                  <input type={showPassword ? "text" : "password"} id="password" data-testid="login-password" className="form-control" placeholder="••••••••" style={{ paddingLeft: "42px", paddingRight: "44px", borderRadius: "0.5rem", border: "1px solid #d1d5db", fontSize: "0.9rem" }} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="position-absolute d-flex align-items-center justify-content-center btn btn-link text-decoration-none p-0" style={{ right: "8px", top: "50%", transform: "translateY(-50%)", width: "32px", height: "32px", color: "#94a3b8", borderRadius: "0.375rem", cursor: "pointer", zIndex: 2 }}>
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>

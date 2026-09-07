@@ -11,7 +11,15 @@ import {
   CalendarDays,
   Clock,
   MapPin,
+  X,
+  Save,
 } from "lucide-react";
+
+interface PatientOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
 
 interface Appointment {
   id: string;
@@ -37,10 +45,71 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewMode>("month");
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [patients, setPatients] = useState<PatientOption[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+  // Form state
+  const [formPatientId, setFormPatientId] = useState("");
+  const [formType, setFormType] = useState("Transplantationsambulanz");
+  const [formLocation, setFormLocation] = useState("");
+  const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
+  const [formTime, setFormTime] = useState("09:00");
 
   useEffect(() => {
     loadAppointments();
+    loadPatients();
   }, []);
+
+  const loadPatients = async () => {
+    try {
+      const res = await fetch("/api/patients/overview", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        const list = (data.patients || []).map((p: any) => ({
+          id: p.id,
+          firstName: p.firstName,
+          lastName: p.lastName,
+        }));
+        setPatients(list);
+        if (list.length > 0) setFormPatientId(list[0].id);
+      }
+    } catch (error) {
+      console.error("Failed to load patients:", error);
+    }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError("");
+    setCreating(true);
+    try {
+      const startTime = new Date(`${formDate}T${formTime}`).toISOString();
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: formPatientId,
+          type: formType,
+          location: formLocation,
+          startTime,
+        }),
+      });
+      if (res.ok) {
+        setShowCreate(false);
+        setFormType("Transplantationsambulanz");
+        setFormLocation("");
+        loadAppointments();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setCreateError(data.error || "Fehler beim Erstellen");
+      }
+    } catch (error) {
+      setCreateError("Netzwerkfehler");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const loadAppointments = async () => {
     try {

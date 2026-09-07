@@ -41,6 +41,7 @@ const sidebarItems: SidebarItem[] = [
   { titleKey: "nav.requirements", href: "/dashboard/requirements", icon: ClipboardList, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
   { titleKey: "nav.helpRequests", href: "/dashboard/help-requests", icon: LifeBuoy, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE", "PATIENT", "CAREGIVER", "DIALYSIS_STAFF"] },
   { titleKey: "nav.email", href: "/dashboard/email", icon: Mail, roles: ["ADMIN", "COORDINATOR", "PHYSICIAN", "NURSE"] },
+  { titleKey: "nav.cms", href: "/dashboard/cms", icon: FileText, roles: ["ADMIN"] },
   {
     titleKey: "nav.admin",
     href: "/dashboard/admin",

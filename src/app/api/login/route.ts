@@ -100,6 +100,16 @@ export async function POST(request: Request) {
           path: "/",
         });
 
+        // Set CSRF token cookie for subsequent state-changing requests
+        const csrfToken = crypto.randomBytes(32).toString("hex");
+        response.cookies.set("csrf-token", csrfToken, {
+          httpOnly: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
+
         return response;
       }
 
@@ -220,6 +230,16 @@ export async function POST(request: Request) {
 
       response.cookies.set("nephro-token", token, {
         httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+
+      // Set CSRF token cookie for subsequent state-changing requests
+      const csrfToken = crypto.randomBytes(32).toString("hex");
+      response.cookies.set("csrf-token", csrfToken, {
+        httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 60 * 60 * 24 * 7,

@@ -60,6 +60,7 @@ export default function DashboardLayout({
       "/dashboard/admin/reports": t("admin.statistics", "Statistiken"),
       "/dashboard/admin/audit": t("admin.auditLog", "Audit Log"),
       "/dashboard/reports": t("nav.reports", "Auswertungen"),
+      "/dashboard/cms": t("nav.cms", "CMS"),
     };
     if (typeof window !== "undefined") {
       setPageTitle(titleMap[window.location.pathname] || t("nav.dashboard", "Dashboard"));

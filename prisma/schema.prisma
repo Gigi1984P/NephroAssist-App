@@ -53,6 +53,7 @@ model Organization {
   donorShares       DataSharingPermission[]  @relation("DonorShares")
   receivedShares    DataSharingPermission[]  @relation("RecipientShares")
   emailMessages     EmailMessage[]
+  cmsPages          CmsPage[]
 
   @@index([type])
   @@index([status])
@@ -1558,4 +1559,27 @@ model ReminderLog {
   @@index([requirementId])
   @@index([sentAt])
   @@map("reminder_logs")
+}
+
+// ============================================================
+// CMS / CONTENT PAGES
+// ============================================================
+
+model CmsPage {
+  id             String   @id @default(uuid())
+  slug           String   @unique
+  title            String
+  content          String
+  published        Boolean  @default(false)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdBy        String   @map("created_by")
+  organizationId   String?  @map("organization_id")
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([published])
+  @@map("cms_pages")
 }
