@@ -7,10 +7,7 @@
 ## Nächste Schritte
 - [ ] WhatsApp/SMS-Integration für Reminder
 - [ ] Video-Chat-Integration (z.B. Jitsi)
-- [ ] AI-Dokumenten-Klassifizierung (OCR + GPT)
 - [ ] Analytics-Dashboard mit Charts
-- [ ] Export-Funktion (PDF-Report für Patienten)
-- [ ] Interoperabilität: HL7 FHIR-Integration
 - [ ] Terminbuchung extern (Patienten können selbst buchen)
 
 ## Erledigt (letzte Session)
@@ -49,4 +46,8 @@
 - [x] **API-Doku**: OpenAPI 3.0 Spec (docs/openapi.yaml)
 - [x] **Deployment-Guide**: Vercel-Deployment, DB-Setup, Env-Vars, Cron-Jobs, Troubleshooting
 - [x] **Deployment-Guide**: .vercelignore für schnellere Builds
+- [x] **AI-OCR**: /api/documents/[id]/ocr mit plantone-ocr Integration
+- [x] **AI-OCR**: DocumentOcrButton Komponente für Dashboard
+- [x] **PDF-Export**: /api/patients/[id]/report mit PatientPdfButton
+- [x] **HL7 FHIR**: /api/fhir/Patient mit FHIR R4 Mapping
 - [x] Build sauber, Git commit + push

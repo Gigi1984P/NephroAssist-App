@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { getAmpelColor } from "@/lib/ampel";
+import { PatientPdfButton } from "@/components/patient-pdf-button";
+import { PatientFhirLink } from "@/components/patient-fhir-link";
 import {
   Calendar, FileText, AlertTriangle, ArrowLeft, Phone, Mail, MapPin,
 } from "lucide-react";
@@ -87,9 +89,13 @@ export default async function PatientPage({ params }: PatientPageProps) {
         title={`${patient.firstName} ${patient.lastName}`}
         description="Patientenübersicht"
         action={
-          <Link href="/dashboard/patients" className="btn-custom btn-outline-custom">
-            <ArrowLeft size={16} /> Zurück
-          </Link>
+          <div className="d-flex gap-2">
+            <PatientPdfButton patientId={id} />
+            <PatientFhirLink patientId={id} />
+            <Link href="/dashboard/patients" className="btn-custom btn-outline-custom">
+              <ArrowLeft size={16} /> Zurück
+            </Link>
+          </div>
         }
       />
 

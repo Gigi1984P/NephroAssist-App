@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { useTranslation } from "@/components/i18n-provider";
-import {
-  Upload, FileText, X, Search, ChevronLeft, ChevronRight,
+import { ScanText, Loader2, Upload, FileText, X, Search, ChevronLeft, ChevronRight,
   Download, CheckCircle, XCircle, HelpCircle,
 } from "lucide-react";
+import { DocumentOcrButton } from "@/components/document-ocr-button";
 
 interface Document {
   id: string;
@@ -236,6 +236,7 @@ export default function DocumentsPage() {
                                 {t("documents.review", "Review")}
                               </button>
                             )}
+                            <DocumentOcrButton documentId={doc.id} />
                           </div>
                         </td>
                       </tr>
